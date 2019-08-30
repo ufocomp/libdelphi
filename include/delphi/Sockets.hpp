@@ -1922,7 +1922,7 @@ namespace Delphi {
 
             virtual void DoWrite(CPollEventHandler *AHandler);
 
-            virtual void DoTimer(CPollEventHandler *AHandler) abstract;
+            virtual void DoTimer(CPollEventHandler *AHandler) {};
 
             bool DoExecute(CTCPConnection *AConnection) override;
 
