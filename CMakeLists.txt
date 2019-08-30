@@ -15,7 +15,7 @@ enable_cxx_compiler_flag_if_supported(CMAKE_CXX_FLAGS_DEBUG "-pedantic")
 
 set(PROJECT_DESCRIPTION "Apostol Web Service")
 
-set(USE_POSTGRESQL  OFF CACHE BOOL "Build with PostgreSQL")
+set(USE_POSTGRESQL  ON CACHE BOOL "Build with PostgreSQL")
 set(USE_SQLITE3     OFF CACHE BOOL "Build with Sqlite3.")
 
 if (USE_POSTGRESQL)
