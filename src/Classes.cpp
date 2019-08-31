@@ -1064,7 +1064,7 @@ namespace Delphi {
                     throw EFilerError(errno, _T("Could not create file: \"%s\" error: "), lpszFileName);
 
             } else {
-                CreateHandle(::open(lpszFileName, O_RDWR, FILE_ATTRIBUTE_NORMAL));
+                CreateHandle(::open(lpszFileName, Mode, FILE_ATTRIBUTE_NORMAL));
                 if (m_Handle == INVALID_HANDLE_VALUE)
                     throw EFilerError(errno, _T("Could not open file: \"%s\" error: "), lpszFileName);
             }
