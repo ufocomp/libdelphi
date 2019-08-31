@@ -61,6 +61,8 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-# add pkg-config
-configure_file("contrib/${DELPHI_LIB_NAME}.pc.in" "${DELPHI_LIB_NAME}.pc" @ONLY)
-install(FILES "${CMAKE_BINARY_DIR}/${DELPHI_LIB_NAME}.pc" DESTINATION lib/pkgconfig)
+if (BUILD_STATIC_LIB OR BUILD_SHARED_LIB)
+    # add pkg-config
+    configure_file("contrib/${DELPHI_LIB_NAME}.pc.in" "${DELPHI_LIB_NAME}.pc" @ONLY)
+    install(FILES "${CMAKE_BINARY_DIR}/${DELPHI_LIB_NAME}.pc" DESTINATION lib/pkgconfig)
+endif()
