@@ -7,5 +7,5 @@ Name: Delphi Library
 Description: Delphi classes for C++
 Version:
 URL: https://github.com/ufocomp/libdelphi
-Libs: -L${libdir} -ldelphi
+Libs: -L${libdir} -ldelphi -lpthread -lpq -lsqlite3
 Cflags: -I${includedir}

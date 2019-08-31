@@ -568,8 +568,8 @@ namespace Delphi {
 
             Pointer m_Memory;
 
-            ssize_t m_Size;
-            ssize_t m_Position;
+            size_t m_Size;
+            size_t m_Position;
 
         protected:
 

@@ -11,6 +11,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #enable_cxx_compiler_flag_if_supported(CMAKE_CXX_FLAGS_DEBUG "-Wextra")
 #enable_cxx_compiler_flag_if_supported(CMAKE_CXX_FLAGS_DEBUG "-pedantic")
 
+add_compile_options("-DDELPHI_LIB_EXPORTS")
+
 # -Iinclude
 include_directories(include)
 include_directories(src)
@@ -21,8 +23,6 @@ add_subdirectory(src)
 
 # Delphi classes for C++
 # ----------------------------------------------------------------------------------------------------------------------
-add_compile_options("-DDELPHI_LIB_EXPORTS")
-
 set(DELPHI_LIB_NAME delphi)
 
 set(USE_POSTGRESQL  OFF CACHE BOOL "Build with PostgreSQL")
