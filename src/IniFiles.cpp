@@ -44,7 +44,7 @@ namespace Delphi {
 
         void CCustomIniFile::InternalReadSections(LPCTSTR lpszSectionName, CStrings *Strings, bool SubSectionNamesOnly,
                                                   bool Recurse) {
-            size_t SLen, SectionLen, SectionEndOfs;
+            size_t SLen, SectionLen, SectionEndOfs, I;
             CString SubSectionName;
             CStringList AllSections;
 
@@ -55,7 +55,7 @@ namespace Delphi {
             SectionEndOfs = SectionLen > 0 ? SectionLen + 1 : SectionLen;
             Strings->BeginUpdate();
             try {
-                for (int I = 0; I < AllSections.Count(); ++I) {
+                for (I = 0; I < AllSections.Count(); ++I) {
                     CString &S = AllSections[I];
                     SLen = S.Length();
                     if ((SectionLen == 0)
@@ -79,22 +79,26 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCustomIniFile::SectionExists(LPCTSTR lpszSectionName) {
-            CStringList S;
+            CStrings *S;
+            S = new CStringList;
             try {
-                ReadSection(lpszSectionName, &S);
+                ReadSection(lpszSectionName, S);
             } catch (...) {
             }
-            return S.Count() > 0;
+            delete S;
+            return S->Count() > 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCustomIniFile::ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) {
-            CStringList S;
+            CStrings *S;
+            S = new CStringList;
             try {
-                ReadSection(lpszSectionName, &S);
+                ReadSection(lpszSectionName, S);
             } catch (...) {
             }
-            return S.IndexOf(lpszKeyName) > -1;
+            delete S;
+            return S->IndexOf(lpszSectionName) > -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -220,14 +224,14 @@ namespace Delphi {
         CStringHash::CStringHash(size_t Size): CObject() {
             m_BucketSize = Size;
             m_Buckets = new CList* [Size];
-            for (size_t I = 0; I < Size; ++I)
+            for (int I = 0; I < Size; ++I)
                 m_Buckets[I] = new CList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CStringHash::~CStringHash() {
             Clear();
-            for (size_t I = 0; I < m_BucketSize; ++I) {
+            for (int I = 0; I < m_BucketSize; ++I) {
                 FreeAndNil(m_Buckets[I]);
             }
             delete [] m_Buckets;
@@ -271,7 +275,7 @@ namespace Delphi {
         //-------------------------------------------------------------------------------------------------------------
 
         unsigned CStringHash::HashOf(const CString &Key) {
-            size_t Result = 0;
+            unsigned Result = 0;
             for (size_t I = 0; I < Key.Length(); ++I)
                 Result = ((Result << 2) | (Result >> (sizeof(Result) * 8 - 2))) ^ Key[I];
             return Result;
@@ -319,7 +323,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringHash::Clear() {
-            for (size_t I = 0; I < m_BucketSize; ++I) {
+            for (int I = 0; I < m_BucketSize; ++I) {
                 ClearList(m_Buckets[I]);
             }
         }
@@ -806,12 +810,12 @@ namespace Delphi {
 
         BOOL CMemIniFile::WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, const CString &String) {
             return WriteString(lpszSectionName, lpszKeyName, String.c_str());
-        }
+        };
         //--------------------------------------------------------------------------------------------------------------
 
         BOOL CMemIniFile::WriteString(const CString &SectionName, const CString &KeyName, const CString &String) {
             return WriteString(SectionName.c_str(), KeyName.c_str(), String.c_str());
-        }
+        };
         //--------------------------------------------------------------------------------------------------------------
 
         int CMemIniFile::GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) {

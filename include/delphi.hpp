@@ -215,6 +215,8 @@ inline void chMB(LPCSTR szMsg);
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 
+#define SYS_ERRNO_COUNT         135
+
 #ifdef DELPHI_LIB_EXPORTS
 #  define LIB_DELPHI
 
@@ -274,6 +276,9 @@ inline void chMB(LPCSTR szMsg);
 #  endif
 #endif
 
+using namespace Delphi;
+//----------------------------------------------------------------------------------------------------------------------
+
 #else
 #  define LIB_DELPHI
 #endif
@@ -299,7 +304,4 @@ inline void chASSERTFAIL(LPCSTR file, int line, LPCSTR expr)
     StringCchPrintf(sz, chARRAY(sz), _T("File %s, line %d : %s\n"), file, line, expr);
     chMBANDDEBUG(sz);
 }
-//----------------------------------------------------------------------------------------------------------------------
-
-using namespace Delphi;
 //----------------------------------------------------------------------------------------------------------------------
