@@ -1031,7 +1031,7 @@ namespace Delphi {
 
             CServerIOHandler() : CIOHandlerSocket() {};
 
-            ~CServerIOHandler() = default;
+            ~CServerIOHandler() override = default;
 
             CIOHandler *Accept(CSocket ASocket, int AFlags);
 
@@ -1193,7 +1193,7 @@ namespace Delphi {
             const COnSocketThreadExceptionEvent &OnException() { return m_OnException; }
             void OnException(COnSocketThreadExceptionEvent && Value) { m_OnException = Value; }
 
-            const COnSocketThreadNotifyEvent OnStopped() { return m_OnStopped; }
+            const COnSocketThreadNotifyEvent& OnStopped() { return m_OnStopped; }
             void OnStopped(COnSocketThreadNotifyEvent && Value) { m_OnStopped = Value; }
 
         }; // CSocketThread
