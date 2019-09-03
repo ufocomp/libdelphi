@@ -1853,9 +1853,13 @@ namespace Delphi {
 
             virtual void DoAccept(CPollEventHandler *AHandler) abstract;
 
+            virtual void DoConnect(CPollEventHandler *AHandler) {};
+
             virtual void DoRead(CPollEventHandler *AHandler);
 
             virtual void DoWrite(CPollEventHandler *AHandler);
+
+            virtual void DoTimer(CPollEventHandler *AHandler) {};
 
             bool DoExecute(CTCPConnection *AConnection) override;
 

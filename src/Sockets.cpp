@@ -3185,6 +3185,16 @@ namespace Delphi {
                         }
                     }
 
+                } else if (LHandler->EventType() == etConnect) {
+
+                    if (EEvents & EPOLLOUT) {
+                        if (LHandler->OnConnectEvent() != nullptr) {
+                            LHandler->DoConnectEvent();
+                        } else {
+                            DoConnect(LHandler);
+                        }
+                    }
+
                 } else if (LHandler->EventType() == etIO) {
 
                     if (EEvents & EPOLLIN) {
@@ -3200,6 +3210,16 @@ namespace Delphi {
                             LHandler->DoWriteEvent();
                         } else {
                             DoWrite(LHandler);
+                        }
+                    }
+
+                } else if (LHandler->EventType() == etTimer) {
+
+                    if (EEvents & EPOLLIN) {
+                        if (LHandler->OnTimerEvent() != nullptr) {
+                            LHandler->DoTimerEvent();
+                        } else {
+                            DoTimer(LHandler);
                         }
                     }
                 }
