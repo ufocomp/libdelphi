@@ -1642,16 +1642,14 @@ namespace Delphi {
         enum CPollEvenType { etNone, etAccept, etConnect, etIO, etTimer };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEPollServer;
-        class LIB_DELPHI CEPollClient;
+        class LIB_DELPHI CEPoll;
         class LIB_DELPHI CPollEventHandlers;
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CPollEventHandler: public CCollectionItem {
             typedef CCollectionItem inherited;
 
-            friend CEPollServer;
-            friend CEPollClient;
+            friend CEPoll;
 
         private:
 
@@ -1820,13 +1818,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CEPollServer ----------------------------------------------------------------------------------------------
+        //-- CEPoll ----------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEPollServer: public CPollSocketServer {
-            typedef CPollSocketServer inherited;
-
+        class LIB_DELPHI CEPoll {
         private:
 
             CPollStack *m_PollStack;
@@ -1836,8 +1832,6 @@ namespace Delphi {
             bool m_FreePollStack;
 
             void SetPollStack(CPollStack *Value);
-
-            void CheckHandler(CPollEventHandler *AHandler);
 
             void CreatePollEventHandlers();
 
@@ -1849,94 +1843,25 @@ namespace Delphi {
 
             void SetTimeOut(int Value);
 
-            virtual void DoTimeOut(CPollEventHandler *AHandler);
+            virtual void DoTimeOut(CPollEventHandler *AHandler) abstract;
 
             virtual void DoAccept(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoConnect(CPollEventHandler *AHandler) {};
-
-            virtual void DoRead(CPollEventHandler *AHandler);
-
-            virtual void DoWrite(CPollEventHandler *AHandler);
-
-            virtual void DoTimer(CPollEventHandler *AHandler) {};
-
-            bool DoExecute(CTCPConnection *AConnection) override;
-
-            void DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException);
-
-        public:
-
-            CEPollServer();
-
-            ~CEPollServer() override;
-
-            CPollStack *PollStack() { return m_PollStack; };
-            void PollStack(CPollStack *Value) { SetPollStack(Value); };
-
-            int TimeOut() { return GetTimeOut(); };
-            void TimeOut(int Value) { SetTimeOut(Value); };
-
-            bool Wait();
-
-            CPollEventHandlers *EventHandlers() { return m_EventHandlers; }
-            void EventHandlers(CPollEventHandlers *Value) { m_EventHandlers = Value; }
-
-            const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
-            void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
-
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CEPollClient ----------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class LIB_DELPHI CEPollClient: public CPollSocketClient {
-            typedef CPollSocketClient inherited;
-
-        private:
-
-            CPollStack *m_PollStack;
-
-            COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
-
-            bool m_FreePollStack;
-
-            void SetPollStack(CPollStack *Value);
-
-            void CheckHandler(CPollEventHandler *AHandler);
-
-            void CreatePollEventHandlers();
-
-        protected:
-
-            CPollEventHandlers *m_EventHandlers;
-
-            int GetTimeOut();
-
-            void SetTimeOut(int Value);
-
-            virtual void DoTimeOut(CPollEventHandler *AHandler);
-
             virtual void DoConnect(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoRead(CPollEventHandler *AHandler);
+            virtual void DoRead(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoWrite(CPollEventHandler *AHandler);
+            virtual void DoWrite(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoTimer(CPollEventHandler *AHandler) {};
-
-            bool DoExecute(CTCPConnection *AConnection) override;
+            virtual void DoTimer(CPollEventHandler *AHandler) abstract;
 
             void DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException);
 
         public:
 
-            CEPollClient();
+            CEPoll();
 
-            ~CEPollClient() override;
+            ~CEPoll();
 
             CPollStack *PollStack() { return m_PollStack; };
             void PollStack(CPollStack *Value) { SetPollStack(Value); };
@@ -1950,12 +1875,71 @@ namespace Delphi {
 
             void Timer(int AMsec, int Flags = 0);
 
+            static void CheckHandler(CPollEventHandler *AHandler);
+
             CPollEventHandlers *EventHandlers() { return m_EventHandlers; }
             void EventHandlers(CPollEventHandlers *Value) { m_EventHandlers = Value; }
 
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
 
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CEPollServer ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CEPollServer: public CPollSocketServer, public CEPoll {
+        protected:
+
+            void DoTimeOut(CPollEventHandler *AHandler) override;
+
+            void DoConnect(CPollEventHandler *AHandler) override {};
+
+            void DoRead(CPollEventHandler *AHandler) override;
+
+            void DoWrite(CPollEventHandler *AHandler) override;
+
+            void DoTimer(CPollEventHandler *AHandler) override {};
+
+            bool DoExecute(CTCPConnection *AConnection) override;
+
+        public:
+
+            CEPollServer();
+
+            ~CEPollServer() override = default;
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CEPollClient ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CEPollClient: public CPollSocketClient, public CEPoll {
+        protected:
+
+            void DoTimeOut(CPollEventHandler *AHandler) override;
+
+            void DoAccept(CPollEventHandler *AHandler) override {};
+
+            void DoRead(CPollEventHandler *AHandler) override;
+
+            void DoWrite(CPollEventHandler *AHandler) override;
+
+            void DoTimer(CPollEventHandler *AHandler) override {};
+
+            bool DoExecute(CTCPConnection *AConnection) override;
+
+        public:
+
+            CEPollClient();
+
+            ~CEPollClient() override = default;
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1968,6 +1952,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CAsyncServer: public CEPollServer {
+            typedef CEPollServer inherited;
+
         private:
 
             CServerIOHandler *m_IOHandler;

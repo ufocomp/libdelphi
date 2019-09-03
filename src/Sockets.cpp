@@ -3065,11 +3065,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CEPollServer ----------------------------------------------------------------------------------------------
+        //-- CEPoll ----------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPollServer::CEPollServer(): CPollSocketServer() {
+        CEPoll::CEPoll() {
             m_EventHandlers = nullptr;
 
             m_PollStack = new CPollStack();
@@ -3082,20 +3082,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPollServer::~CEPollServer() {
+        CEPoll::~CEPoll() {
             FreeAndNil(m_EventHandlers);
             if (m_FreePollStack)
-                FreeAndNil(m_PollStack);
+            FreeAndNil(m_PollStack);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPollServer::CreatePollEventHandlers() {
+        void CEPoll::CreatePollEventHandlers() {
             m_EventHandlers = new CPollEventHandlers(m_PollStack);
-            m_EventHandlers->OnException(std::bind(&CAsyncServer::DoEventHandlersException, this, _1, _2));
+            m_EventHandlers->OnException(std::bind(&CEPoll::DoEventHandlersException, this, _1, _2));
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPollServer::SetPollStack(CPollStack *Value) {
+        void CEPoll::SetPollStack(CPollStack *Value) {
             if (m_PollStack != Value) {
                 FreeAndNil(m_PollStack);
                 m_PollStack = Value;
@@ -3105,24 +3105,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CEPollServer::GetTimeOut() {
+        int CEPoll::GetTimeOut() {
             return m_PollStack->TimeOut();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPollServer::SetTimeOut(int Value) {
+        void CEPoll::SetTimeOut(int Value) {
             m_PollStack->TimeOut(Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPollServer::CheckHandler(CPollEventHandler *AHandler) {
+        void CEPoll::CheckHandler(CPollEventHandler *AHandler) {
             if (AHandler->Stoped()) {
                 delete AHandler;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CEPollServer::Wait() {
+        bool CEPoll::Wait() {
 
             int LEvents, err, i;
             uint32_t EEvents;
@@ -3231,6 +3231,45 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CEPoll::Timer(int AMsec, int Flags) {
+
+            CPollEventHandler *Handler;
+            CEPollTimer *Timer = CEPollTimer::CreateAs(CLOCK_MONOTONIC, Flags);
+
+            struct itimerspec ts = {};
+            uint64_t res;
+
+            ts.it_interval.tv_sec = 0;
+            ts.it_interval.tv_nsec = 0;
+            ts.it_value.tv_sec = AMsec / 1000;
+            ts.it_value.tv_nsec = (AMsec % 1000) * 1000000;
+
+            Timer->SetTime(0, &ts);
+
+            Handler = m_EventHandlers->Add(Timer->Handle());
+            Handler->Binding(Timer, true);
+            Handler->Start(etTimer);
+
+            Timer->Read(&res, sizeof(res));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException) {
+            if (m_OnEventHandlerException != nullptr)
+                m_OnEventHandlerException(AHandler, AException);
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CEPollServer ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CEPollServer::CEPollServer() : CPollSocketServer(), CEPoll() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         bool CEPollServer::DoExecute(CTCPConnection *AConnection) {
             if (m_OnExecute != nullptr) {
                 return m_OnExecute(AConnection);
@@ -3272,12 +3311,6 @@ namespace Delphi {
                 LConnection->Disconnect();
             }
         }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollServer::DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException) {
-            if (m_OnEventHandlerException != nullptr)
-                m_OnEventHandlerException(AHandler, AException);
-        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3285,179 +3318,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPollClient::CEPollClient(): CPollSocketClient() {
-            m_EventHandlers = nullptr;
+        CEPollClient::CEPollClient(): CPollSocketClient(), CEPoll() {
 
-            m_PollStack = new CPollStack();
-
-            m_FreePollStack = true;
-
-            m_OnEventHandlerException = nullptr;
-
-            CreatePollEventHandlers();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CEPollClient::~CEPollClient() {
-            FreeAndNil(m_EventHandlers);
-            if (m_FreePollStack)
-                FreeAndNil(m_PollStack);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::CreatePollEventHandlers() {
-            m_EventHandlers = new CPollEventHandlers(m_PollStack);
-            m_EventHandlers->OnException(std::bind(&CEPollClient::DoEventHandlersException, this, _1, _2));
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::SetPollStack(CPollStack *Value) {
-            if (m_PollStack != Value) {
-                FreeAndNil(m_PollStack);
-                m_PollStack = Value;
-                m_EventHandlers->PollStack(Value);
-                m_FreePollStack = false;
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CEPollClient::GetTimeOut() {
-            return m_PollStack->TimeOut();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::SetTimeOut(int Value) {
-            m_PollStack->TimeOut(Value);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::CheckHandler(CPollEventHandler *AHandler) {
-            if (AHandler->Stoped()) {
-                delete AHandler;
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        bool CEPollClient::Wait() {
-
-            int LEvents, err, i;
-            uint32_t EEvents;
-
-            CPollEventHandler *LHandler = nullptr;
-            CPollEvent *LPollEvent = nullptr;
-
-            LEvents = m_PollStack->Wait();
-
-            err = (LEvents == -1) ? errno : 0;
-
-            if (err) {
-                throw EOSError(err, _T("epoll: call waits for events failure: "));
-            }
-
-            if (LEvents == 0) {
-
-                if (m_PollStack->TimeOut() != INFINITE) {
-
-                    for (int I = 0; I < m_EventHandlers->Count(); ++I) {
-                        LHandler = m_EventHandlers->Handlers(I);
-                        if (LHandler->EventType() == etIO) {
-                            if (LHandler->OnTimeOutEvent() != nullptr) {
-                                LHandler->DoTimeOutEvent();
-                            } else {
-                                DoTimeOut(LHandler);
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-
-                throw EOSError(err, _T("epoll_wait() returned no events without timeout "));
-            }
-
-            for (i = 0; i < LEvents; ++i) {
-
-                LPollEvent = m_PollStack->Events(i);
-
-                LHandler = (CPollEventHandler *) LPollEvent->data.ptr;
-                EEvents = LPollEvent->events;
-
-                if (EEvents & (EPOLLERR|EPOLLHUP)) {
-                    /*
-                     * if the error events were returned, add EPOLLIN and EPOLLOUT
-                     * to handle the events at least in one active handler
-                     */
-
-                    EEvents |= EPOLLIN|EPOLLOUT;
-                }
-
-                if (LHandler->EventType() == etConnect) {
-
-                    if (EEvents & EPOLLOUT) {
-                        if (LHandler->OnConnectEvent() != nullptr) {
-                            LHandler->DoConnectEvent();
-                        } else {
-                            DoConnect(LHandler);
-                        }
-                    }
-
-                } else if (LHandler->EventType() == etIO) {
-
-                    if (EEvents & EPOLLIN) {
-                        if (LHandler->OnReadEvent() != nullptr) {
-                            LHandler->DoReadEvent();
-                        } else {
-                            DoRead(LHandler);
-                        }
-                    }
-
-                    if (EEvents & EPOLLOUT) {
-                        if (LHandler->OnWriteEvent() != nullptr) {
-                            LHandler->DoWriteEvent();
-                        } else {
-                            DoWrite(LHandler);
-                        }
-                    }
-
-                } else if (LHandler->EventType() == etTimer) {
-
-                    if (EEvents & EPOLLIN) {
-                        if (LHandler->OnTimerEvent() != nullptr) {
-                            LHandler->DoTimerEvent();
-                        } else {
-                            DoTimer(LHandler);
-                        }
-                    }
-
-                }
-
-                CheckHandler(LHandler);
-            }
-
-            return true;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::Timer(int AMsec, int Flags) {
-
-            CPollEventHandler *Handler;
-            CEPollTimer *Timer = CEPollTimer::CreateAs(CLOCK_MONOTONIC, Flags);
-
-            struct itimerspec ts = {};
-            uint64_t res;
-
-            ts.it_interval.tv_sec = 0;
-            ts.it_interval.tv_nsec = 0;
-            ts.it_value.tv_sec = AMsec / 1000;
-            ts.it_value.tv_nsec = (AMsec % 1000) * 1000000;
-
-            Timer->SetTime(0, &ts);
-
-            Handler = m_EventHandlers->Add(Timer->Handle());
-            Handler->Binding(Timer, true);
-            Handler->Start(etTimer);
-
-            Timer->Read(&res, sizeof(res));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3500,12 +3362,6 @@ namespace Delphi {
                 DoException(LConnection, &E);
                 LConnection->Disconnect();
             }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPollClient::DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException) {
-            if (m_OnEventHandlerException != nullptr)
-                m_OnEventHandlerException(AHandler, AException);
         }
 
         //--------------------------------------------------------------------------------------------------------------
