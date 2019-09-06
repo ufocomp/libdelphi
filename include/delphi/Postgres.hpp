@@ -62,7 +62,7 @@ namespace Delphi {
 
             PGPing GetPing();
 
-            const CString& GetValue(LPCSTR Keyword) const;
+            CString GetValue(LPCSTR Keyword) const;
 
             const CString& GetConnInfo();
 
@@ -102,7 +102,7 @@ namespace Delphi {
             CString& ApplicationName() { return m_ApplicationName; };
             const CString& ApplicationName() const { return m_ApplicationName; };
 
-            const CString& Parameters(LPCSTR Keyword) const { return GetValue(Keyword); };
+            CString Parameters(LPCSTR Keyword) const { return GetValue(Keyword); };
 
             CPQConnInfo& operator=(const CPQConnInfo& Info) {
                 if (&Info != this) {
@@ -111,7 +111,7 @@ namespace Delphi {
                 return *this;
             }
 
-            const CString& operator[](LPCSTR Keyword) const { return GetValue(Keyword); }
+            CString operator[](LPCSTR Keyword) const { return GetValue(Keyword); }
 
         };
 

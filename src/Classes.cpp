@@ -924,18 +924,18 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CStream::GetPosition() {
-            return (size_t) Seek(0, soCurrent);
+        off_t CStream::GetPosition() {
+            return Seek(0, soCurrent);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStream::SetPosition(size_t Pos) {
+        void CStream::SetPosition(off_t Pos) {
             Seek(Pos, soBeginning);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CStream::GetSize() {
-            size_t Pos, Result;
+        off_t CStream::GetSize() {
+            off_t Pos, Result;
 
             Pos = Seek(0, soCurrent);
             Result = Seek(0, soEnd);
@@ -951,7 +951,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CStream::Seek(off_t Offset, CSeekOrigin Origin) {
+        off_t CStream::Seek(off_t Offset, CSeekOrigin Origin) {
             switch (Origin) {
                 case soBeginning:
                 case soCurrent:
@@ -1031,24 +1031,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CHandleStream::Read(void *Buffer, size_t Count) {
+        ssize_t CHandleStream::Read(void *Buffer, size_t Count) {
             ssize_t Result = ::read(m_Handle, Buffer, Count);
             if (!Result)
                 Result = 0;
-            return (size_t) Result;
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CHandleStream::Write(const void *Buffer, size_t Count) {
+        ssize_t CHandleStream::Write(const void *Buffer, size_t Count) {
             ssize_t Result = ::write(m_Handle, Buffer, Count);
             if (!Result)
                 Result = 0;
-            return (size_t) Result;
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CHandleStream::Seek(const off_t Offset, unsigned short Origin) {
-            return (size_t) ::lseek(m_Handle, Offset, Origin);
+        off_t CHandleStream::Seek(const off_t Offset, unsigned short Origin) {
+            return ::lseek(m_Handle, Offset, Origin);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1097,7 +1097,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCustomMemoryStream::Read(void *Buffer, size_t Count) {
+        ssize_t CCustomMemoryStream::Read(void *Buffer, size_t Count) {
             size_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
@@ -1114,7 +1114,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCustomMemoryStream::Seek(off_t Offset, unsigned short Origin) {
+        off_t CCustomMemoryStream::Seek(off_t Offset, unsigned short Origin) {
             switch (Origin) {
                 case soFromBeginning:
                     m_Position = (size_t) Offset;
@@ -1243,7 +1243,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CMemoryStream::Write(const void *Buffer, size_t Count) {
+        ssize_t CMemoryStream::Write(const void *Buffer, size_t Count) {
             size_t Pos;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Pos = m_Position + Count;
@@ -1281,8 +1281,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCustomStringStream::Read(void *Buffer, size_t Count) {
-            size_t Result = 0;
+        ssize_t CCustomStringStream::Read(void *Buffer, size_t Count) {
+            ssize_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
                 if (Result > 0) {
@@ -1298,10 +1298,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCustomStringStream::Seek(off_t Offset, unsigned short Origin) {
+        off_t CCustomStringStream::Seek(off_t Offset, unsigned short Origin) {
             switch (Origin) {
                 case soFromBeginning:
-                    m_Position = (size_t) Offset;
+                    m_Position = Offset;
                     break;
 
                 case soFromCurrent:
@@ -1432,7 +1432,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CStringStream::Write(const void *Buffer, size_t Count) {
+        ssize_t CStringStream::Write(const void *Buffer, size_t Count) {
             size_t Pos;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Pos = m_Position + Count;
@@ -1935,12 +1935,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CStrings::GetText(CString& Value) const {
+        CString CStrings::GetText() const {
+            CString Result;
+
             int I;
             size_t L, LineBreakLen;
             LPCTSTR LB = LineBreak();
-
-            Value.Clear();
 
             L = 0;
             LineBreakLen = strlen(LB);
@@ -1952,17 +1952,17 @@ namespace Delphi {
                 L += LineBreakLen;
             }
 
-            Value.SetLength(L);
-            Value.Position(0);
+            Result.SetLength(L);
+            Result.Position(0);
 
             for (I = 0; I < GetCount(); ++I) {
                 const CString &S = Get(I);
                 if (!S.IsEmpty())
-                    Value.WriteBuffer(S.Data(), S.Size());
-                Value.WriteBuffer(LB, LineBreakLen);
+                    Result.WriteBuffer(S.Data(), S.Size());
+                Result.WriteBuffer(LB, LineBreakLen);
             }
 
-            return Value;
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2367,8 +2367,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SaveToStream(CStream *Stream) {
-            CString S;
-            GetText(S);
+            const CString& S = GetText();
             Stream->WriteBuffer(S.Data(), S.Size());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2430,12 +2429,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CStrings::GetTextStr(LPTSTR Buffer, size_t &SizeBuf) {
-            CString S;
-            GetText(S);
+            const CString& S = GetText();
             size_t Size = SizeBuf;
             SizeBuf = S.Size();
             if (Size >= SizeBuf) {
-                S.ReadBuffer(Buffer, SizeBuf);
+                ::CopyMemory(Buffer, (LPTSTR) S.Data(), SizeBuf);
                 Size = SizeBuf;
             }
             return (SizeBuf == Size);
@@ -2539,48 +2537,50 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString &CStringList::GetName(int Index) const {
+        CString CStringList::GetName(int Index) const {
             if ((Index < 0) || (Index >= m_nCount))
                 throw ExceptionFrm(SListIndexError, Index);
 
             size_t L = CString::npos;
             CStringItem *R = m_pList[Index];
 
-            R->Name.Clear();
+            CString Name;
             if (!R->String.IsEmpty())
                 L = R->String.Find(NameValueSeparator());
 
             if (L != CString::npos) {
-                R->Name.SetLength(L);
-                R->String.Copy(R->Name.Data(), L);
+                Name.SetLength(L);
+                R->String.Copy(Name.Data(), L);
             }
 
-            return R->Name;
+            return Name;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString &CStringList::GetValue(const CString &Name) const {
+        CString CStringList::GetValue(const CString &Name) const {
             CStringItem *P;
+            CString Value;
 
             int Index = IndexOfName(Name);
             if (Index != -1) {
                 P = m_pList[Index];
                 if (P->String.Length() - Name.Length() > 0) {
-                    P->Value.SetLength(P->String.Length() - Name.Length() - 1);
-                    if (P->Value.Length() > 0)
-                        P->String.Copy(P->Value.Data(), P->Value.Length(), Name.Length() + 1);
+                    Value.SetLength(P->String.Length() - Name.Length() - 1);
+                    if (Value.Length() > 0)
+                        P->String.Copy(Value.Data(), Value.Length(), Name.Length() + 1);
                 }
 
-                return P->Value;
+                return Value;
             }
 
             return m_NullValue;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString &CStringList::GetValue(reference Name) const {
+        CString CStringList::GetValue(reference Name) const {
             CStringItem *P;
             size_t Length;
+            CString Value;
 
             chVERIFY(SUCCEEDED(StringCchLength(Name, _INT_T_LEN, &Length)));
 
@@ -2588,12 +2588,12 @@ namespace Delphi {
             if (Index != -1) {
                 P = m_pList[Index];
                 if (P->String.Length() - Length > 0) {
-                    P->Value.SetLength(P->String.Length() - Length - 1);
-                    if (P->Value.Length() > 0)
-                        P->String.Copy(P->Value.Data(), P->Value.Length(), Length + 1);
+                    Value.SetLength(P->String.Length() - Length - 1);
+                    if (Value.Length() > 0)
+                        P->String.Copy(Value.Data(), Value.Length(), Length + 1);
                 }
 
-                return P->Value;
+                return Value;
             }
 
             return m_NullValue;

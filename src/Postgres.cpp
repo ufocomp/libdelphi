@@ -129,7 +129,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CPQConnInfo::GetValue(LPCSTR AKeyword) const {
+        CString CPQConnInfo::GetValue(LPCSTR AKeyword) const {
             CString Keyword(AKeyword);
             return m_Parameters.Values(Keyword);
         }

@@ -71,8 +71,6 @@ namespace Delphi {
 
             CJSON *m_Value;
 
-            CString m_JSON;
-
             int m_UpdateCount;
 
         protected:
@@ -81,7 +79,7 @@ namespace Delphi {
 
             void StringToJson(const CString &Value);
 
-            virtual const CString& JsonToString(CString &String) const;
+            virtual CString JsonToString() const;
 
             void StrToJson(LPCTSTR ABuffer, size_t ASize);
 
@@ -169,9 +167,7 @@ namespace Delphi {
 
             void SaveToStream(CStream *Stream);
 
-            const CString& ToString(CString& Value) const { return JsonToString(Value); };
-
-            const CString& ToString() { return JsonToString(m_JSON); };
+            CString ToString() const { return JsonToString(); };
             void ToJson(const CString &Value) { StringToJson(Value); };
 
             CJSON &operator=(const CJSON &Json) {
@@ -197,7 +193,7 @@ namespace Delphi {
             };
 
             virtual CJSON &operator<<(reference Str) {
-                CString J(Str);
+                const CString J(Str);
                 StringToJson(J);
                 return *this;
             };
@@ -208,14 +204,13 @@ namespace Delphi {
             };
 
             friend CJSON &operator>>(reference LS, CJSON &RM) {
-                CString J(LS);
+                const CString J(LS);
                 RM.StringToJson(J);
                 return RM;
             };
 
             friend tostream &operator<<(tostream &Out, CJSON &RM) {
-                CString S;
-                RM.JsonToString(S);
+                const CString& S = RM.JsonToString();
                 Out << S.c_str();
                 return Out;
             };
@@ -286,7 +281,7 @@ namespace Delphi {
 
         protected:
 
-            const CString& JsonToString(CString &String) const override;
+            CString JsonToString() const override;
 
             void Error(const CString &Msg, int Data);
 
@@ -401,9 +396,8 @@ namespace Delphi {
             };
 
             friend tostream &operator<<(tostream &Out, CJSONElements &RM) {
-                CString J;
-                RM.JsonToString(J);
-                return Out << J.c_str();
+                const CString& S = RM.JsonToString();
+                return Out << S.c_str();
             };
 
             friend tistream &operator>>(tistream &In, CJSONElements &RM) {
@@ -467,7 +461,7 @@ namespace Delphi {
 
         protected:
 
-            const CString& JsonToString(CString &String) const override;
+            CString JsonToString() const override;
 
             static void Error(const CString &Msg, int Data);
 
@@ -634,9 +628,8 @@ namespace Delphi {
             };
 
             friend tostream &operator<<(tostream &Out, CJSONMembers &RM) {
-                CString J;
-                RM.JsonToString(J);
-                return Out << J.c_str();
+                const CString& S = RM.JsonToString();
+                return Out << S.c_str();
             };
 
             friend tistream &operator>>(tistream &In, CJSONMembers &RM) {
@@ -726,7 +719,7 @@ namespace Delphi {
 
         protected:
 
-            const CString& JsonToString(CString &String) const override;
+            CString JsonToString() const override;
 
             CJSONValue &GetValue(const CString &String);
 
@@ -1114,9 +1107,8 @@ namespace Delphi {
             };
 
             friend tostream &operator<<(tostream &Out, CJSONArray &RM) {
-                CString J;
-                RM.JsonToString(J);
-                return Out << J.c_str();
+                const CString& S = RM.JsonToString();
+                return Out << S.c_str();
             };
 
             friend tistream &operator>>(tistream &In, CJSONArray &RM) {
@@ -1256,7 +1248,7 @@ namespace Delphi {
             };
 
             CJSONObject &operator<<(reference Str) override {
-                CString J(Str);
+                const CString J(Str);
                 StringToJson(J);
                 return *this;
             };
@@ -1267,15 +1259,14 @@ namespace Delphi {
             };
 
             friend CJSONObject &operator>>(reference LS, CJSONObject &RM) {
-                CString J(LS);
+                const CString J(LS);
                 RM.StringToJson(J);
                 return RM;
             };
 
             friend tostream &operator<<(tostream &Out, CJSONObject &RM) {
-                CString J;
-                RM.JsonToString(J);
-                return Out << J.c_str();
+                const CString& S = RM.JsonToString();
+                return Out << S.c_str();
             };
 
             friend tistream &operator>>(tistream &In, CJSONObject &RM) {

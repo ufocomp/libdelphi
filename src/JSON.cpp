@@ -155,44 +155,45 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CJSON::JsonToString(CString& String) const {
+        CString CJSON::JsonToString() const {
+            CString S;
 
             if (ValueType() == jvtObject) {
-                String = "{";
+                S = "{";
 
                 for (int i = 0; i < Count(); i++) {
 
                     if (i > 0) {
-                        String += ", ";
+                        S += ", ";
                     }
 
-                    String += "\"";
-                    String += Members(i).String();
-                    String += "\": ";
+                    S += "\"";
+                    S += Members(i).String();
+                    S += "\": ";
 
-                    Object()[i].ToString(String);
+                    S << Object()[i].ToString();
                 }
 
-                String += "}";
+                S += "}";
             }
 
             if (ValueType() == jvtArray) {
 
-                String = "[";
+                S = "[";
 
                 for (int i = 0; i < Count(); i++) {
 
                     if (i > 0) {
-                        String += ", ";
+                        S += ", ";
                     }
 
-                    Array()[i].ToString(String);
+                    S << Array()[i].ToString();
                 }
 
-                String += "]";
+                S += "]";
             }
 
-            return String;
+            return S;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -203,12 +204,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSON::JsonToStr(LPTSTR ABuffer, size_t &ASize) {
-            CString S;
-            JsonToString(S);
+            const CString& S = JsonToString();
             size_t Size = ASize;
             ASize = S.Size();
             if (Size >= ASize) {
-                S.ReadBuffer(ABuffer, ASize);
+                ::CopyMemory(ABuffer, (LPTSTR) S.Data(), ASize);
                 Size = ASize;
             }
             return (ASize == Size);
@@ -287,8 +287,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSON::SaveToStream(CStream *Stream) {
-            CString S;
-            JsonToString(S);
+            const CString& S = JsonToString();
             Stream->WriteBuffer(S.Data(), S.Size());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -531,19 +530,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CJSONElements::JsonToString(CString &String) const {
-            String += "[";
+        CString CJSONElements::JsonToString() const {
+            CString S;
+
+            S += "[";
 
             for (int i = 0; i < Count(); i++) {
                 if (i > 0) {
-                    String += ", ";
+                    S += ", ";
                 }
-                Values(i).ToString(String);
+
+                S << Values(i).ToString();
             }
 
-            String += "]";
+            S += "]";
 
-            return String;
+            return S;
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -629,25 +631,27 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CJSONMembers::JsonToString(CString &String) const {
-            String += "{";
+        CString CJSONMembers::JsonToString() const {
+            CString S;
+
+            S = "{";
 
             for (int i = 0; i < Count(); i++) {
 
                 if (i > 0) {
-                    String += ", ";
+                    S += ", ";
                 }
 
-                String += "\"";
-                String += Members(i).String();
-                String += "\": ";
+                S += "\"";
+                S += Members(i).String();
+                S += "\": ";
 
-                Members(i).Value().ToString(String);
+                S << Members(i).Value().ToString();
             }
 
-            String += "}";
+            S += "}";
 
-            return String;
+            return S;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -998,40 +1002,42 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CJSONValue::JsonToString(CString &String) const {
+        CString CJSONValue::JsonToString() const {
+            CString S;
+
             switch (ValueType()) {
                 case jvtObject:
-                    AsObject().ToString(String);
+                    S = AsObject().ToString();
                     break;
 
                 case jvtArray:
-                    AsArray().ToString(String);
+                    S = AsArray().ToString();
                     break;
 
                 case jvtString:
-                    String += "\"";
-                    String += Data();
-                    String += "\"";
+                    S = "\"";
+                    S += Data();
+                    S += "\"";
                     break;
 
                 case jvtNumber:
-                    String += Data();
+                    S = Data();
                     break;
 
                 case jvtBoolean:
                     if (AsBoolean()) {
-                        String += "true";
+                        S = "true";
                     } else {
-                        String += "false";
+                        S = "false";
                     }
                     break;
 
                 case jvtNull:
-                    String += "null";
+                    S = "null";
                     break;
             }
 
-            return String;
+            return S;
         }
         //--------------------------------------------------------------------------------------------------------------
 

@@ -455,12 +455,12 @@ namespace Delphi {
         {
         private:
 
-            size_t GetPosition();
-            void SetPosition(size_t Pos);
+            off_t GetPosition();
+            void SetPosition(off_t Pos);
 
         protected:
 
-            virtual size_t GetSize();
+            virtual off_t GetSize();
             virtual void SetSize(ssize_t NewSize);
 
         public:
@@ -468,11 +468,11 @@ namespace Delphi {
             CStream(): CHeapComponent() {};
             virtual ~CStream() = default;
 
-            virtual size_t Read(void *Buffer, size_t Count) abstract;
-            virtual size_t Write(const void *Buffer, size_t Count) abstract;
+            virtual ssize_t Read(void *Buffer, size_t Count) abstract;
+            virtual ssize_t Write(const void *Buffer, size_t Count) abstract;
 
-            virtual size_t Seek(off_t Offset, unsigned short Origin) abstract;
-            virtual size_t Seek(off_t Offset, CSeekOrigin Origin);
+            virtual off_t Seek(off_t Offset, unsigned short Origin) abstract;
+            virtual off_t Seek(off_t Offset, CSeekOrigin Origin);
 
             void ReadBuffer(void *Buffer, size_t Count);
             void WriteBuffer(const void *Buffer, size_t Count);
@@ -514,11 +514,11 @@ namespace Delphi {
 
             ~CHandleStream() override = default;
 
-            size_t Read(void *Buffer, size_t Count) override;
+            ssize_t Read(void *Buffer, size_t Count) override;
 
-            size_t Write(const void *Buffer, size_t Count) override;
+            ssize_t Write(const void *Buffer, size_t Count) override;
 
-            size_t Seek(off_t Offset, unsigned short Origin) override;
+            off_t Seek(off_t Offset, unsigned short Origin) override;
 
         }; // CHandleStream
 
@@ -581,11 +581,11 @@ namespace Delphi {
 
             ~CCustomMemoryStream() override = default;
 
-            inline size_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
+            inline off_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
 
-            size_t Read(Pointer Buffer, size_t Count) override;
+            ssize_t Read(Pointer Buffer, size_t Count) override;
 
-            size_t Seek(off_t Offset, unsigned short Origin) override;
+            ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
             void SaveToStream(CStream *Stream);
             void SaveToFile(LPCTSTR lpszFileName);
@@ -632,7 +632,7 @@ namespace Delphi {
 
             void SetSize(ssize_t NewSize) override;
 
-            size_t Write(const void *Buffer, size_t Count) override;
+            ssize_t Write(const void *Buffer, size_t Count) override;
 
         }; // CMemoryStream
 
@@ -673,11 +673,11 @@ namespace Delphi {
 
             ~CCustomStringStream() override = default;
 
-            inline size_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
+            inline off_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
 
-            size_t Read(Pointer Buffer, size_t Count) override;
+            ssize_t Read(Pointer Buffer, size_t Count) override;
 
-            size_t Seek(off_t Offset, unsigned short Origin) override;
+            ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
             void SaveToStream(CStream *Stream);
             void SaveToFile(LPCTSTR lpszFileName);
@@ -728,7 +728,7 @@ namespace Delphi {
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromFile(const CString& FileName);
 
-            size_t Write(const void *Buffer, size_t Count) override;
+            ssize_t Write(const void *Buffer, size_t Count) override;
 
             size_t Capacity() const noexcept { return m_Capacity; };
 
@@ -1130,8 +1130,6 @@ namespace Delphi {
 
         private:
 
-            CString m_Text;
-
             LPCTSTR m_LineBreak;
 
             TCHAR m_Delimiter;
@@ -1141,10 +1139,10 @@ namespace Delphi {
             bool m_StrictDelimiter;
             int m_UpdateCount;
 
-            virtual const CString &GetName(int Index) const abstract;
+            virtual CString GetName(int Index) const abstract;
 
-            virtual const CString &GetValue(const CString &Name) const abstract;
-            virtual const CString &GetValue(reference Name) const abstract;
+            virtual CString GetValue(const CString &Name) const abstract;
+            virtual CString GetValue(reference Name) const abstract;
 
             void SetValue(const CString &Name, const CString &Value);
             void SetValue(reference Name, reference Value);
@@ -1210,7 +1208,7 @@ namespace Delphi {
             bool Equals(CStrings* Strings);
             virtual void Exchange(int Index1, int Index2);
             virtual bool GetTextStr(LPTSTR Buffer, size_t &SizeBuf);
-            virtual const CString &GetText(CString& Value) const;
+            virtual CString GetText() const;
             virtual int IndexOf(const CString &S);
             virtual int IndexOf(const CString &S) const;
             virtual int IndexOf(reference Str);
@@ -1244,7 +1242,7 @@ namespace Delphi {
             LPCTSTR LineBreak() const { return GetLineBreak(); };
             void LineBreak(LPCTSTR Value) { SetLineBreak(Value); };
 
-            const CString &Names(int Index) const { return GetName(Index); };
+            CString Names(int Index) const { return GetName(Index); };
 
             CObject *Objects(int Index) { return GetObject(Index); };
             CObject *Objects(int Index) const { return GetObject(Index); };
@@ -1252,8 +1250,8 @@ namespace Delphi {
             TCHAR QuoteChar() { return GetQuoteChar(); }
             void QuoteChar(TCHAR Value) { SetQuoteChar(Value); };
 
-            const CString &Values(const CString &Name) const { return GetValue(Name); };
-            const CString &Values(reference Name) const { return GetValue(Name); };
+            CString Values(const CString &Name) const { return GetValue(Name); };
+            CString Values(reference Name) const { return GetValue(Name); };
 
             void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
             void Values(reference Name, reference Value) { SetValue(Name, Value); };
@@ -1273,9 +1271,7 @@ namespace Delphi {
 
             void Strings(int Index, const CString &Value) { return Put(Index, Value); };
 
-            const CString& ToText(CString& Value) const { return GetText(Value); };
-
-            const CString& Text() { return GetText(m_Text); };
+            CString Text() const { return GetText(); };
             void Text(const CString &Value) { SetText(Value); };
 
             CString &First() { return Get(0); };
@@ -1315,7 +1311,7 @@ namespace Delphi {
             virtual CString &operator[] (int Index) { return Strings(Index); }
             virtual const CString &operator[] (int Index) const { return Strings(Index); }
 
-            virtual const CString &operator[] (reference Name) const { return Values(Name); }
+            virtual CString operator[] (reference Name) const { return Values(Name); }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1374,8 +1370,6 @@ namespace Delphi {
 
         typedef struct StringItem {
             CString     String;
-            CString     Name;
-            CString     Value;
             CObject    *Object;
         } CStringItem, *PStringItem;
         //--------------------------------------------------------------------------------------------------------------
@@ -1406,10 +1400,10 @@ namespace Delphi {
             virtual void Grow();
             //void QuickSort(int L, int R, PStringListSortCompare SCompare);
 
-            const CString &GetName(int Index) const override;
+            CString GetName(int Index) const override;
 
-            const CString &GetValue(const CString &Name) const override;
-            const CString &GetValue(reference Name) const override;
+            CString GetValue(const CString &Name) const override;
+            CString GetValue(reference Name) const override;
 
         protected:
 
@@ -1435,6 +1429,18 @@ namespace Delphi {
         public:
 
             CStringList();
+
+            CStringList(const CStringList& List): CStringList() {
+                if (&List != this) {
+                    Assign(List);
+                }
+            }
+
+            explicit CStringList(const CString& String): CStringList() {
+                if (!String.IsEmpty()) {
+                    SetText(String);
+                }
+            }
 
             explicit CStringList(bool AOwnsObjects);
 
