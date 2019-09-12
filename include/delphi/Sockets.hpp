@@ -1833,6 +1833,8 @@ namespace Delphi {
 
             void SetPollStack(CPollStack *Value);
 
+            void FreePollStack();
+
             void CreatePollEventHandlers();
 
         protected:

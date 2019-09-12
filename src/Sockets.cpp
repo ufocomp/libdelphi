@@ -3084,8 +3084,7 @@ namespace Delphi {
 
         CEPoll::~CEPoll() {
             FreeAndNil(m_EventHandlers);
-            if (m_FreePollStack)
-            FreeAndNil(m_PollStack);
+            FreePollStack();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3095,9 +3094,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CEPoll::FreePollStack() {
+            if (m_FreePollStack)
+                FreeAndNil(m_PollStack);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CEPoll::SetPollStack(CPollStack *Value) {
             if (m_PollStack != Value) {
-                FreeAndNil(m_PollStack);
+                FreePollStack();
                 m_PollStack = Value;
                 m_EventHandlers->PollStack(Value);
                 m_FreePollStack = false;
