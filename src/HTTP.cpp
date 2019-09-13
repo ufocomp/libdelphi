@@ -28,7 +28,7 @@ extern "C++" {
 
 namespace Delphi {
 
-    namespace Server {
+    namespace HTTP {
 
         #define StringArrayToStream(Stream, Buf) (Stream)->Write((Buf), sizeof((Buf)) - sizeof(TCHAR))
 
@@ -308,6 +308,13 @@ namespace Delphi {
             Headers.Add(CHeader());
             Headers.Last().Name = lpszName;
             Headers.Last().Value = lpszValue;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void http_request::AddHeader(const CString &Name, const CString &Value) {
+            Headers.Add(CHeader());
+            Headers.Last().Name = Name;
+            Headers.Last().Value = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1941,8 +1948,8 @@ namespace Delphi {
                     DoConnected(LConnection);
                 }
             } catch (Exception::Exception &E) {
-                delete AHandler;
-                throw ESocketError(E.ErrorCode(), "Connection failed ");
+                DoException(LConnection, &E);
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1997,6 +2004,77 @@ namespace Delphi {
                 return m_OnExecute(AConnection);
             }
             return DoCommand(AConnection);
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPProxy ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPProxy::CHTTPProxy(CHTTPServerConnection *AConnection, CHTTPProxyManager *AManager):
+                CCollectionItem(AManager), CHTTPClient() {
+
+            m_Request = nullptr;
+
+            m_Connection = AConnection;
+            m_ClientName = Server()->ServerName();
+
+            SetPollStack(Server()->PollStack());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
+            auto LConnection = new CHTTPClientConnection(this);
+            LConnection->IOHandler(AIOHandler);
+            AHandler->Binding(LConnection, true);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoConnect(CPollEventHandler *AHandler) {
+            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            try {
+                auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
+
+                if (LIOHandler->Binding()->CheckConnection()) {
+                    LConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
+                    AHandler->Start(etIO);
+                    DoConnected(LConnection);
+                    DoRequest(LConnection);
+                }
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(LConnection, &E);
+                AHandler->Stop();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoRequest(CHTTPClientConnection *AConnection) {
+            auto LRequest = AConnection->Request();
+            *LRequest = *m_Request;
+            AConnection->SendRequest(true);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CRequest *CHTTPProxy::GetRequest() {
+            if (m_Request == nullptr) {
+                m_Request = new CRequest();
+                m_Request->Host = Host().c_str();
+                m_Request->Port = Port();
+                m_Request->UserAgent = ClientName().c_str();
+            }
+
+            return m_Request;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPProxyManager -----------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPProxy *CHTTPProxyManager::Add(CHTTPServerConnection *AConnection) {
+            return new CHTTPProxy(AConnection, this);
         }
         //--------------------------------------------------------------------------------------------------------------
 

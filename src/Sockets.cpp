@@ -1809,7 +1809,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketEvent::CSocketEvent(): CSocketComponent() {
+        CSocketEvent::CSocketEvent() {
             m_OnVerbose = nullptr;
             m_OnAccessLog = nullptr;
             m_OnExecute = nullptr;
@@ -1829,6 +1829,13 @@ namespace Delphi {
                 va_start(args, AFormat);
                 m_OnVerbose(this, AConnection, AFormat, args);
                 va_end(args);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketEvent::DoVerbose(CTCPConnection *AConnection, LPCTSTR AFormat, va_list args) {
+            if (m_OnVerbose != nullptr) {
+                m_OnVerbose(this, AConnection, AFormat, args);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3541,6 +3548,15 @@ namespace Delphi {
             LIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
             auto LEventHandler = m_EventHandlers->Add(LIOHandler->Binding()->Handle());
+
+            if (ExternalPollStack()) {
+                LEventHandler->OnTimeOutEvent(std::bind(&CAsyncClient::DoTimeOut, this, _1));
+                LEventHandler->OnConnectEvent(std::bind(&CAsyncClient::DoConnect, this, _1));
+                LEventHandler->OnReadEvent(std::bind(&CAsyncClient::DoRead, this, _1));
+                LEventHandler->OnWriteEvent(std::bind(&CAsyncClient::DoWrite, this, _1));
+                LEventHandler->OnTimerEvent(std::bind(&CAsyncClient::DoTimer, this, _1));
+            }
+
             LEventHandler->Start(etConnect);
 
             int ErrorCode = LIOHandler->Binding()->Connect(AF_INET, m_Host.c_str(), m_Port);
@@ -3678,8 +3694,8 @@ namespace Delphi {
                     DoConnected(LConnection);
                 }
             } catch (Exception::Exception &E) {
-                delete AHandler;
-                throw ESocketError(E.ErrorCode(), "Connection failed ");
+                DoException(LConnection, &E);
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------

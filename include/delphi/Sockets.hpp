@@ -769,7 +769,7 @@ namespace Delphi {
         typedef std::function<void (CCommand *ACommand)> COnSocketCommandEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CSocketEvent: public CSocketComponent {
+        class LIB_DELPHI CSocketEvent {
             friend CPeerThread;
 
         protected:
@@ -790,6 +790,7 @@ namespace Delphi {
             COnSocketNoCommandHandlerEvent m_OnNoCommandHandler;
 
             virtual void DoVerbose(CTCPConnection *AConnection, LPCTSTR AFormat, ...);
+            virtual void DoVerbose(CTCPConnection *AConnection, LPCTSTR AFormat, va_list args);
 
             virtual bool DoCommand(CTCPConnection *AConnection) abstract;
 
@@ -919,10 +920,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEventSocketServer: public CSocketEvent, public CSocketServer {
+        class LIB_DELPHI CEventSocketServer: public CSocketServer, public CSocketEvent {
         public:
 
-            CEventSocketServer(): CSocketEvent(), CSocketServer() {};
+            CEventSocketServer(): CSocketServer(), CSocketEvent() {};
 
             ~CEventSocketServer() = default;
         };
@@ -933,10 +934,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEventSocketClient: public CSocketEvent, public CSocketClient {
+        class LIB_DELPHI CEventSocketClient: public CSocketClient, public CSocketEvent  {
         public:
 
-            CEventSocketClient(): CSocketEvent(), CSocketClient() {};
+            CEventSocketClient(): CSocketClient(), CSocketEvent() {};
 
             ~CEventSocketClient() = default;
         };
@@ -1831,8 +1832,6 @@ namespace Delphi {
 
             bool m_FreePollStack;
 
-            void SetPollStack(CPollStack *Value);
-
             void FreePollStack();
 
             void CreatePollEventHandlers();
@@ -1840,6 +1839,8 @@ namespace Delphi {
         protected:
 
             CPollEventHandlers *m_EventHandlers;
+
+            void SetPollStack(CPollStack *Value);
 
             int GetTimeOut();
 

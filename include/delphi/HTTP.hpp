@@ -42,7 +42,7 @@ extern "C++" {
 
 namespace Delphi {
 
-    namespace Server {
+    namespace HTTP {
 
         namespace Mapping {
             LPCTSTR ExtToType(LPCTSTR Ext);
@@ -201,12 +201,35 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue);
 
+            /// Add header to headers.
+            void AddHeader(const CString& Name, const CString& Value);
+
             /// Get a prepare request.
             static http_request *Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AUri,
                                          LPCTSTR AContentType = nullptr);
 
             /// Add Authorization header to headers
             static http_request *Authorization(http_request *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
+
+            http_request &operator=(const http_request &Value) {
+                if (this != &Value) {
+                    Method = Value.Method;
+                    Uri = Value.Uri;
+                    Params = Value.Params;
+                    VMajor = Value.VMajor;
+                    VMinor = Value.VMinor;
+                    Headers = Value.Headers;
+                    ContentLength = Value.ContentLength;
+                    ContentType = Value.ContentType;
+                    Content = Value.Content;
+                    Host = Value.Host;
+                    Port = Value.Port;
+                    UserAgent = Value.UserAgent;
+                    CloseConnection = Value.CloseConnection;
+                }
+
+                return *this;
+            };
 
         } CRequest, *PRequest;
 
@@ -683,10 +706,67 @@ namespace Delphi {
             ~CHTTPClient() override = default;
 
         };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPProxy ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPProxyManager;
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPProxy: public CCollectionItem, public CHTTPClient {
+        private:
+
+            CHTTPServerConnection *m_Connection;
+
+            CRequest *m_Request;
+
+        protected:
+
+            CRequest *GetRequest();
+
+            void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
+            void DoConnect(CPollEventHandler *AHandler) override;
+
+            void DoRequest(CHTTPClientConnection *AConnection);
+
+        public:
+
+            explicit CHTTPProxy(CHTTPServerConnection *AConnection, CHTTPProxyManager *AManager);
+
+            CHTTPServerConnection *Connection() { return m_Connection; }
+
+            CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_Connection->Server()); }
+
+            CRequest *Request() { return GetRequest(); }
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPProxyManager -----------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPProxyManager: public CCollection {
+        public:
+
+            explicit CHTTPProxyManager(): CCollection(this) {
+
+            };
+
+            ~CHTTPProxyManager() override = default;
+
+            CHTTPProxy* Add(CHTTPServerConnection *AConnection);
+
+        };
+
     }
 }
 
-using namespace Delphi::Server;
+using namespace Delphi::HTTP;
 }
 
 #endif //DELPHI_HTTP_HPP
