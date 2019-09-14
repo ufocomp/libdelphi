@@ -180,10 +180,10 @@ namespace Delphi {
             /// The content to be sent in the request.
             CString Content;
 
-            LPCTSTR Host;
+            CString Host;
             unsigned short Port;
 
-            LPCTSTR UserAgent;
+            CString UserAgent;
 
             bool CloseConnection = false;
 
@@ -200,6 +200,9 @@ namespace Delphi {
 
             /// Add header to headers.
             void AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue);
+
+            /// Add header to headers.
+            void AddHeader(LPCTSTR lpszName, const CString& Value);
 
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
@@ -369,9 +372,9 @@ namespace Delphi {
                 sbin
             } ContentType = html;
 
-            LPCTSTR ServerName;
+            CString ServerName;
 
-            LPCTSTR AllowedMethods;
+            CString AllowedMethods;
 
             bool CloseConnection = true;
 
@@ -402,6 +405,12 @@ namespace Delphi {
 
             /// Add header to headers.
             void AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue);
+
+            /// Add header to headers.
+            void AddHeader(LPCTSTR lpszName, const CString& Value);
+
+            /// Add header to headers.
+            void AddHeader(const CString& Name, const CString& Value);
 
             /// Get a prepare reply.
             static http_reply *GetReply(http_reply *AReply, status_type AStatus, LPCTSTR AContentType = nullptr);

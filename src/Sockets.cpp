@@ -3685,6 +3685,12 @@ namespace Delphi {
 
         void CTCPAsyncClient::DoConnect(CPollEventHandler *AHandler) {
             auto LConnection = dynamic_cast<CTCPClientConnection *> (AHandler->Binding());
+
+            if (LConnection == nullptr) {
+                AHandler->Stop();
+                return;
+            }
+
             try {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 

@@ -209,7 +209,12 @@ namespace Delphi {
                 return RM;
             };
 
-            friend tostream &operator<<(tostream &Out, CJSON &RM) {
+            friend CString &operator<<(CString &LS, const CJSON &RM) {
+                LS = RM.JsonToString();
+                return LS;
+            };
+
+            friend tostream &operator<<(tostream &Out, const CJSON &RM) {
                 const CString& S = RM.JsonToString();
                 Out << S.c_str();
                 return Out;

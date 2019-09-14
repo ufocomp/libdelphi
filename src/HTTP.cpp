@@ -311,6 +311,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void http_request::AddHeader(LPCTSTR lpszName, const CString &Value) {
+            Headers.Add(CHeader());
+            Headers.Last().Name = lpszName;
+            Headers.Last().Value = Value;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void http_request::AddHeader(const CString &Name, const CString &Value) {
             Headers.Add(CHeader());
             Headers.Last().Name = Name;
@@ -372,14 +379,19 @@ namespace Delphi {
         http_request *http_request::Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AUri, LPCTSTR AContentType) {
 
             TCHAR szSize[_INT_T_LEN + 1] = {0};
-            TCHAR szHost[NI_MAXHOST + 1] = {0};
 
             ARequest->Method = AMethod;
             ARequest->Uri = AUri;
 
-            chVERIFY(SUCCEEDED(StringCchPrintf(szHost, sizeof(szHost), _T("%s:%u"), ARequest->Host, ARequest->Port)));
+            CString Host(ARequest->Host);
+            if (!Host.IsEmpty()) {
+                if (ARequest->Port > 0) {
+                    Host << ":";
+                    Host << ARequest->Port;
+                }
 
-            ARequest->AddHeader(_T("Host"), szHost);
+                ARequest->AddHeader(_T("Host"), Host);
+            }
 
             ARequest->AddHeader(_T("User-Agent"), ARequest->UserAgent);
 
@@ -438,7 +450,7 @@ namespace Delphi {
             LAuthorization << " ";
             LAuthorization << base64_encode(LPassphrase);
 
-            ARequest->AddHeader("Authorization", LAuthorization.c_str());
+            ARequest->AddHeader("Authorization", LAuthorization);
 
             return ARequest;
         }
@@ -1013,6 +1025,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void http_reply::AddHeader(LPCTSTR lpszName, const CString &Value) {
+            Headers.Add(CHeader());
+            Headers.Last().Name = lpszName;
+            Headers.Last().Value = Value;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void http_reply::AddHeader(const CString &Name, const CString &Value) {
+            Headers.Add(CHeader());
+            Headers.Last().Name = Name;
+            Headers.Last().Value = Value;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void http_reply::ToText() {
             CString Temp;
             TCHAR ch;
@@ -1500,8 +1526,8 @@ namespace Delphi {
         CReply *CHTTPServerConnection::GetReply() {
             if (m_Reply == nullptr) {
                 m_Reply = new CReply;
-                m_Reply->ServerName = Server()->ServerName().c_str();
-                m_Reply->AllowedMethods = Server()->AllowedMethods().c_str();
+                m_Reply->ServerName = Server()->ServerName();
+                m_Reply->AllowedMethods = Server()->AllowedMethods();
             }
             return m_Reply;
         }
@@ -1693,9 +1719,9 @@ namespace Delphi {
         CRequest *CHTTPClientConnection::GetRequest() {
             if (m_Request == nullptr) {
                 m_Request = new CRequest();
-                m_Request->Host = Client()->Host().c_str();
+                m_Request->Host = Client()->Host();
                 m_Request->Port = Client()->Port();
-                m_Request->UserAgent = Client()->ClientName().c_str();
+                m_Request->UserAgent = Client()->ClientName();
             }
             return m_Request;
         }
@@ -1939,6 +1965,12 @@ namespace Delphi {
 
         void CHTTPClient::DoConnect(CPollEventHandler *AHandler) {
             auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+            if (LConnection == nullptr) {
+                AHandler->Stop();
+                return;
+            }
+
             try {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 
@@ -2033,6 +2065,12 @@ namespace Delphi {
 
         void CHTTPProxy::DoConnect(CPollEventHandler *AHandler) {
             auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+            if (LConnection == nullptr) {
+                AHandler->Stop();
+                return;
+            }
+
             try {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 
@@ -2059,9 +2097,9 @@ namespace Delphi {
         CRequest *CHTTPProxy::GetRequest() {
             if (m_Request == nullptr) {
                 m_Request = new CRequest();
-                m_Request->Host = Host().c_str();
+                m_Request->Host = Host();
                 m_Request->Port = Port();
-                m_Request->UserAgent = ClientName().c_str();
+                m_Request->UserAgent = ClientName();
             }
 
             return m_Request;
