@@ -784,8 +784,13 @@ namespace Delphi {
                         return false;
                     } else {
                         ARequest->FormData.back().Append(AInput);
-                        return -1;
+
+                        if (ARequest->Content.Size() < ARequest->ContentLength) {
+                            return -1;
+                        }
                     }
+
+                    return true;
                 case Request::uri_param_mime:
                     ARequest->MIME[ARequest->MimeIndex++] = AInput;
                     if (ARequest->MimeIndex == 2) {
@@ -794,6 +799,7 @@ namespace Delphi {
                     }
                     return -1;
                 case Request::form_mime:
+                    ARequest->Content.Append(AInput);
                     ARequest->MIME[ARequest->MimeIndex++] = AInput;
                     if (ARequest->MimeIndex == 2) {
                         ARequest->FormData.back().Append((TCHAR) HexToDec(ARequest->MIME));
