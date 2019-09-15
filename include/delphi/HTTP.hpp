@@ -180,12 +180,18 @@ namespace Delphi {
             /// The content to be sent in the request.
             CString Content;
 
+            /// The uri parameters to be included in the request.
+            CStringList FormData;
+
             CString Host;
             unsigned short Port;
 
             CString UserAgent;
 
             bool CloseConnection = false;
+
+            TCHAR MIME[3] = {};
+            size_t MimeIndex = 0;
 
             /// Clear content and headers.
             void Clear();
@@ -251,6 +257,7 @@ namespace Delphi {
                 uri,
                 uri_param_start,
                 uri_param,
+                uri_param_mime,
                 http_version_h,
                 http_version_t_1,
                 http_version_t_2,
@@ -270,7 +277,10 @@ namespace Delphi {
                 header_value_options,
                 expecting_newline_2,
                 expecting_newline_3,
-                content
+                content,
+                form_data_start,
+                form_data,
+                form_mime
             } CParcerState;
 
         }
@@ -283,11 +293,14 @@ namespace Delphi {
             /// The current state of the parser.
             Request::CParcerState m_State;
 
-            /// The current result of the parser.
-            int m_Result;
+        public:
 
-            /// Handle the next character of input.
-            int Consume(CRequest *ARequest, char AInput);
+            explicit CRequestParser();
+
+            ~CRequestParser() override = default;
+
+            /// Reset to initial parser state.
+            void Reset();
 
             /// Check if a byte is an HTTP character.
             static bool IsChar(int c);
@@ -301,23 +314,19 @@ namespace Delphi {
             /// Check if a byte is a digit.
             static bool IsDigit(int c);
 
-        public:
+            /// Handle the next character of input.
+            static int Consume(CRequest *ARequest, char AInput, Request::CParcerState& AState);
 
-            explicit CRequestParser();
-
-            ~CRequestParser() override = default;
-
-            /// Reset to initial parser state.
-            void Reset();
+            static int ConsumeFormData(CStringList& Data, char AInput, Request::CParcerState& AState);
+            static int DecodeFormData(CStringList& Data, LPCTSTR ABegin, LPCTSTR AEnd);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            int Parse(CRequest *ARequest, LPTSTR ABegin, LPCTSTR AEnd);
+            static int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd, Request::CParcerState& AState);
+            int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd);
 
             Request::CParcerState State() { return m_State; };
-
-            int Result() { return m_Result; };
 
         };
 
