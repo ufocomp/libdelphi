@@ -820,21 +820,6 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CRequestParser::ConsumeFormData(CStringList &Data, char AInput, Request::CParcerState &AState) {
-            return 0;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CRequestParser::DecodeFormData(CStringList &Data, LPCTSTR ABegin, LPCTSTR AEnd) {
-            int Result = -1;
-            Request::CParcerState State;
-            while ((Result == -1) && (ABegin != AEnd)) {
-                Result = ConsumeFormData(Data, *ABegin++, State);
-            }
-            return Result;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         bool CRequestParser::IsChar(int c) {
             return c >= 0 && c <= 127;
         }

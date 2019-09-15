@@ -317,9 +317,6 @@ namespace Delphi {
             /// Handle the next character of input.
             static int Consume(CRequest *ARequest, char AInput, Request::CParcerState& AState);
 
-            static int ConsumeFormData(CStringList& Data, char AInput, Request::CParcerState& AState);
-            static int DecodeFormData(CStringList& Data, LPCTSTR ABegin, LPCTSTR AEnd);
-
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
