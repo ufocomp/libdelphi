@@ -800,7 +800,7 @@ namespace Delphi {
             bool AsBoolean() const {
                 LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
 
-                for (unsigned int i = 0; i < chARRAY(LBoolStr); ++i) {
+                for (size_t i = 0; i < chARRAY(LBoolStr); ++i) {
                     if (SameText(LBoolStr[i], m_Data.c_str()))
                         return Odd(i);
                 }
