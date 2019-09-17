@@ -1303,7 +1303,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef enum parcer_state {
+        typedef enum parser_state {
             json_start,
             string_start,
             string,
@@ -1318,7 +1318,7 @@ namespace Delphi {
             value_true,
             value_false,
             value_null
-        } CParcerState;
+        } CParserState;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1333,7 +1333,7 @@ namespace Delphi {
 
             CList *m_pJsonList;
 
-            CParcerState m_State;
+            CParserState m_State;
 
             int m_Result;
 
@@ -1379,7 +1379,7 @@ namespace Delphi {
 
             CJSONParserResult Parse(LPTSTR ABegin, LPCTSTR AEnd);
 
-            CParcerState State() { return m_State; };
+            CParserState State() { return m_State; };
 
             int Result() { return m_Result; };
 

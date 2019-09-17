@@ -250,7 +250,7 @@ namespace Delphi {
 
         namespace Request {
 
-            typedef enum parcer_state {
+            typedef enum parser_state {
                 method_start,
                 method,
                 uri_start,
@@ -281,26 +281,14 @@ namespace Delphi {
                 form_data_start,
                 form_data,
                 form_mime
-            } CParcerState;
+            } CParserState;
 
         }
         //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming requests.
-        class CRequestParser: public CObject {
-        private:
-
-            /// The current state of the parser.
-            Request::CParcerState m_State;
-
+        class CRequestParser {
         public:
-
-            explicit CRequestParser();
-
-            ~CRequestParser() override = default;
-
-            /// Reset to initial parser state.
-            void Reset();
 
             /// Check if a byte is an HTTP character.
             static bool IsChar(int c);
@@ -315,15 +303,12 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CRequest *ARequest, char AInput, Request::CParcerState& AState);
+            static int Consume(CRequest *ARequest, char AInput, Request::CParserState& AState);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd, Request::CParcerState& AState);
-            int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd);
-
-            Request::CParcerState State() { return m_State; };
+            static int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd, Request::CParserState& AState);
 
         };
 
@@ -434,7 +419,7 @@ namespace Delphi {
 
         namespace Reply {
 
-            typedef enum parcer_state {
+            typedef enum parser_state {
                 http_version_h,
                 http_version_t_1,
                 http_version_t_2,
@@ -459,23 +444,13 @@ namespace Delphi {
                 expecting_newline_2,
                 expecting_newline_3,
                 content
-            } CParcerState;
-            //--------------------------------------------------------------------------------------------------------------
+            } CParserState;
+            //----------------------------------------------------------------------------------------------------------
         }
 
         /// Parser for incoming requests.
-        class CReplyParser: public CObject {
-        private:
-
-            /// The current state of the parser.
-            Reply::CParcerState m_State;
-
-            /// The current result of the parser.
-            int m_Result;
-
-            /// Handle the next character of input.
-            int Consume(CReply *AReply, char AInput);
-
+        class CReplyParser {
+        public:
             /// Check if a byte is an HTTP character.
             static bool IsChar(int c);
 
@@ -488,23 +463,13 @@ namespace Delphi {
             /// Check if a byte is a digit.
             static bool IsDigit(int c);
 
-        public:
-
-            explicit CReplyParser();
-
-            ~CReplyParser() override = default;
-
-            /// Reset to initial parser state.
-            void Reset();
+            /// Handle the next character of input.
+            static int Consume(CReply *AReply, char AInput, Reply::CParserState& AState);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            int Parse(CReply *AReply, LPTSTR ABegin, LPCTSTR AEnd);
-
-            Reply::CParcerState State() { return m_State; };
-
-            int Result() { return m_Result; };
+            static int Parse(CReply *AReply, LPCTSTR ABegin, LPCTSTR AEnd, Reply::CParserState& AState);
 
         };
 
@@ -532,7 +497,8 @@ namespace Delphi {
 
             CReply *m_Reply;
 
-            CRequestParser *m_RequestParser;
+            /// The current state of the parser.
+            Request::CParserState m_State;
 
             CHTTPConnectionStatus m_ConnectionStatus;
 
@@ -561,8 +527,6 @@ namespace Delphi {
             bool ParseInput();
 
             CHTTPServer *HTTPServer() { return (CHTTPServer *) Server(); }
-
-            CRequestParser *RequestParser() { return m_RequestParser; }
 
             CRequest *Request() { return GetRequest(); }
 
@@ -603,7 +567,8 @@ namespace Delphi {
 
             CReply *m_Reply;
 
-            CReplyParser *m_ReplyParser;
+            /// The current state of the parser.
+            Reply::CParserState m_State;
 
             CHTTPConnectionStatus m_ConnectionStatus;
 
