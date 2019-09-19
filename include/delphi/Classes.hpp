@@ -621,6 +621,10 @@ namespace Delphi {
 
             CMemoryStream();
 
+            explicit CMemoryStream(ssize_t ASize): CMemoryStream() {
+                SetSize(ASize);
+            };
+
             ~CMemoryStream() override;
 
             inline static class CMemoryStream *Create() { return new CMemoryStream; };
@@ -1147,22 +1151,23 @@ namespace Delphi {
             void SetValue(const CString &Name, const CString &Value);
             void SetValue(reference Name, reference Value);
 
-            TCHAR GetDelimiter();
-            void SetDelimiter(TCHAR Value);
-            LPCTSTR GetLineBreak() const;
-            void SetLineBreak(LPCTSTR Value);
-            TCHAR GetQuoteChar();
-            void SetQuoteChar(TCHAR Value);
-            TCHAR GetNameValueSeparator() const;
-            void SetNameValueSeparator(TCHAR Value);
-            bool GetStrictDelimiter();
-            void SetStrictDelimiter(bool Value);
             CString GetValueFromIndex(int Index);
 
             void SetValueFromIndex(int Index, const CString &Value);
             void SetValueFromIndex(int Index, reference Value);
 
         protected:
+
+            TCHAR GetDelimiter() const;
+            void SetDelimiter(TCHAR Value);
+            LPCTSTR GetLineBreak() const;
+            void SetLineBreak(LPCTSTR Value);
+            TCHAR GetQuoteChar() const;
+            void SetQuoteChar(TCHAR Value);
+            TCHAR GetNameValueSeparator() const;
+            void SetNameValueSeparator(TCHAR Value);
+            bool GetStrictDelimiter() const;
+            void SetStrictDelimiter(bool Value);
 
             void Error(const CString &Msg, int Data);
             virtual CString &Get(int Index) abstract;
@@ -1236,8 +1241,8 @@ namespace Delphi {
             void Capacity(int NewCapacity) { SetCapacity(NewCapacity); };
 
             int Count() const noexcept { return GetCount(); };
-            TCHAR Delimiter() { return m_Delimiter; };
-            void Delimiter(TCHAR Value) { m_Delimiter = Value; };
+            TCHAR Delimiter() const { return GetDelimiter(); };
+            void Delimiter(TCHAR Value) { SetDelimiter(Value); };
 
             LPCTSTR LineBreak() const { return GetLineBreak(); };
             void LineBreak(LPCTSTR Value) { SetLineBreak(Value); };
@@ -1247,7 +1252,7 @@ namespace Delphi {
             CObject *Objects(int Index) { return GetObject(Index); };
             CObject *Objects(int Index) const { return GetObject(Index); };
             void Objects(int Index, CObject *Value) { return PutObject(Index, Value); };
-            TCHAR QuoteChar() { return GetQuoteChar(); }
+            TCHAR QuoteChar() const { return GetQuoteChar(); }
             void QuoteChar(TCHAR Value) { SetQuoteChar(Value); };
 
             CString Values(const CString &Name) const { return GetValue(Name); };
@@ -1263,7 +1268,7 @@ namespace Delphi {
             TCHAR NameValueSeparator() const { return GetNameValueSeparator(); };
             void NameValueSeparator(TCHAR Value) { SetNameValueSeparator(Value); };
 
-            bool StrictDelimiter() { return GetStrictDelimiter(); };
+            bool StrictDelimiter() const { return GetStrictDelimiter(); };
             void StrictDelimiter(bool Value) { SetStrictDelimiter(Value); };
 
             CString &Strings(int Index) { return Get(Index); };
@@ -1389,8 +1394,6 @@ namespace Delphi {
         private:
 
             PStringItemList m_pList;
-
-            CString m_NullValue;
 
             int m_nCount;
             int m_nCapacity;

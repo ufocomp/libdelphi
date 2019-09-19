@@ -145,6 +145,107 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CFormData -------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        typedef struct http_form_data {
+
+            CHeaders Headers;
+
+            CString Name;
+            CString File;
+            CString Data;
+
+            http_form_data& operator= (const http_form_data& Value) {
+                if (this != &Value) {
+                    Name = Value.Name;
+                    File = Value.File;
+                    Data = Value.Data;
+                }
+                return *this;
+            };
+
+            inline bool operator!= (const http_form_data& Value) { return Name != Value.Name; };
+            inline bool operator== (const http_form_data& Value) { return Name == Value.Name; };
+
+        } CFormDataItem, *PFormDataItem;
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CFormData -------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CFormData {
+        private:
+
+            TList<CFormDataItem> m_pList;
+
+            CString m_NullData;
+
+            void Put(int Index, const CFormDataItem& Item);
+
+            CFormDataItem& Get(int Index);
+            const CFormDataItem& Get(int Index) const;
+
+        protected:
+
+            int GetCount() const;
+
+            const CString &GetData(const CString &Name) const;
+            const CString &GetData(LPCTSTR Name) const;
+
+        public:
+
+            CFormData() = default;
+
+            ~CFormData();
+
+            void Clear();
+
+            int IndexOfName(const CString &Name) const;
+            int IndexOfName(LPCTSTR Name) const;
+
+            void Insert(int Index, const CFormDataItem& Item);
+
+            int Add(const CFormDataItem& Item);
+
+            void Delete(int Index);
+
+            void SetCount(int NewCount);
+
+            CFormDataItem& First();
+
+            CFormDataItem& Last();
+
+            int Count() const { return GetCount(); }
+
+            void Assign(const CFormData& Value);
+
+            const CString &Data(const CString& Name) const { return GetData(Name); };
+            const CString &Data(LPCTSTR Name) const { return GetData(Name); };
+
+            CFormDataItem& Items(int Index) { return Get(Index); }
+            const CFormDataItem& Items(int Index) const { return Get(Index); }
+
+            void Items(int Index, const CFormDataItem& Value) { Put(Index, Value); }
+
+            CFormData& operator= (const CFormData& Value) {
+                if (this != &Value)
+                    Assign(Value);
+                return *this;
+            };
+
+            CFormDataItem& operator[](int Index) { return Get(Index); }
+            const CFormDataItem& operator[](int Index) const { return Get(Index); }
+
+            CFormDataItem& operator[](LPCTSTR Name) { return Items(IndexOfName(Name)); }
+            const CFormDataItem& operator[](LPCTSTR Name) const { return Items(IndexOfName(Name)); }
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CRequest --------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -180,7 +281,7 @@ namespace Delphi {
             /// The content to be sent in the request.
             CString Content;
 
-            /// The uri parameters to be included in the request.
+            /// The form data to be included in the request.
             CStringList FormData;
 
             CString Host;
@@ -189,9 +290,6 @@ namespace Delphi {
             CString UserAgent;
 
             bool CloseConnection = false;
-
-            TCHAR MIME[3] = {};
-            size_t MimeIndex = 0;
 
             /// Clear content and headers.
             void Clear();
@@ -244,6 +342,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef TList<CRequest> CRequestList;
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CRequestParser --------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -286,6 +388,29 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef struct request_parser_context {
+            LPCTSTR Begin;
+            LPCTSTR End;
+            size_t Size;
+            int Result;
+            Request::CParserState State;
+            size_t ContentLength;
+            TCHAR MIME[3] = {};
+            size_t MimeIndex;
+
+            request_parser_context(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
+                Begin = ABegin;
+                End = ABegin + ASize;
+                Size = ASize;
+                Result = -1;
+                State = AState;
+                ContentLength = 0;
+                MimeIndex = 0;
+            };
+
+        } CRequestContext, *PRequestContext;
+        //--------------------------------------------------------------------------------------------------------------
+
         /// Parser for incoming requests.
         class CRequestParser {
         public:
@@ -303,12 +428,14 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CRequest *ARequest, char AInput, Request::CParserState& AState);
+            static int Consume(CRequest *ARequest, CRequestContext& Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CRequest *ARequest, LPCTSTR ABegin, LPCTSTR AEnd, Request::CParserState& AState);
+            static int Parse(CRequest *ARequest, CRequestContext& Context);
+
+            static int ParseFormData(CRequest *ARequest, CFormData& FormData);
 
         };
 
@@ -448,6 +575,29 @@ namespace Delphi {
             //----------------------------------------------------------------------------------------------------------
         }
 
+        typedef struct reply_parser_context {
+            LPCTSTR Begin;
+            LPCTSTR End;
+            size_t Size;
+            int Result;
+            Reply::CParserState State;
+            size_t ContentLength;
+            TCHAR MIME[3] = {};
+            size_t MimeIndex;
+
+            reply_parser_context(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h) {
+                Begin = ABegin;
+                End = ABegin + ASize;
+                Size = ASize;
+                Result = -1;
+                State = AState;
+                ContentLength = 0;
+                MimeIndex = 0;
+            };
+
+        } CReplyContext, *PReplyContext;
+        //--------------------------------------------------------------------------------------------------------------
+
         /// Parser for incoming requests.
         class CReplyParser {
         public:
@@ -464,12 +614,12 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CReply *AReply, char AInput, Reply::CParserState& AState);
+            static int Consume(CReply *AReply, CReplyContext& Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CReply *AReply, LPCTSTR ABegin, LPCTSTR AEnd, Reply::CParserState& AState);
+            static int Parse(CReply *AReply, CReplyContext& Context);
 
         };
 

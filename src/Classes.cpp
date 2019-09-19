@@ -1821,7 +1821,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        TCHAR CStrings::GetDelimiter() {
+        TCHAR CStrings::GetDelimiter() const {
             return m_Delimiter;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1843,7 +1843,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        TCHAR CStrings::GetQuoteChar() {
+        TCHAR CStrings::GetQuoteChar() const {
             return m_QuoteChar;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1865,7 +1865,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CStrings::GetStrictDelimiter() {
+        bool CStrings::GetStrictDelimiter() const {
             return m_StrictDelimiter;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2559,44 +2559,45 @@ namespace Delphi {
 
         CString CStringList::GetValue(const CString &Name) const {
             CStringItem *P;
+            size_t Length;
             CString Value;
 
             int Index = IndexOfName(Name);
             if (Index != -1) {
                 P = m_pList[Index];
-                if (P->String.Length() - Name.Length() > 0) {
-                    Value.SetLength(P->String.Length() - Name.Length() - 1);
-                    if (Value.Length() > 0)
-                        P->String.Copy(Value.Data(), Value.Length(), Name.Length() + 1);
+                Length = P->String.Length() - Name.Length();
+                if (Length > 0) {
+                    if (P->String.at(Name.Length() + 1) == QuoteChar() && P->String.back() == QuoteChar())
+                        Value = P->String.SubString(Name.Length() + 2, Length - 3);
+                    else
+                        Value = P->String.SubString(Name.Length() + 1, Length - 1);
                 }
-
-                return Value;
             }
 
-            return m_NullValue;
+            return Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CString CStringList::GetValue(reference Name) const {
             CStringItem *P;
-            size_t Length;
+            size_t NameLength, Length;
             CString Value;
 
-            chVERIFY(SUCCEEDED(StringCchLength(Name, _INT_T_LEN, &Length)));
+            chVERIFY(SUCCEEDED(StringCchLength(Name, _INT_T_LEN, &NameLength)));
 
             int Index = IndexOfName(Name);
             if (Index != -1) {
                 P = m_pList[Index];
-                if (P->String.Length() - Length > 0) {
-                    Value.SetLength(P->String.Length() - Length - 1);
-                    if (Value.Length() > 0)
-                        P->String.Copy(Value.Data(), Value.Length(), Length + 1);
+                Length = P->String.Length() - NameLength;
+                if (Length > 0) {
+                    if (P->String.at(NameLength + 1) == QuoteChar() && P->String.back() == QuoteChar())
+                        Value = P->String.SubString(NameLength + 2, Length - 3);
+                    else
+                        Value = P->String.SubString(NameLength + 1, Length - 1);
                 }
-
-                return Value;
             }
 
-            return m_NullValue;
+            return Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
