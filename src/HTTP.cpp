@@ -510,7 +510,7 @@ namespace Delphi {
             if (!Host.IsEmpty()) {
                 if (ARequest->Port > 0) {
                     Host << ":";
-                    Host << ARequest->Port;
+                    Host << (int) ARequest->Port;
                 }
 
                 ARequest->AddHeader(_T("Host"), Host);
