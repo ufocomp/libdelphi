@@ -500,6 +500,8 @@ namespace Delphi {
 
             virtual int AddPair(reference String, const CString &Value);
 
+            virtual int AddPair(reference String, bool Value);
+
             virtual int AddPair(reference String, int Value);
 
             virtual int AddPair(reference String, float Value);
@@ -535,6 +537,8 @@ namespace Delphi {
             virtual void InsertPair(int Index, const CString &String, const CString &Value) abstract;
 
             virtual void InsertPair(int Index, reference String, const CString &Value) abstract;
+
+            virtual void InsertPair(int Index, reference String, bool Value) abstract;
 
             virtual void InsertPair(int Index, reference String, int Value) abstract;
 
@@ -923,6 +927,12 @@ namespace Delphi {
                 m_Value.Data() = AValue;
             }
 
+            explicit CJSONMember(LPCTSTR AString, bool AValue) : CPersistent(this) {
+                m_String = AString;
+                m_Value.ValueType(jvtBoolean);
+                m_Value.Data() = AValue;
+            }
+
             explicit CJSONMember(LPCTSTR AString, int AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
@@ -1179,6 +1189,8 @@ namespace Delphi {
 
             void InsertPair(int Index, reference String, const CString &Value) override;
 
+            void InsertPair(int Index, reference String, bool Value) override;
+
             void InsertPair(int Index, reference String, int Value) override;
 
             void InsertPair(int Index, reference String, float Value) override;
@@ -1214,6 +1226,8 @@ namespace Delphi {
             int AddPair(const CString &String, const CString &Value) override;
 
             int AddPair(reference String, const CString &Value) override;
+
+            int AddPair(reference String, bool Value) override;
 
             int AddPair(reference String, int Value) override;
 
