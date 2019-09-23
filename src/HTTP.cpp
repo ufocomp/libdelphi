@@ -180,6 +180,30 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CHeaders::AddPair(LPCTSTR lpszName, LPCTSTR lpszValue) {
+            int Index = Add(CHeader());
+            Last().Name = lpszName;
+            Last().Value = lpszValue;
+            return Index;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CHeaders::AddPair(LPCTSTR lpszName, const CString &Value) {
+            int Index = Add(CHeader());
+            Last().Name = lpszName;
+            Last().Value = Value;
+            return Index;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CHeaders::AddPair(const CString &Name, const CString &Value) {
+            int Index = Add(CHeader());
+            Last().Name = Name;
+            Last().Value = Value;
+            return Index;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHeaders::Delete(int Index) {
             m_pList.Delete(Index);
         }
@@ -428,23 +452,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void http_request::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
-            Headers.Add(CHeader());
-            Headers.Last().Name = lpszName;
-            Headers.Last().Value = lpszValue;
+            Headers.AddPair(lpszName, lpszValue);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void http_request::AddHeader(LPCTSTR lpszName, const CString &Value) {
-            Headers.Add(CHeader());
-            Headers.Last().Name = lpszName;
-            Headers.Last().Value = Value;
+            Headers.AddPair(lpszName, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void http_request::AddHeader(const CString &Name, const CString &Value) {
-            Headers.Add(CHeader());
-            Headers.Last().Name = Name;
-            Headers.Last().Value = Value;
+            Headers.AddPair(Name, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 

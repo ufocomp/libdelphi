@@ -110,6 +110,10 @@ namespace Delphi {
 
             int Add(const CHeader& Header);
 
+            int AddPair(LPCTSTR lpszName, LPCTSTR lpszValue);
+            int AddPair(LPCTSTR lpszName, const CString& Value);
+            int AddPair(const CString& Name, const CString& Value);
+
             void Delete(int Index);
 
             void SetCount(int NewCount);
