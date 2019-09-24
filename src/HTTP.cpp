@@ -1852,7 +1852,7 @@ namespace Delphi {
 
             CloseConnection(true);
 
-            if (AStatus == CReply::ok) {
+            if (AStatus == CReply::ok && m_Request != nullptr) {
                 const CString &Value = m_Request->Headers.Values(_T("connection"));
                 if (!Value.IsEmpty()) {
                     if (Value == _T("keep-alive"))
