@@ -264,13 +264,13 @@ inline void chMB(LPCSTR szMsg);
 #    include "delphi/HTTP.hpp"
 #  endif
 
-#ifdef DELPHI_POSTGRESQL
+#ifdef WITH_POSTGRESQL
 #  ifndef DELPHI_POSTGRES_HPP
 #    include "delphi/Postgres.hpp"
 #  endif
 #endif
 
-#ifdef DELPHI_SQLLITE
+#ifdef WITH_SQLLITE
 #  ifndef DELPHI_SQLLITE_HPP
 #    include "delphi/SQLite.hpp"
 #  endif

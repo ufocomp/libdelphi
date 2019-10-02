@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(BUILD_STATIC_LIB    OFF CACHE BOOL "Build a static library")
 set(BUILD_SHARED_LIB    OFF CACHE BOOL "Build a shared library")
 
-set(WITH_POSTGESQL      OFF CACHE BOOL "Build with PostgreSQL")
+set(WITH_POSTGRESQL     OFF CACHE BOOL "Build with PostgreSQL")
 set(WITH_SQLITE3        OFF CACHE BOOL "Build with Sqlite3")
 
 set(EXTRA_WARNING_MODE  OFF CACHE BOOL "Add extra warnings in debug mode")
@@ -37,17 +37,17 @@ add_subdirectory(src)
 # ----------------------------------------------------------------------------------------------------------------------
 set(DELPHI_LIB_NAME delphi)
 
-if (WITH_POSTGESQL)
+if (WITH_POSTGRESQL)
     message(STATUS "Using PostgreSQL.")
     find_package(PostgreSQL REQUIRED)
     set(PQ_LIB_NAME "pq")
-    add_compile_options("-DDELPHI_POSTGRESQL")
+    add_compile_options("-DWITH_POSTGRESQL")
 endif()
 
 if (WITH_SQLITE3)
     message(STATUS "Using SQLite3.")
     set(SQLITE3_LIB_NAME "sqlite3")
-    add_compile_options("-DDELPHI_SQLITE3")
+    add_compile_options("-DWITH_SQLITE3")
 endif()
 
 if (BUILD_STATIC_LIB)
