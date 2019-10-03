@@ -1059,6 +1059,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         static const CReply::status_type StatusArray[] = {
+                CReply::switching_protocols,
                 CReply::ok,
                 CReply::created,
                 CReply::accepted,
@@ -1083,6 +1084,7 @@ namespace Delphi {
 
         namespace StatusStrings {
 
+            const TCHAR switching_protocols[] = _T("HTTP/1.1 101 Switching Protocols\r\n");
             const TCHAR ok[] = _T("HTTP/1.1 200 OK\r\n");
             const TCHAR created[] = _T("HTTP/1.1 201 Created\r\n");
             const TCHAR accepted[] = _T("HTTP/1.1 202 Accepted\r\n");
@@ -1105,6 +1107,8 @@ namespace Delphi {
 
             size_t ToBuffer(CReply::status_type AStatus, CStream *AStream) {
                 switch (AStatus) {
+                    case CReply::switching_protocols:
+                        return StringArrayToStream(AStream, switching_protocols);
                     case CReply::ok:
                         return StringArrayToStream(AStream, ok);
                     case CReply::created:
@@ -1195,6 +1199,7 @@ namespace Delphi {
 
         namespace StockReplies {
 
+            LPCTSTR switching_protocols[]   = CreateStockReplies(101, Switching Protocols);
             LPCTSTR ok[]                    = CreateStockReplies(200, OK);
             LPCTSTR created[]               = CreateStockReplies(201, Created);
             LPCTSTR accepted[]              = CreateStockReplies(202, Accepted);
@@ -1221,6 +1226,8 @@ namespace Delphi {
                     AMessage = CReply::content_type::html;
 
                 switch (AStatus) {
+                    case CReply::switching_protocols:
+                        return switching_protocols[AMessage];
                     case CReply::ok:
                         return ok[AMessage];
                     case CReply::created:
