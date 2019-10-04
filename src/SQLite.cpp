@@ -6,13 +6,13 @@ Library name:
 
 Module Name:
 
-  SQLLite.cpp
+  SQLite.cpp
 
 Notices:
 
   Delphi classes for C++
 
-  SQLLite3
+  SQLite3
 
 Author:
 
@@ -23,6 +23,8 @@ Author:
 
 --*/
 
+#ifdef WITH_SQLITE
+
 #include "delphi.hpp"
 #include "delphi/SQLite.hpp"
 
@@ -30,9 +32,9 @@ extern "C++" {
 
 namespace Delphi {
 
-    namespace SQLLite3 {
+    namespace SQLite3 {
 
-        CSQlLiteConnection::CSQlLiteConnection(const CString &ADataBase): CObject() {
+        CSQLiteConnection::CSQLiteConnection(const CString &ADataBase): CObject() {
             m_Handle = nullptr;
             m_DataBase = ADataBase;
             m_ResultCode = SQLITE_ERROR;
@@ -41,19 +43,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteConnection::~CSQlLiteConnection() {
+        CSQLiteConnection::~CSQLiteConnection() {
             Disconnect();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CSQlLiteConnection::Connect() {
+        bool CSQLiteConnection::Connect() {
             if ((m_ResultCode = sqlite3_open_v2(m_DataBase.c_str(), &m_Handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr)) == SQLITE_OK)
                 DoConnected(this);
             return m_ResultCode == SQLITE_OK;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteConnection::Disconnect() {
+        void CSQLiteConnection::Disconnect() {
             if (m_Handle != nullptr) {
                 DoDisconnected(this);
                 sqlite3_close_v2(m_Handle);
@@ -61,13 +63,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSQlLiteConnection::GetResultCode() {
+        int CSQLiteConnection::GetResultCode() {
             m_ResultCode = sqlite3_errcode(m_Handle);
             return m_ResultCode;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LPCSTR CSQlLiteConnection::GetErrorMessage() {
+        LPCSTR CSQLiteConnection::GetErrorMessage() {
             sqlite3_mutex *mutex = sqlite3_db_mutex(m_Handle);
             if (mutex != nullptr)
                 sqlite3_mutex_enter(mutex);
@@ -78,7 +80,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LPCSTR CSQlLiteConnection::ResultCodeString() {
+        LPCSTR CSQLiteConnection::ResultCodeString() {
             switch (m_ResultCode) {
                 case SQLITE_OK:
                     return "Connection success.";
@@ -108,14 +110,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteConnection::DoConnected(CSQlLiteConnection *AConnection) {
+        void CSQLiteConnection::DoConnected(CSQLiteConnection *AConnection) {
             if (m_OnConnected != nullptr) {
                 m_OnConnected(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteConnection::DoDisconnected(CSQlLiteConnection *AConnection) {
+        void CSQLiteConnection::DoDisconnected(CSQLiteConnection *AConnection) {
             if (m_OnDisconnected != nullptr) {
                 m_OnDisconnected(AConnection);
             }
@@ -123,11 +125,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CSQlLiteResult --------------------------------------------------------------------------------------------
+        //-- CSQLiteResult --------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteResult::CSQlLiteResult(CSQlLiteQuery *AQQuery, sqlite3_stmt *AHandle): CCollectionItem(AQQuery)  {
+        CSQLiteResult::CSQLiteResult(CSQLiteQuery *AQQuery, sqlite3_stmt *AHandle): CCollectionItem(AQQuery)  {
             m_Query = AQQuery;
             m_Handle = AHandle;
             m_ResultCode = SQLITE_ERROR;
@@ -135,18 +137,18 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteResult::~CSQlLiteResult() {
+        CSQLiteResult::~CSQLiteResult() {
             Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteResult::Clear() {
+        void CSQLiteResult::Clear() {
             if (m_Handle != nullptr)
                 sqlite3_finalize(m_Handle);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteResult::DoResult() {
+        void CSQLiteResult::DoResult() {
             if (m_OnResult != nullptr) {
                 m_OnResult(this);
             }
@@ -154,45 +156,45 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CSQlLiteQuery ---------------------------------------------------------------------------------------------
+        //-- CSQLiteQuery ---------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteQuery::CSQlLiteQuery(): CCollection(this) {
+        CSQLiteQuery::CSQLiteQuery(): CCollection(this) {
             m_Connection = nullptr;
             m_OnExecuted = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteQuery::CSQlLiteQuery(CSQlLiteConnection *AConnection): CSQlLiteQuery() {
+        CSQLiteQuery::CSQLiteQuery(CSQLiteConnection *AConnection): CSQLiteQuery() {
             m_Connection = AConnection;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteQuery::~CSQlLiteQuery() {
+        CSQLiteQuery::~CSQLiteQuery() {
             Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSQlLiteResult *CSQlLiteQuery::GetResult(int Index) {
-            return (CSQlLiteResult *) inherited::GetItem(Index);
+        CSQLiteResult *CSQLiteQuery::GetResult(int Index) {
+            return (CSQLiteResult *) inherited::GetItem(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteQuery::SetConnection(CSQlLiteConnection *Value) {
+        void CSQLiteQuery::SetConnection(CSQLiteConnection *Value) {
             if (m_Connection != Value) {
                 m_Connection = Value;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteQuery::Clear() {
+        void CSQLiteQuery::Clear() {
             CCollection::Clear();
             m_SQL.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteQuery::Execute() {
+        void CSQLiteQuery::Execute() {
 
             if (m_Connection == nullptr)
                 throw Delphi::Exception::EDBError(_T("Connection has not be empty"));
@@ -278,13 +280,13 @@ namespace Delphi {
                 }
             }
 
-            Added(new CSQlLiteResult(this, stmt));
+            Added(new CSQLiteResult(this, stmt));
 
             DoExecuted();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSQlLiteQuery::DoExecuted() {
+        void CSQLiteQuery::DoExecuted() {
             if (m_OnExecuted != nullptr) {
                 try {
                     m_OnExecuted(this);
@@ -297,3 +299,4 @@ namespace Delphi {
     }
 }
 }
+#endif

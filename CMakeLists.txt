@@ -11,7 +11,7 @@ set(BUILD_STATIC_LIB    OFF CACHE BOOL "Build a static library")
 set(BUILD_SHARED_LIB    OFF CACHE BOOL "Build a shared library")
 
 set(WITH_POSTGRESQL     OFF CACHE BOOL "Build with PostgreSQL")
-set(WITH_SQLITE3        OFF CACHE BOOL "Build with Sqlite3")
+set(WITH_SQLITE         OFF CACHE BOOL "Build with Sqlite")
 
 set(EXTRA_WARNING_MODE  OFF CACHE BOOL "Add extra warnings in debug mode")
 # ----------------------------------------------------------------------------------------------------------------------
@@ -44,17 +44,17 @@ if (WITH_POSTGRESQL)
     add_compile_options("-DWITH_POSTGRESQL")
 endif()
 
-if (WITH_SQLITE3)
-    message(STATUS "Using SQLite3.")
-    set(SQLITE3_LIB_NAME "sqlite3")
-    add_compile_options("-DWITH_SQLITE3")
+if (WITH_SQLITE)
+    message(STATUS "Using SQLite.")
+    set(SQLITE_LIB_NAME "sqlite3")
+    add_compile_options("-DWITH_SQLITE")
 endif()
 
 if (BUILD_STATIC_LIB)
     # build the static library
     add_library(${DELPHI_LIB_NAME}_static STATIC $<TARGET_OBJECTS:delphi>)
     set_target_properties(${DELPHI_LIB_NAME}_static PROPERTIES OUTPUT_NAME "${DELPHI_LIB_NAME}")
-    target_link_libraries(${DELPHI_LIB_NAME}_static pthread ${SQLITE3_LIB_NAME} ${PQ_LIB_NAME})
+    target_link_libraries(${DELPHI_LIB_NAME}_static pthread ${SQLITE_LIB_NAME} ${PQ_LIB_NAME})
     install(TARGETS ${DELPHI_LIB_NAME}_static DESTINATION lib)
 endif()
 
@@ -62,7 +62,7 @@ if (BUILD_SHARED_LIB)
     # build the static library
     add_library(${DELPHI_LIB_NAME}_shared SHARED $<TARGET_OBJECTS:delphi>)
     set_target_properties(${DELPHI_LIB_NAME}_shared PROPERTIES OUTPUT_NAME "${DELPHI_LIB_NAME}")
-    target_link_libraries(${DELPHI_LIB_NAME}_shared pthread ${SQLITE3_LIB_NAME} ${PQ_LIB_NAME})
+    target_link_libraries(${DELPHI_LIB_NAME}_shared pthread ${SQLITE_LIB_NAME} ${PQ_LIB_NAME})
     install(TARGETS ${DELPHI_LIB_NAME}_shared DESTINATION lib)
 endif()
 

@@ -6,13 +6,13 @@ Library name:
 
 Module Name:
 
-  SQLLite.hpp
+  SQLite.hpp
 
 Notices:
 
   Delphi classes for C++
 
-  SQLLite3
+  SQLite3
 
 Author:
 
@@ -23,8 +23,8 @@ Author:
 
 --*/
 
-#ifndef DELPHI_SQLLITE_HPP
-#define DELPHI_SQLLITE_HPP
+#ifndef DELPHI_SQLITE_HPP
+#define DELPHI_SQLITE_HPP
 //----------------------------------------------------------------------------------------------------------------------
 
 #include <sqlite3.h>
@@ -33,20 +33,20 @@ extern "C++" {
 
 namespace Delphi {
 
-    namespace SQLLite3 {
+    namespace SQLite3 {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //- CSQlLiteConnection -----------------------------------------------------------------------------------------
+        //- CSQLiteConnection -----------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CSQlLiteConnection;
+        class CSQLiteConnection;
 
-        typedef std::function<void (CSQlLiteConnection *AConnection)> COnSQlLiteConnectionEvent;
+        typedef std::function<void (CSQLiteConnection *AConnection)> COnSQlLiteConnectionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CSQlLiteConnection: public CObject {
+        class CSQLiteConnection: public CObject {
         private:
 
             sqlite3 *m_Handle;
@@ -62,14 +62,14 @@ namespace Delphi {
 
             int GetResultCode();
 
-            void DoConnected(CSQlLiteConnection *AConnection);
-            void DoDisconnected(CSQlLiteConnection *AConnection);
+            void DoConnected(CSQLiteConnection *AConnection);
+            void DoDisconnected(CSQLiteConnection *AConnection);
 
         public:
 
-            explicit CSQlLiteConnection(const CString &ADataBase);
+            explicit CSQLiteConnection(const CString &ADataBase);
 
-            ~CSQlLiteConnection() override;
+            ~CSQLiteConnection() override;
 
             const CString &DataBase() const { return m_DataBase; }
 
@@ -97,22 +97,22 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //- CSQlLiteResult ---------------------------------------------------------------------------------------------
+        //- CSQLiteResult ---------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CSQlLiteQuery;
-        class CSQlLiteResult;
+        class CSQLiteQuery;
+        class CSQLiteResult;
 
-        typedef std::function<void (CSQlLiteResult *AResult)> COnSQlLiteResultEvent;
+        typedef std::function<void (CSQLiteResult *AResult)> COnSQlLiteResultEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CSQlLiteResult: public CCollectionItem {
+        class CSQLiteResult: public CCollectionItem {
         private:
 
             sqlite3_stmt *m_Handle;
 
-            CSQlLiteQuery *m_Query;
+            CSQLiteQuery *m_Query;
 
             int m_ResultCode;
 
@@ -124,15 +124,15 @@ namespace Delphi {
 
         public:
 
-            explicit CSQlLiteResult(CSQlLiteQuery *AQQuery, sqlite3_stmt *AHandle);
+            explicit CSQLiteResult(CSQLiteQuery *AQQuery, sqlite3_stmt *AHandle);
 
-            ~CSQlLiteResult() override;
+            ~CSQLiteResult() override;
 
             void Clear();
 
             sqlite3_stmt *Handle() { return m_Handle; };
 
-            CSQlLiteQuery *Query() { return m_Query; };
+            CSQLiteQuery *Query() { return m_Query; };
 
             int ResultCode() { return m_ResultCode; };
 
@@ -143,49 +143,49 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //- CSQlLiteQuery ----------------------------------------------------------------------------------------------
+        //- CSQLiteQuery ----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CSQlLiteQuery;
+        class CSQLiteQuery;
 
-        typedef std::function<void (CSQlLiteQuery *AQuery)> COnSQlLiteQueryExecutedEvent;
+        typedef std::function<void (CSQLiteQuery *AQuery)> COnSQlLiteQueryExecutedEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef TList<CVariant> CCSQlLiteParams;
+        typedef TList<CVariant> CCSQLiteParams;
 
-        class CSQlLiteQuery: public CCollection {
+        class CSQLiteQuery: public CCollection {
             typedef CCollection inherited;
 
         private:
 
-            CSQlLiteConnection *m_Connection;
+            CSQLiteConnection *m_Connection;
 
             CString m_SQL;
 
-            CCSQlLiteParams m_Params;
+            CCSQLiteParams m_Params;
 
             COnSQlLiteQueryExecutedEvent m_OnExecuted;
 
         protected:
 
-            CSQlLiteResult *GetResult(int Index);
+            CSQLiteResult *GetResult(int Index);
 
             virtual void DoExecuted();
 
-            void SetConnection(CSQlLiteConnection *Value);
+            void SetConnection(CSQLiteConnection *Value);
 
         public:
 
-            CSQlLiteQuery();
+            CSQLiteQuery();
 
-            explicit CSQlLiteQuery(CSQlLiteConnection *AConnection);
+            explicit CSQLiteQuery(CSQLiteConnection *AConnection);
 
-            ~CSQlLiteQuery() override;
+            ~CSQLiteQuery() override;
 
-            CSQlLiteConnection *Connection() { return m_Connection; };
+            CSQLiteConnection *Connection() { return m_Connection; };
 
-            void Connection(CSQlLiteConnection *Value) { SetConnection(Value); };
+            void Connection(CSQLiteConnection *Value) { SetConnection(Value); };
 
             void Clear() override;
 
@@ -196,10 +196,10 @@ namespace Delphi {
             CString& SQL() { return m_SQL; }
             const CString& SQL() const { return m_SQL; }
 
-            CCSQlLiteParams& Params() { return m_Params; }
-            const CCSQlLiteParams& Params() const { return m_Params; }
+            CCSQLiteParams& Params() { return m_Params; }
+            const CCSQLiteParams& Params() const { return m_Params; }
 
-            CSQlLiteResult *Results(int Index) { return GetResult(Index); };
+            CSQLiteResult *Results(int Index) { return GetResult(Index); };
 
             const COnSQlLiteQueryExecutedEvent &OnExecuted() { return m_OnExecuted; }
             void OnExecute(COnSQlLiteQueryExecutedEvent && Value) { m_OnExecuted = Value; }
@@ -209,6 +209,6 @@ namespace Delphi {
     }
 }
 
-using namespace Delphi::SQLLite3;
+using namespace Delphi::SQLite3;
 }
-#endif //DELPHI_SQLLITE_HPP
+#endif //DELPHI_SQLITE_HPP

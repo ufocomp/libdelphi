@@ -211,7 +211,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.0.1")
+#define DELPHI_LIB_VERSION      _T("2.0.3")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -270,7 +270,7 @@ inline void chMB(LPCSTR szMsg);
 #  endif
 #endif
 
-#ifdef WITH_SQLLITE
+#ifdef WITH_SQLITE
 #  ifndef DELPHI_SQLLITE_HPP
 #    include "delphi/SQLite.hpp"
 #  endif
