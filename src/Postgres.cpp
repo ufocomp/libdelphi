@@ -21,6 +21,7 @@ Author:
 
 --*/
 
+#ifdef WITH_POSTGRESQL
 #include "delphi.hpp"
 #include "delphi/Postgres.hpp"
 //----------------------------------------------------------------------------------------------------------------------
@@ -1272,3 +1273,4 @@ namespace Delphi {
     }
 }
 }
+#endif
