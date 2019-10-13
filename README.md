@@ -1,53 +1,55 @@
 # libdelphi
-Delphi classes for C++
 
-НАСТРОЙКА
+Delphi classes for C++.
+
+Settings
 -
 
-###### Параметры конфигурации CMake
+###### CMake configuration options
 
-В файле `CMakeLists.txt` укажите фаги:
+In the file `CMakeLists.txt`, specify the phages:
 
-Логический флаг **WITH_POSTGRESQL** можно использовать, чтобы включить поддержку PostgreSQL. По умолчанию установлено в ON.
+Boolean flag **WITH_POSTGRESQL** can be used to enable PostgreSQL support. The default value is **OFF**.
 
-Логический флаг **WITH_SQLITE3** можно использовать, чтобы включить поддержку sqlite3. По умолчанию установлено в OFF.
+Boolean flag **WITH_SQLITE3** can be used to enable sqlite3 support. The default value is **OFF**.
 
-СБОРКА И УСТАНОВКА
+Build and installing
 -
-Для сборки библиотеки Вам потребуется:
 
-1. Компилятор C++;
-1. [CMake](https://cmake.org) или интегрированная среда разработки (IDE) с поддержкой [CMake](https://cmake.org);
-1. Библиотека [libpq-dev](https://www.postgresql.org/download/) (libraries and headers for C language frontend development);
-1. Библиотека [postgresql-server-dev-10](https://www.postgresql.org/download/) (libraries and headers for C language backend development).
-1. Библиотека [sqllite3](https://www.sqlite.org/download/) (SQLite 3);
+To build you need:
 
-Для того чтобы установить компилятор C++ и необходимые библиотеки на Ubuntu выполните:
+1. The compiler C ++;
+1. [CMake](https://cmake.org);
+1. The library [libpq-dev](https://www.postgresql.org/download/) (libraries and headers for C language frontend development);
+1. The library [postgresql-server-dev-10](https://www.postgresql.org/download/) (libraries and headers for C language backend development).
+1. The library [sqllite3](https://www.sqlite.org/download/) (SQLite 3);
+
+To install the C++ compiler and necessary libraries in Ubuntu, run:
 ~~~
 sudo apt-get install build-essential libssl-dev libcurl4-openssl-dev make cmake gcc g++
 ~~~
 
-Для того чтобы установить SQLite3 выполните:
+To install PostgreSQL, use the instructions for [this](https://www.postgresql.org/download/) link.
+
+To install SQLite3 run:
 ~~~
 sudo apt-get install sqlite3 libsqlite3-dev
 ~~~
 
-Для того чтобы установить PostgreSQL воспользуйтесь инструкцией по [этой](https://www.postgresql.org/download/) ссылке.
+###### A detailed description of the installation of C++, CMake, IDE, and other components necessary for building the project is not included in this guide. 
 
-###### Подробное описание установки C++, CMake, IDE и иных компонентов необходимых для сборки проекта не входит в данное руководство. 
+To install (without Git) you need:
 
-Для сборки **libdelphi**, необходимо:
+1. Download [libdelphi](https://github.com/ufocomp/libdelphi/archive/master.zip);
+1. Unpack;
+1. Build and compile (see below).
 
-1. Скачать **libdelphi** по [ссылке](https://github.com/ufocomp/libdelphi/archive/master.zip);
-1. Распаковать;
-1. Скомпилировать (см. ниже).
-
-Для сборки **libdelphi**, с помощью Git выполните:
+To install (with Git) you need:
 ~~~
 git clone https://github.com/ufocomp/libdelphi.git
 ~~~
 
-###### Сборка:
+###### Build:
 ~~~
 cd libdelphi
 cmake -DCMAKE_BUILD_TYPE=Release . -B cmake-build-release
@@ -55,14 +57,14 @@ cmake -DCMAKE_BUILD_TYPE=Release . -B cmake-build-release
 cmake -DCMAKE_BUILD_TYPE=Debug . -B cmake-build-debug
 ~~~
 
-###### Компиляция и установка:
+###### Make and install:
 ~~~
 cd cmake-build-release
 make
 sudo make install
 ~~~
 
-По умолчанию **libdelphi** будет установлена в:
+By default **libdelphi** will be set to:
 ~~~
 /usr/local/lib
 ~~~
