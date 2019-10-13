@@ -18,7 +18,7 @@ Build and installing
 
 To build you need:
 
-1. The compiler C ++;
+1. The compiler C++;
 1. [CMake](https://cmake.org);
 1. The library [libpq-dev](https://www.postgresql.org/download/) (libraries and headers for C language frontend development);
 1. The library [postgresql-server-dev-10](https://www.postgresql.org/download/) (libraries and headers for C language backend development).
