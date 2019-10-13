@@ -53,7 +53,7 @@ git clone https://github.com/ufocomp/libdelphi.git
 ~~~
 cd libdelphi
 cmake -DCMAKE_BUILD_TYPE=Release . -B cmake-build-release
-или
+or
 cmake -DCMAKE_BUILD_TYPE=Debug . -B cmake-build-debug
 ~~~
 
