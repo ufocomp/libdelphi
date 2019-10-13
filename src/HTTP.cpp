@@ -1845,8 +1845,6 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendStockReply(http_reply::status_type AStatus, bool ASendNow) {
 
-            CloseConnection(true);
-
             GetReply()->CloseConnection = CloseConnection();
 
             CReply::GetStockReply(m_Reply, AStatus);
@@ -1857,12 +1855,10 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendReply(http_reply::status_type AStatus, LPCTSTR AContentType, bool ASendNow) {
 
-            CloseConnection(true);
-
             if (AStatus == CReply::ok) {
                 const CString &Value = GetRequest()->Headers.Values(_T("connection"));
                 if (!Value.IsEmpty()) {
-                    if (Value == _T("keep-alive"))
+                    if (Value == _T("keep-alive") || Value == _T("upgrade"))
                         CloseConnection(false);
                 }
             }
@@ -2063,8 +2059,11 @@ namespace Delphi {
                 if (LConnection->ConnectionStatus() >= csRequestOk) {
                     if (LConnection->ConnectionStatus() == csRequestOk) {
                         LConnection->SendStockReply(CReply::gateway_timeout, true);
+                        LConnection->Disconnect();
+                    } else {
+                        if (LConnection->CloseConnection())
+                            LConnection->Disconnect();
                     }
-                    LConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(LConnection, &E);

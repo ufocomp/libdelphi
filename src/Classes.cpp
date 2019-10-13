@@ -1561,6 +1561,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CString::CString(CStream *Stream) {
+            LoadFromStream(Stream);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CString::CString(LPCTSTR Str, size_t Length) : CString() {
             Create(Str, Length);
         }

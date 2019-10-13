@@ -105,9 +105,9 @@ namespace Delphi {
 
             virtual ~CHeap();
 
-            inline class CHeap *CreateHeap() { return GHeap = new CHeap(); };
+            static inline class CHeap *CreateHeap() { return GHeap = new CHeap(); };
 
-            inline void DestroyHeap() { delete GHeap; };
+            static inline void DestroyHeap() { delete GHeap; };
 
             void Initialize();
 
@@ -833,6 +833,8 @@ namespace Delphi {
             CString();
 
             CString(const CString& S);
+
+            CString(CStream *Stream);
 
             CString(LPCTSTR Str, size_t Length = 0);
 
