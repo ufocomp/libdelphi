@@ -1322,6 +1322,21 @@ namespace Delphi {
                 return *this;
             }
 
+            virtual CStrings& operator<< (reference Str) {
+                Add(Str);
+                return *this;
+            }
+
+            virtual CStrings& operator<< (const CString& S) {
+                Add(S);
+                return *this;
+            }
+
+            virtual CStrings& operator<< (const std::string& s) {
+                Add(s.c_str());
+                return *this;
+            }
+
             virtual CString &operator[] (int Index) { return Strings(Index); }
             virtual const CString &operator[] (int Index) const { return Strings(Index); }
 
@@ -1507,6 +1522,21 @@ namespace Delphi {
                     size_t Size = strlen(Str);
                     SetTextStr(Str, Size);
                 }
+                return *this;
+            }
+
+            CStringList& operator<< (reference Str) override {
+                Add(Str);
+                return *this;
+            }
+
+            CStringList& operator<< (const CString& S) override {
+                Add(S);
+                return *this;
+            }
+
+            CStringList& operator<< (const std::string& s) override {
+                Add(s.c_str());
                 return *this;
             }
 
