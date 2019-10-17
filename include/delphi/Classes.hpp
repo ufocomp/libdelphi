@@ -936,6 +936,12 @@ namespace Delphi {
                 return *this;
             };
 
+            CString& operator= (const std::string& s) {
+                Clear();
+                Create(s.c_str());
+                return *this;
+            }
+
             CString& operator= (bool Value) {
                 Clear();
                 TCHAR szValue[_INT_T_LEN + 1] = {0};
