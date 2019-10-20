@@ -834,11 +834,13 @@ namespace Delphi {
 
             CString(const CString& S);
 
-            CString(CStream *Stream);
+            CString(const std::string& str);
 
             CString(LPCTSTR Str, size_t Length = 0);
 
             CString(TCHAR C);
+
+            explicit CString(CStream *Stream);
 
             explicit CString(size_t Length, TCHAR C);
 

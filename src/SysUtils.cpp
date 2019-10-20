@@ -435,7 +435,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI unsigned long MsEpoch() {
-            struct timeval tv{};
+            struct timeval tv = {};
             gettimeofday(&tv, nullptr);
             return tv.tv_sec * 1000 + tv.tv_usec / 1000;
         }
@@ -635,7 +635,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        inline void ErrorStrToFloatA(double val, LPCSTR S) {
+        inline void ErrorStrToFloatA(long double val, LPCSTR S) {
             if (val == 0.0)
                 throw ExceptionFrm(SInvalidDouble, S);
             if (((val == LONG_MIN) || (val == LONG_MAX)) && errno == ERANGE)
@@ -643,7 +643,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        inline void ErrorStrToFloatW(double val, LPCWSTR S) {
+        inline void ErrorStrToFloatW(long double val, LPCWSTR S) {
             if (val == 0.0)
                 throw ExceptionFrm(SInvalidDouble, S);
             if (((val == LONG_MIN) || (val == LONG_MAX)) && errno == ERANGE)
