@@ -1830,6 +1830,8 @@ namespace Delphi {
 
                             default:
                                 m_State = Context.State;
+                                if (RecvBufferSize() < GetReply()->ContentLength)
+                                    RecvBufferSize(GetReply()->ContentLength);
                                 m_ConnectionStatus = csWaitRequest;
                                 break;
                         }
@@ -1953,6 +1955,9 @@ namespace Delphi {
                                 break;
 
                             default:
+                                m_State = Context.State;
+                                if (RecvBufferSize() < GetReply()->ContentLength)
+                                    RecvBufferSize(GetReply()->ContentLength);
                                 m_ConnectionStatus = csWaitReply;
                                 break;
                         }
