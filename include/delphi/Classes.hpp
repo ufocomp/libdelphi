@@ -918,7 +918,7 @@ namespace Delphi {
             size_t find (T Value, size_t Pos = 0) { return Find(Value, Pos); }
             size_t find (LPCTSTR Str, size_t Pos, size_t Length) { return Find(Str, Pos, Length); }
 
-            operator const std::string() const {
+            operator std::string() const {
                 return std::string(this->c_str());
             };
 
