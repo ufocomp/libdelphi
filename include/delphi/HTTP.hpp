@@ -420,6 +420,7 @@ namespace Delphi {
 
             CMemoryStream *Payload() { return m_Payload; };
 
+            void Close(CMemoryStream *Stream);
             void Ping(CMemoryStream *Stream);
             void Pong(CMemoryStream *Stream);
 
@@ -828,6 +829,7 @@ namespace Delphi {
 
             void SendWebSocketPing(bool ASendNow = false);
             void SendWebSocketPong(bool ASendNow = false);
+            void SendWebSocketClose(bool ASendNow = false);
 
             const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }

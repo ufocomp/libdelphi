@@ -618,6 +618,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CWebSocket::Close(CMemoryStream *Stream) {
+            const unsigned char Close[2] = { WS_FIN | WS_OPCODE_CLOSE, 0x00 };
+            if (m_Frame.Length == 0) {
+                Stream->Write(Close, sizeof(Close));
+            } else {
+                Stream->Write(Close, 1);
+                PayloadToStream(Stream);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CWebSocket::Ping(CMemoryStream *Stream) {
             const unsigned char Ping[2] = { WS_FIN | WS_OPCODE_PING, 0x00 };
             if (m_Frame.Length == 0) {
@@ -2025,12 +2036,10 @@ namespace Delphi {
 
             switch (ParseResult) {
                 case 0:
-                    Tag(clock());
                     m_ConnectionStatus = csRequestError;
                     break;
 
                 case 1:
-                    Tag(clock());
                     m_ConnectionStatus = csRequestOk;
                     DoRequest();
                     break;
@@ -2079,7 +2088,7 @@ namespace Delphi {
 
                 default:
                     m_CloseConnection = true;
-                    m_ConnectionStatus = csRequestError;
+                    SendWebSocketClose();
                     break;
             }
         }
@@ -2095,9 +2104,11 @@ namespace Delphi {
                         InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                         switch (m_Protocol) {
                             case pHTTP:
+                                Tag(clock());
                                 ParseHTTP(&Stream);
                                 break;
                             case pWebSocket:
+                                Tag(clock());
                                 ParseWebSocket(&Stream);
                                 break;
                         }
@@ -2209,6 +2220,20 @@ namespace Delphi {
         void CHTTPServerConnection::SendWebSocketPong(bool ASendNow) {
 
             GetWSReply()->Pong(OutputBuffer());
+
+            m_ConnectionStatus = csReplyReady;
+
+            if (ASendNow) {
+                WriteAsync();
+                m_ConnectionStatus = csReplySent;
+                Clear();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::SendWebSocketClose(bool ASendNow) {
+
+            GetWSReply()->Close(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 

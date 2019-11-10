@@ -1690,24 +1690,29 @@ namespace Delphi {
 
         ssize_t CTCPConnection::ReadAsync(bool ARaiseExceptionIfDisconnected) {
             ssize_t LByteCount = 0;
+            ssize_t LByteRecv = 0;
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
             if (Connected() && (m_RecvBuffer != nullptr) && (IOHandler() != nullptr)) //APR: disconnect from other thread
             {
                 m_RecvBuffer->Size(RecvBufferSize());
-                LByteCount = IOHandler()->Recv(m_RecvBuffer->Memory(), m_RecvBuffer->Size());
+                do {
+                    LByteRecv = IOHandler()->Recv(m_RecvBuffer->Memory(), m_RecvBuffer->Size());
+
+                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                    if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
+                        return 0;
+
+                    LByteCount += CheckReadStack(LByteRecv);
+                } while (LByteRecv == RecvBufferSize());
             } else {
                 LByteCount = 0;
                 if (ARaiseExceptionIfDisconnected)
                     throw ESocketError(_T("Not Connected."));
             }
 
-            int Ignore[] = {EAGAIN, EWOULDBLOCK};
-            if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
-                return 0;
-
-            return CheckReadStack(LByteCount);
+            return LByteCount;
         }
         //--------------------------------------------------------------------------------------------------------------
 
