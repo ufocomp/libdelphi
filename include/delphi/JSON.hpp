@@ -128,6 +128,7 @@ namespace Delphi {
             virtual CJSONObject *CreateObject();
 
             virtual void Assign(const CJSON &Source);
+            virtual void Assign(const CJSONValue &Value);
 
             virtual void Concat(const CJSON &Source);
 
@@ -173,6 +174,11 @@ namespace Delphi {
             CJSON &operator=(const CJSON &Json) {
                 if (this != &Json)
                     Assign(Json);
+                return *this;
+            };
+
+            CJSON &operator=(const CJSONValue &Value) {
+                Assign(Value);
                 return *this;
             };
 
@@ -789,7 +795,7 @@ namespace Delphi {
 
             ~CJSONValue() override = default;
 
-            void Assign(const CJSONValue &Value);
+            void Assign(const CJSONValue &Value) override;
 
             bool IsEmpty() const { return m_Data.IsEmpty(); };
 

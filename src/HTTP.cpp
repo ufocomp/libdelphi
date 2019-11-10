@@ -598,6 +598,191 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CWebSocket ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CWebSocket::CWebSocket() {
+            m_Payload = new CMemoryStream();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CWebSocket::~CWebSocket() {
+            FreeAndNil(m_Payload);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::Clear() {
+            m_Frame.Clear();
+            m_Payload->Clear();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::Ping(CMemoryStream *Stream) {
+            const unsigned char Ping[2] = { WS_FIN | WS_OPCODE_PING, 0x00 };
+            if (m_Frame.Length == 0) {
+                Stream->Write(Ping, sizeof(Ping));
+            } else {
+                Stream->Write(Ping, 1);
+                PayloadToStream(Stream);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::Pong(CMemoryStream *Stream) {
+            const unsigned char Pong[2] = { WS_FIN | WS_OPCODE_PONG, 0x00 };
+            if (m_Frame.Length == 0) {
+                Stream->Write(Pong, sizeof(Pong));
+            } else {
+                Stream->Write(Pong, 1);
+                PayloadToStream(Stream);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::Encode(CMemoryStream *Stream) {
+            unsigned char Input;
+            m_Payload->Position(0);
+            for (size_t i = 0; i < m_Payload->Size(); i++) {
+                m_Payload->Read(&Input, 1);
+                Input = Input ^ m_Frame.MaskingKey[i % 4];
+                Stream->Write(&Input, 1);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::Decode(CMemoryStream *Stream) {
+            unsigned char Input;
+            size_t Position = Stream->Position();
+            for (size_t i = Position; i < Stream->Size(); i++) {
+                Stream->Read(&Input, 1);
+                Input = Input ^ m_Frame.MaskingKey[(i - Position) % 4];
+                m_Payload->Write(&Input, 1);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::PayloadFromStream(CMemoryStream *Stream) {
+            if (m_Frame.Mask == WS_MASK) {
+                Decode(Stream);
+            } else {
+                auto Size = Stream->Size() - Stream->Position();
+                if (Size != 0) {
+                    auto Position = m_Payload->Position();
+                    auto PayloadSize = Position + Size;
+                    if (PayloadSize > m_Payload->Size())
+                        m_Payload->Size(PayloadSize);
+                    const auto Count = Stream->Read(Pointer((size_t) m_Payload->Memory() + m_Payload->Position()), Size);
+                    m_Payload->Position(Position + Count);
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::PayloadToStream(CMemoryStream *Stream) {
+            const unsigned char octet = m_Frame.Mask | m_Frame.Length;
+            Stream->Write(&octet, sizeof(octet));
+
+            if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
+                unsigned short Length16 = m_Payload->Size();
+                Length16 = be16toh(Length16);
+                Stream->Write(&Length16, sizeof(Length16));
+            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_63) {
+                unsigned long long Length63 = m_Payload->Size();
+                Length63 = be64toh(Length63);
+                Stream->Write(&Length63, sizeof(Length63));
+            }
+
+            if (m_Frame.Mask == WS_MASK) {
+                Stream->Write(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+                Encode(Stream);
+            } else {
+                m_Payload->SaveToStream(Stream);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::SaveToStream(CMemoryStream *Stream) {
+            const unsigned char octet = m_Frame.FIN | m_Frame.Opcode;
+            Stream->Write(&octet, sizeof(octet));
+            if (m_Frame.Length > 0) {
+                PayloadToStream(Stream);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::LoadFromStream(CMemoryStream *Stream) {
+            if (Stream->Size() < 2)
+                return;
+
+            size_t PayloadSize = 0;
+
+            unsigned char octet[2] = {0, 0};
+            Stream->Read(octet, sizeof(octet));
+
+            m_Frame.FIN = octet[0] & WS_FIN;
+            m_Frame.Opcode = octet[0] & 0x0Fu;
+
+            m_Frame.Mask = octet[1] & WS_MASK;
+            m_Frame.Length = octet[1] & 0x7Fu;
+
+            if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
+                unsigned short Length16 = 0;
+                Stream->Read(&Length16, sizeof(Length16));
+                PayloadSize = htobe16(Length16);
+            } else  if (m_Frame.Length == WS_PAYLOAD_LENGTH_63) {
+                unsigned long long Length63 = 0;
+                Stream->Read(&Length63, sizeof(Length63));
+                PayloadSize = htobe64(Length63);
+            } else {
+                PayloadSize = m_Frame.Length;
+            }
+
+            if (m_Frame.Mask == WS_MASK) {
+                Stream->Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+            }
+
+            m_Payload->SetSize(PayloadSize);
+            PayloadFromStream(Stream);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::SetPayload(CMemoryStream *Stream) {
+            m_Frame.FIN = WS_FIN;
+            m_Frame.Opcode = WS_OPCODE_BINARY;
+
+            if (Stream->Size() < WS_PAYLOAD_LENGTH_16) {
+                m_Frame.Length = Stream->Size();
+            } else if (Stream->Size() <= 0xFFFF) {
+                m_Frame.Length = WS_PAYLOAD_LENGTH_16;
+            } else {
+                m_Frame.Length = WS_PAYLOAD_LENGTH_63;
+            }
+
+            m_Payload->LoadFromStream(Stream);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::SetPayload(const CString &String) {
+            m_Frame.FIN = WS_FIN;
+            m_Frame.Opcode = WS_OPCODE_TEXT;
+
+            if (String.Size() < WS_PAYLOAD_LENGTH_16) {
+                m_Frame.Length = String.Size();
+            } else if (String.Size() <= 0xFFFF) {
+                m_Frame.Length = WS_PAYLOAD_LENGTH_16;
+            } else {
+                m_Frame.Length = WS_PAYLOAD_LENGTH_63;
+            }
+
+            m_Payload->Position(0);
+            m_Payload->SetSize(String.Size());
+
+            String.SaveToStream(m_Payload);
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CRequestParser --------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1058,8 +1243,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketParser::Parse(CWebSocketFrame *AFrame, CMemoryStream *AStream) {
-            AFrame->Read(AStream);
+        void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream *AStream) {
+            ARequest->LoadFromStream(AStream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1783,8 +1968,8 @@ namespace Delphi {
             m_ConnectionStatus = csConnected;
             m_Request = nullptr;
             m_Reply = nullptr;
-            m_FrameIn = nullptr;
-            m_FrameOut = nullptr;
+            m_WSRequest = nullptr;
+            m_WSReply = nullptr;
             m_OnReply = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1811,17 +1996,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CWebSocketFrame *CHTTPServerConnection::GetFrameIn() {
-            if (m_FrameIn == nullptr)
-                m_FrameIn = new CWebSocketFrame();
-            return m_FrameIn;
+        CWebSocket *CHTTPServerConnection::GetWSRequest() {
+            if (m_WSRequest == nullptr)
+                m_WSRequest = new CWebSocket();
+            return m_WSRequest;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CWebSocketFrame *CHTTPServerConnection::GetFrameOut() {
-            if (m_FrameOut == nullptr)
-                m_FrameOut = new CWebSocketFrame();
-            return m_FrameOut;
+        CWebSocket *CHTTPServerConnection::GetWSReply() {
+            if (m_WSReply == nullptr)
+                m_WSReply = new CWebSocket();
+            return m_WSReply;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1829,8 +2014,8 @@ namespace Delphi {
             m_State = Request::method_start;
             FreeAndNil(m_Request);
             FreeAndNil(m_Reply);
-            FreeAndNil(m_FrameIn);
-            FreeAndNil(m_FrameOut);
+            FreeAndNil(m_WSRequest);
+            FreeAndNil(m_WSReply);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1862,16 +2047,16 @@ namespace Delphi {
 
         void CHTTPServerConnection::ParseWebSocket(CMemoryStream *Stream) {
 
-            auto LFrame = GetFrameIn();
+            auto LWSRequest = GetWSRequest();
 
-            CWebSocketParser::Parse(LFrame, Stream);
+            CWebSocketParser::Parse(LWSRequest, Stream);
 
-            switch (LFrame->Opcode) {
+            switch (LWSRequest->Frame().Opcode) {
                 case WS_OPCODE_CONTINUATION:
                 case WS_OPCODE_TEXT:
                 case WS_OPCODE_BINARY:
 
-                    if (LFrame->FIN == 0) {
+                    if (LWSRequest->Frame().FIN == 0) {
                         m_ConnectionStatus = csWaitRequest;
                     } else {
                         m_ConnectionStatus = csRequestOk;
@@ -1885,8 +2070,7 @@ namespace Delphi {
                     break;
 
                 case WS_OPCODE_PING:
-                    LFrame->Pong(OutputBuffer());
-                    m_ConnectionStatus = csReplyReady;
+                    SendWebSocketPong();
                     break;
 
                 case WS_OPCODE_PONG:
@@ -1996,7 +2180,35 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocket(bool ASendNow) {
 
-            GetFrameOut()->Write(OutputBuffer());
+            GetWSReply()->SaveToStream(OutputBuffer());
+
+            m_ConnectionStatus = csReplyReady;
+
+            if (ASendNow) {
+                WriteAsync();
+                m_ConnectionStatus = csReplySent;
+                Clear();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::SendWebSocketPing(bool ASendNow) {
+
+            GetWSReply()->Ping(OutputBuffer());
+
+            m_ConnectionStatus = csReplyReady;
+
+            if (ASendNow) {
+                WriteAsync();
+                m_ConnectionStatus = csReplySent;
+                Clear();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::SendWebSocketPong(bool ASendNow) {
+
+            GetWSReply()->Pong(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 

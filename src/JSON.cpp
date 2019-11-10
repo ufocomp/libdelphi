@@ -118,6 +118,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSON::Assign(const CJSONValue& Value) {
+
+            Clear();
+
+            m_ValueType = Value.ValueType();
+
+            if (Assigned(Value.Value())) {
+                if (Value.Value()->ValueType() == jvtObject) {
+                    CreateObject()->Assign(Value.Object());
+                }
+
+                if (Value.Value()->ValueType() == jvtArray) {
+                    CreateArray()->Assign(Value.Array());
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CJSON::Concat(const CJSON& Source) {
             if (Assigned(Source.Value()) && (ValueType() == Source.Value()->ValueType())) {
                 if (Source.Value()->ValueType() == jvtObject) {
