@@ -29,6 +29,19 @@ Author:
 #define DefaultAllowedMethods  _T("OPTIONS, GET")
 //----------------------------------------------------------------------------------------------------------------------
 
+#define WS_FIN                  0x80u
+#define WS_MASK                 0x80u
+
+#define WS_OPCODE_CONTINUATION  0x00u
+#define WS_OPCODE_TEXT          0x01u
+#define WS_OPCODE_BINARY        0x02u
+#define WS_OPCODE_CLOSE         0x08u
+#define WS_OPCODE_PING          0x09u
+#define WS_OPCODE_PONG          0x0Au
+
+#define WS_PAYLOAD_LENGTH_16    126u
+#define WS_PAYLOAD_LENGTH_63    127u
+
 #ifndef WWWServerName
 #define WWWServerName DefaultServerName
 #endif
@@ -343,10 +356,204 @@ namespace Delphi {
             };
 
         } CRequest, *PRequest;
-
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef TList<CRequest> CRequestList;
+        typedef struct web_socket_frame {
+
+            unsigned char FIN = WS_FIN;
+            unsigned char Opcode = 0xFF;
+            unsigned char Mask = 0;
+            unsigned char Length = 0;
+            unsigned char Maskingkey[4] = { 0, 0, 0, 0 };
+            unsigned long long PayloadLength = 0;
+
+            CMemoryStream Payload;
+
+            void Ping(CMemoryStream *Stream) {
+                const unsigned char Ping[2] = { 0x89, 0x00 };
+                if (Length == 0) {
+                    Stream->Write(Ping, sizeof(Ping));
+                } else {
+                    Stream->Write(Ping, 1);
+                    Write(Stream);
+                }
+            }
+
+            void Pong(CMemoryStream *Stream) {
+                const unsigned char Pong[2] = { 0x8A, 0x00 };
+                if (Length == 0) {
+                    Stream->Write(Pong, sizeof(Pong));
+                } else {
+                    Stream->Write(Pong, 1);
+                    Write(Stream);
+                }
+            }
+
+            void Encode(CMemoryStream *Stream) {
+                unsigned char Input;
+                Payload.Position(0);
+                for (size_t i = 0; i < Payload.Size(); i++) {
+                    Payload.Read(&Input, 1);
+                    Input = Input ^ Maskingkey[i % 4];
+                    Stream->Write(&Input, 1);
+                }
+            }
+
+            void Decode(CMemoryStream *Stream) {
+                unsigned char Input;
+                size_t Position = Stream->Position();
+                for (size_t i = Position; i < Stream->Size(); i++) {
+                    Stream->Read(&Input, 1);
+                    Input = Input ^ Maskingkey[(i - Position) % 4];
+                    Payload.Write(&Input, 1);
+                }
+            }
+
+            void ReadPayload(CMemoryStream *Stream) {
+                if (Mask == WS_MASK) {
+                    Decode(Stream);
+                } else {
+                    if (PayloadLength != 0) {
+                        auto Position = Payload.Position();
+                        auto Size = Stream->Size() - Stream->Position();
+                        auto PayloadSize = Position + Size;
+                        if (PayloadSize > Payload.Size())
+                            Payload.Size(PayloadSize);
+                        const auto Count = Stream->Read(Pointer((size_t) Payload.Memory() + Payload.Position()), Size);
+                        Payload.Position(Position + Count);
+                    }
+                }
+            }
+
+            void Write(CMemoryStream *Stream) {
+                unsigned char octet[2] = { WS_FIN, 0x00 };
+
+                octet[0] = FIN | Opcode;
+
+                if (Length == 0) {
+                    Stream->Write(octet, sizeof(octet));
+                } else {
+                    octet[1] = Mask | Length;
+
+                    Stream->Write(octet, sizeof(octet));
+
+                    if (Length == WS_PAYLOAD_LENGTH_16) {
+                        unsigned short Length16 = PayloadLength;
+                        Length16 = be16toh(Length16);
+                        Stream->Write(&Length16, sizeof(Length16));
+                    } else if (Length == WS_PAYLOAD_LENGTH_63) {
+                        unsigned long long Length63 = PayloadLength;
+                        Length63 = be64toh(Length63);
+                        Stream->Write(&Length63, sizeof(Length63));
+                    }
+
+                    if (Mask == WS_MASK) {
+                        Stream->Write(Maskingkey, sizeof(Maskingkey));
+                        Encode(Stream);
+                    } else {
+                        Stream->Write(Payload.Memory(), Payload.Size());
+                    }
+                }
+            }
+
+            void Read(CMemoryStream *Stream) {
+                if (Stream->Size() < 6)
+                    return;
+
+                unsigned char octet[2] = {0, 0};
+                Stream->Read(octet, sizeof(octet));
+
+                FIN = octet[0] & WS_FIN;
+                Opcode = octet[0] & 0x0Fu;
+
+                Mask = octet[1] & WS_MASK;
+                Length = octet[1] & 0x7Fu;
+
+                if (Length == WS_PAYLOAD_LENGTH_16) {
+                    unsigned short Length16 = 0;
+                    Stream->Read(&Length16, sizeof(Length16));
+                    PayloadLength = htobe16(Length16);
+                } else  if (Length == WS_PAYLOAD_LENGTH_63) {
+                    unsigned long long Length63 = 0;
+                    Stream->Read(&Length63, sizeof(Length63));
+                    PayloadLength = htobe64(Length63);
+                } else {
+                    PayloadLength = Length;
+                }
+
+                if (Mask == WS_MASK) {
+                    Stream->Read(Maskingkey, sizeof(Maskingkey));
+                }
+
+                ReadPayload(Stream);
+            }
+
+            void SetMaskingKey(u_int32_t Key) {
+                Mask = WS_MASK;
+                ::CopyMemory(Maskingkey, &Key, sizeof(Key));
+            }
+
+            void SetMaskingKey(unsigned char Key[4]) {
+                Mask = WS_MASK;
+                ::CopyMemory(Maskingkey, Key, sizeof(Maskingkey));
+            }
+
+            void SetPayload(CMemoryStream *Stream) {
+                Opcode = WS_OPCODE_BINARY;
+
+                if (Stream->Size() < WS_PAYLOAD_LENGTH_16) {
+                    Length = Stream->Size();
+                    PayloadLength = Stream->Size();
+                } else if (Stream->Size() <= 0xFFFF) {
+                    Length = WS_PAYLOAD_LENGTH_16;
+                    PayloadLength = Stream->Size();
+                } else {
+                    Length = WS_PAYLOAD_LENGTH_63;
+                    PayloadLength = Stream->Size();
+                }
+
+                Payload.LoadFromStream(Stream);
+            };
+
+            void SetPayload(const CString &String) {
+                Opcode = WS_OPCODE_TEXT;
+
+                if (String.Size() < WS_PAYLOAD_LENGTH_16) {
+                    Length = String.Size();
+                    PayloadLength = String.Size();
+                } else if (String.Size() <= 0xFFFF) {
+                    Length = WS_PAYLOAD_LENGTH_16;
+                    PayloadLength = String.Size();
+                } else {
+                    Length = WS_PAYLOAD_LENGTH_63;
+                    PayloadLength = String.Size();
+                }
+
+                Payload.Position(0);
+                String.SaveToStream(&Payload);
+            };
+
+            web_socket_frame& operator<< (const CString &String) {
+                SetPayload(String);
+                return *this;
+            }
+
+            web_socket_frame& operator>> (CString &String) {
+                String.LoadFromStream(&Payload);
+                return *this;
+            }
+
+            web_socket_frame& operator<< (CMemoryStream *Stream) {
+                Read(Stream);
+                return *this;
+            }
+
+            web_socket_frame& operator>> (CMemoryStream *Stream) {
+                Write(Stream);
+                return *this;
+            }
+
+        } CWebSocketFrame, *PWebSocketFrame;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -392,7 +599,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct request_parser_context {
+        typedef struct http_context {
             LPCTSTR Begin;
             LPCTSTR End;
             size_t Size;
@@ -402,7 +609,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            request_parser_context(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
+            http_context(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
                 Begin = ABegin;
                 End = ABegin + ASize;
                 Size = ASize;
@@ -412,10 +619,10 @@ namespace Delphi {
                 MimeIndex = 0;
             };
 
-        } CRequestContext, *PRequestContext;
+        } CHTTPContext, *PRequestContext;
         //--------------------------------------------------------------------------------------------------------------
 
-        /// Parser for incoming requests.
+        /// Parser for incoming HTTP requests.
         class CRequestParser {
         public:
 
@@ -432,14 +639,22 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CRequest *ARequest, CRequestContext& Context);
+            static int Consume(CRequest *ARequest, CHTTPContext &Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CRequest *ARequest, CRequestContext& Context);
+            static int Parse(CRequest *ARequest, CHTTPContext &Context);
 
-            static int ParseFormData(CRequest *ARequest, CFormData& FormData);
+            static int ParseFormData(CRequest *ARequest, CFormData &FormData);
+
+        };
+
+        /// Parser for incoming WebSocket requests.
+        class CWebSocketParser {
+        public:
+
+            static void Parse(CWebSocketFrame *AFrame, CMemoryStream *AStream);
 
         };
 
@@ -643,30 +858,41 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
+        enum CHTTPProtocol { pHTTP = 0, pWebSocket };
+
         class CHTTPServerConnection: public CTCPServerConnection {
             typedef CTCPServerConnection inherited;
 
         private:
 
             CRequest *m_Request;
-
             CReply *m_Reply;
+
+            CWebSocketFrame *m_FrameIn;
+            CWebSocketFrame *m_FrameOut;
 
             /// The current state of the parser.
             Request::CParserState m_State;
 
             CHTTPConnectionStatus m_ConnectionStatus;
 
+            CHTTPProtocol m_Protocol;
+
             bool m_CloseConnection;
 
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
+            void ParseHTTP(CMemoryStream *Stream);
+            void ParseWebSocket(CMemoryStream *Stream);
+
         protected:
 
             CRequest *GetRequest();
-
             CReply *GetReply();
+
+            CWebSocketFrame *GetFrameIn();
+            CWebSocketFrame *GetFrameOut();
 
             void DoRequest();
             void DoReply();
@@ -684,20 +910,25 @@ namespace Delphi {
             CHTTPServer *HTTPServer() { return (CHTTPServer *) Server(); }
 
             CRequest *Request() { return GetRequest(); }
+            CReply *Reply() { return GetReply(); }
 
-            CReply *Reply() { return GetReply(); };
+            CWebSocketFrame *FrameIn() { return GetFrameIn(); }
+            CWebSocketFrame *FrameOut() { return GetFrameOut(); }
 
-            bool CloseConnection() { return m_CloseConnection; };
-            void CloseConnection(bool Value) { m_CloseConnection = Value; };
+            CHTTPProtocol Protocol() const { return m_Protocol; }
 
-            CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
-            void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; };
+            bool CloseConnection() const { return m_CloseConnection; }
+            void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
-            void SendReply(bool ASendNow = false);
-
-            void SendReply(CReply::status_type AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
+            CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; }
+            void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; }
 
             void SendStockReply(CReply::status_type AStatus, bool ASendNow = false);
+            void SendReply(CReply::status_type AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
+            void SendReply(bool ASendNow = false);
+
+            void SwitchingProtocols(const CString &Accept, const CString &Protocol);
+            void SendWebSocket(bool ASendNow = false);
 
             const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }

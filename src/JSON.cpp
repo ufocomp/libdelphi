@@ -713,6 +713,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONMembers::AddPair(const CString &String, CJSONMembers::reference Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CJSONMembers::AddPair(reference String, reference Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONMembers::AddPair(reference String, bool Value) {
             int Result = GetCount();
             InsertPair(Result, String, Value);
@@ -1300,6 +1314,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONObject::AddPair(reference String, reference Value) {
+            return m_pList.Add(CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONObject::AddPair(reference String, const CString &Value) {
             return m_pList.Add(CJSONMember(String, Value));
         }
@@ -1346,6 +1365,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSONObject::InsertPair(int Index, reference String, const CString &Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSONObject::InsertPair(int Index, const CString &String, reference Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSONObject::InsertPair(int Index, reference String, reference Value) {
             m_pList.Insert(Index, CJSONMember(String, Value));
         }
         //--------------------------------------------------------------------------------------------------------------

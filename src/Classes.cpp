@@ -1324,7 +1324,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomStringStream::SaveToStream(CStream *Stream) {
+        void CCustomStringStream::SaveToStream(CStream *Stream) const {
             if (m_Size != 0)
                 Stream->WriteBuffer(m_Data, m_Size);
         }

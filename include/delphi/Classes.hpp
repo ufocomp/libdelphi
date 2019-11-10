@@ -683,7 +683,7 @@ namespace Delphi {
 
             ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
-            void SaveToStream(CStream *Stream);
+            void SaveToStream(CStream *Stream) const;
             void SaveToFile(LPCTSTR lpszFileName);
 
             LPTSTR Data() { return m_Data; };
