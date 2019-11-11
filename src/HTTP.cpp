@@ -603,6 +603,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CWebSocket::CWebSocket() {
+            m_Size = 0;
             m_Payload = new CMemoryStream();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -613,6 +614,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Clear() {
+            m_Size = 0;
             m_Frame.Clear();
             m_Payload->Clear();
         }
@@ -664,11 +666,13 @@ namespace Delphi {
 
         void CWebSocket::Decode(CMemoryStream *Stream) {
             unsigned char Input;
-            size_t Position = Stream->Position();
+            auto Position = Stream->Position();
+            m_Payload->Position(m_Size);
             for (size_t i = Position; i < Stream->Size(); i++) {
                 Stream->Read(&Input, 1);
                 Input = Input ^ m_Frame.MaskingKey[(i - Position) % 4];
                 m_Payload->Write(&Input, 1);
+                m_Size++;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -677,13 +681,13 @@ namespace Delphi {
             if (m_Frame.Mask == WS_MASK) {
                 Decode(Stream);
             } else {
-                auto Size = Stream->Size() - Stream->Position();
-                if (Size != 0) {
-                    auto Position = m_Payload->Position();
-                    auto PayloadSize = Position + Size;
-                    if (PayloadSize > m_Payload->Size())
-                        m_Payload->Size(PayloadSize);
-                    const auto Count = Stream->Read(Pointer((size_t) m_Payload->Memory() + m_Payload->Position()), Size);
+                auto PayloadSize = Stream->Size() - Stream->Position();
+                if (PayloadSize != 0) {
+                    auto Position = m_Size;
+                    m_Size += PayloadSize;
+                    if (m_Size > m_Payload->Size())
+                        m_Payload->Size(m_Size);
+                    const auto Count = Stream->Read(Pointer((size_t) m_Payload->Memory() + Position), PayloadSize);
                     m_Payload->Position(Position + Count);
                 }
             }
@@ -1250,12 +1254,16 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CWebSocketParser ----------------------------------------------------------------------------------------------------
+        //-- CWebSocketParser ------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream *AStream) {
-            ARequest->LoadFromStream(AStream);
+            if (ARequest->Size() == 0) {
+                ARequest->LoadFromStream(AStream);
+            } else {
+                ARequest->PayloadFromStream(AStream);
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2065,7 +2073,7 @@ namespace Delphi {
                 case WS_OPCODE_TEXT:
                 case WS_OPCODE_BINARY:
 
-                    if (LWSRequest->Frame().FIN == 0) {
+                    if (LWSRequest->Frame().FIN == 0 || (LWSRequest->Size() < LWSRequest->Payload()->Size())) {
                         m_ConnectionStatus = csWaitRequest;
                     } else {
                         m_ConnectionStatus = csRequestOk;
@@ -2169,6 +2177,8 @@ namespace Delphi {
         void CHTTPServerConnection::SwitchingProtocols(const CString &Accept, const CString &Protocol) {
 
             m_Protocol = pWebSocket;
+
+            RecvBufferSize(256 * 1024);
 
             CloseConnection(false);
 

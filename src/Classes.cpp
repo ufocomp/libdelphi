@@ -1556,22 +1556,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(const CString &S) : CString()  {
+        CString::CString(const CString &S): CString()  {
             Create(S);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(const std::string &str) {
+        CString::CString(const std::string &str): CString() {
             Create(str.c_str());
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(CStream *Stream) {
+        CString::CString(CStream *Stream): CString() {
+            auto Position = Stream->Position();
             LoadFromStream(Stream);
+            Stream->Position(Position);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(LPCTSTR Str, size_t Length) : CString() {
+        CString::CString(LPCTSTR Str, size_t Length): CString() {
             Create(Str, Length);
         }
         //--------------------------------------------------------------------------------------------------------------

@@ -394,12 +394,18 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        class CWebSocketParser;
+
         class CWebSocket {
+            friend CWebSocketParser;
+
         private:
 
             CWebSocketFrame m_Frame;
 
             CMemoryStream *m_Payload;
+
+            size_t m_Size;
 
             void Encode(CMemoryStream *Stream);
             void Decode(CMemoryStream *Stream);
@@ -414,6 +420,8 @@ namespace Delphi {
             ~CWebSocket();
 
             void Clear();
+
+            size_t Size() const { return m_Size; };
 
             CWebSocketFrame &Frame() { return m_Frame; }
             const CWebSocketFrame &Frame() const { return m_Frame; }
