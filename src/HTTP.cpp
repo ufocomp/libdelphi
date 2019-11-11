@@ -2428,13 +2428,15 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
                 if (LConnection->ConnectionStatus() >= csRequestOk) {
+
                     if (LConnection->ConnectionStatus() == csRequestOk) {
-                        LConnection->SendStockReply(CReply::gateway_timeout, true);
-                        LConnection->Disconnect();
-                    } else {
-                        if (LConnection->CloseConnection())
-                            LConnection->Disconnect();
+                        if (LConnection->Protocol() == pHTTP)
+                            LConnection->SendStockReply(CReply::gateway_timeout, true);
+                        LConnection->CloseConnection(true);
                     }
+
+                    if (LConnection->CloseConnection())
+                        LConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(LConnection, &E);
