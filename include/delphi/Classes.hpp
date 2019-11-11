@@ -919,7 +919,7 @@ namespace Delphi {
             size_t find (LPCTSTR Str, size_t Pos, size_t Length) { return Find(Str, Pos, Length); }
 
             operator std::string() const {
-                return std::string(this->c_str());
+                return std::string(IsEmpty() ? "" : c_str());
             };
 
             CString& operator= (const CString& S) {
