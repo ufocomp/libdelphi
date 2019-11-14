@@ -905,8 +905,8 @@ namespace Delphi {
 
             LPCTSTR c_str() const noexcept { return Str(); }
 
-            LPCSTR c_a_str() const noexcept { return AnsiStr(); }
-            LPCWSTR c_w_str() const noexcept { return WideStr(); }
+            //LPCSTR c_a_str() const noexcept { return AnsiStr(); }
+            //LPCWSTR c_w_str() const noexcept { return WideStr(); }
 
             template <class T>
             int compare(T Value) const { return Compare(Value); }
@@ -918,8 +918,12 @@ namespace Delphi {
             size_t find (T Value, size_t Pos = 0) { return Find(Value, Pos); }
             size_t find (LPCTSTR Str, size_t Pos, size_t Length) { return Find(Str, Pos, Length); }
 
-            operator std::string() const {
-                return std::string(IsEmpty() ? "" : c_str());
+            explicit operator std::basic_string<char>() const {
+                return std::basic_string<char>(IsEmpty() ? "" : c_str());
+            };
+
+            explicit operator const char *() const {
+                return IsEmpty() ? "" : c_str();
             };
 
             CString& operator= (const CString& S) {
