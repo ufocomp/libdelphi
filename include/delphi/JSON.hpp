@@ -1383,6 +1383,8 @@ namespace Delphi {
 
             CParserState m_State;
 
+            bool m_Escape;
+
             int m_Result;
 
             int m_CharIndex;

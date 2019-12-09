@@ -1464,6 +1464,7 @@ namespace Delphi {
             m_State = json_start;
             m_Result = -1;
             m_CharIndex = 0;
+            m_Escape = false;
 
             m_pJsonList = new CList();
         }
@@ -1680,10 +1681,14 @@ namespace Delphi {
                     }
                     return false;
                 case value_string:
-                    if (AInput == '"') {
+                    if (!m_Escape && AInput == '"') {
                         m_State = value_string_end;
                         return -1;
                     } if (IsCharacter(AInput)) {
+                        if (m_Escape)
+                            m_Escape = false;
+                        if (AInput == '\\')
+                            m_Escape = true;
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (IsWS(AInput)) {
