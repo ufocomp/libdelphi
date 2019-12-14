@@ -1657,7 +1657,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         http_reply *CReply::GetStockReply(http_reply *AReply, CReply::status_type AStatus) {
-            AReply->Content = StockReplies::ToString(AStatus, AReply->ContentType);
+            if (AStatus != CReply::no_content)
+                AReply->Content = StockReplies::ToString(AStatus, AReply->ContentType);
             AReply = GetReply(AReply, AStatus);
             return AReply;
         }
