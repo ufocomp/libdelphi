@@ -1298,26 +1298,26 @@ namespace Delphi {
 
         namespace StatusStrings {
 
-            const TCHAR switching_protocols[] = _T("HTTP/1.1 101 Switching Protocols\r\n");
-            const TCHAR ok[] = _T("HTTP/1.1 200 OK\r\n");
-            const TCHAR created[] = _T("HTTP/1.1 201 Created\r\n");
-            const TCHAR accepted[] = _T("HTTP/1.1 202 Accepted\r\n");
-            const TCHAR non_authoritative[] = _T("HTTP/1.1 203 Non-Authoritative Information\r\n");
-            const TCHAR no_content[] = _T("HTTP/1.1 204 No Content\r\n");
-            const TCHAR multiple_choices[] = _T("HTTP/1.1 300 Multiple Choices\r\n");
-            const TCHAR moved_permanently[] = _T("HTTP/1.1 301 Moved Permanently\r\n");
-            const TCHAR moved_temporarily[] = _T("HTTP/1.1 302 Moved Temporarily\r\n");
-            const TCHAR not_modified[] = _T("HTTP/1.1 304 Not Modified\r\n");
-            const TCHAR bad_request[] = _T("HTTP/1.1 400 Bad Request\r\n");
-            const TCHAR unauthorized[] = _T("HTTP/1.1 401 Unauthorized\r\n");
-            const TCHAR forbidden[] = _T("HTTP/1.1 403 Forbidden\r\n");
-            const TCHAR not_found[] = _T("HTTP/1.1 404 Not Found\r\n");
-            const TCHAR not_allowed[] = _T("HTTP/1.1 405 Method Not Allowed\r\n");
-            const TCHAR internal_server_error[] = _T("HTTP/1.1 500 Internal Server Error\r\n");
-            const TCHAR not_implemented[] = _T("HTTP/1.1 501 Not Implemented\r\n");
-            const TCHAR bad_gateway[] = _T("HTTP/1.1 502 Bad Gateway\r\n");
-            const TCHAR service_unavailable[] = _T("HTTP/1.1 503 Service Unavailable\r\n");
-            const TCHAR gateway_timeout[] = _T("HTTP/1.1 504 Gateway Timeout\r\n");
+            const TCHAR switching_protocols[] = _T("Switching Protocols");
+            const TCHAR ok[] = _T("OK");
+            const TCHAR created[] = _T("Created");
+            const TCHAR accepted[] = _T("Accepted");
+            const TCHAR non_authoritative[] = _T("Non-Authoritative Information");
+            const TCHAR no_content[] = _T("No Content");
+            const TCHAR multiple_choices[] = _T("Multiple Choices");
+            const TCHAR moved_permanently[] = _T("Moved Permanently");
+            const TCHAR moved_temporarily[] = _T("Moved Temporarily");
+            const TCHAR not_modified[] = _T("Not Modified");
+            const TCHAR bad_request[] = _T("Bad Request");
+            const TCHAR unauthorized[] = _T("Unauthorized");
+            const TCHAR forbidden[] = _T("Forbidden");
+            const TCHAR not_found[] = _T("Not Found");
+            const TCHAR not_allowed[] = _T("Method Not Allowed");
+            const TCHAR internal_server_error[] = _T("Internal Server Error");
+            const TCHAR not_implemented[] = _T("Not Implemented");
+            const TCHAR bad_gateway[] = _T("Bad Gateway");
+            const TCHAR service_unavailable[] = _T("Service Unavailable");
+            const TCHAR gateway_timeout[] = _T("Gateway Timeout");
 
             size_t ToBuffer(CReply::status_type AStatus, CStream *AStream) {
                 switch (AStatus) {
@@ -1365,12 +1365,87 @@ namespace Delphi {
                         return StringArrayToStream(AStream, internal_server_error);
                 }
             }
+
+            void ToString(CReply::status_type AStatus, CString &AString) {
+                switch (AStatus) {
+                    case CReply::switching_protocols:
+                        AString = switching_protocols;
+                        break;
+                    case CReply::ok:
+                        AString = ok;
+                        break;
+                    case CReply::created:
+                        AString = created;
+                        break;
+                    case CReply::accepted:
+                        AString = accepted;
+                        break;
+                    case CReply::non_authoritative:
+                        AString = non_authoritative;
+                        break;
+                    case CReply::no_content:
+                        AString = no_content;
+                        break;
+                    case CReply::multiple_choices:
+                        AString = multiple_choices;
+                        break;
+                    case CReply::moved_permanently:
+                        AString = moved_permanently;
+                        break;
+                    case CReply::moved_temporarily:
+                        AString = moved_temporarily;
+                        break;
+                    case CReply::not_modified:
+                        AString = not_modified;
+                        break;
+                    case CReply::bad_request:
+                        AString = bad_request;
+                        break;
+                    case CReply::unauthorized:
+                        AString = unauthorized;
+                        break;
+                    case CReply::forbidden:
+                        AString = forbidden;
+                        break;
+                    case CReply::not_found:
+                        AString = not_found;
+                        break;
+                    case CReply::not_allowed:
+                        AString = not_allowed;
+                        break;
+                    case CReply::internal_server_error:
+                        AString = internal_server_error;
+                        break;
+                    case CReply::not_implemented:
+                        AString = not_implemented;
+                        break;
+                    case CReply::bad_gateway:
+                        AString = bad_gateway;
+                        break;
+                    case CReply::service_unavailable:
+                        AString = service_unavailable;
+                        break;
+                    case CReply::gateway_timeout:
+                        AString = gateway_timeout;
+                        break;
+                    default:
+                        AString = internal_server_error;
+                        break;
+                }
+            }
         } // namespace StatusStrings
         //--------------------------------------------------------------------------------------------------------------
 
         void CReply::ToBuffers(CMemoryStream *AStream) {
 
-            StatusStrings::ToBuffer(Status, AStream);
+            StatusString = Status;
+            StatusStrings::ToString(Status, StatusText);
+
+            CString HTTP;
+            HTTP.Format("HTTP/%d.%d %d %s", VMajor, VMinor, Status, StatusText.c_str());
+            HTTP.SaveToStream(AStream);
+
+            StringArrayToStream(AStream, MiscStrings::crlf);
 
             for (int i = 0; i < Headers.Count(); ++i) {
                 CHeader &H = Headers[i];
@@ -1490,6 +1565,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void http_reply::Clear() {
+            VMajor = 1;
+            VMinor = 1;
             Status = status_type::internal_server_error;
             StatusString.Clear();
             StatusText.Clear();
@@ -1593,6 +1670,9 @@ namespace Delphi {
 
             wtime = time(&wtime);
             wtm = gmtime(&wtime);
+
+            AReply->VMajor = 1;
+            AReply->VMinor = 1;
 
             AReply->Status = AStatus;
 
