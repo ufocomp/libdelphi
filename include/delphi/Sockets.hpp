@@ -2010,7 +2010,9 @@ namespace Delphi {
             bool m_AutoConnect;
             bool m_Active;
 
-            virtual void SetActive(bool AValue);
+            void SetActive(bool AValue);
+
+            virtual void Initialize() {};
 
             virtual void InitializeCommandHandlers() {};
 

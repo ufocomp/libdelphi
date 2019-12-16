@@ -3528,6 +3528,8 @@ namespace Delphi {
             if (m_Active != AValue ) {
 
                 if (AValue) {
+                    Initialize();
+
                     if (CommandHandlers()->Count() == 0)
                         InitializeCommandHandlers();
 
