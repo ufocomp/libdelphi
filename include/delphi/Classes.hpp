@@ -1176,7 +1176,7 @@ namespace Delphi {
             void SetValue(const CString &Name, const CString &Value);
             void SetValue(reference Name, reference Value);
 
-            CString GetValueFromIndex(int Index);
+            CString GetValueFromIndex(int Index) const;
 
             void SetValueFromIndex(int Index, const CString &Value);
             void SetValueFromIndex(int Index, reference Value);
@@ -1286,7 +1286,7 @@ namespace Delphi {
             void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
             void Values(reference Name, reference Value) { SetValue(Name, Value); };
 
-            CString ValueFromIndex(int Index) { return GetValueFromIndex(Index); };
+            CString ValueFromIndex(int Index) const { return GetValueFromIndex(Index); };
             void ValueFromIndex(int Index, const CString &Value) { SetValueFromIndex(Index, Value); };
             void ValueFromIndex(int Index, reference Value) { SetValueFromIndex(Index, Value); };
 

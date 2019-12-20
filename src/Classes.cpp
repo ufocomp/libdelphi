@@ -1888,7 +1888,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CStrings::GetValueFromIndex(int Index) {
+        CString CStrings::GetValueFromIndex(int Index) const {
             size_t      SepPos;
             CString     R;
 
