@@ -3088,6 +3088,7 @@ namespace Delphi {
 
             m_FreePollStack = true;
 
+            m_OnTimer = nullptr;
             m_OnEventHandlerException = nullptr;
 
             CreatePollEventHandlers();
@@ -3268,6 +3269,12 @@ namespace Delphi {
             Handler->Start(etTimer);
 
             Timer->Read(&res, sizeof(res));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::DoTimer(CPollEventHandler *AHandler) {
+            if (m_OnTimer != nullptr)
+                m_OnTimer(AHandler);
         }
         //--------------------------------------------------------------------------------------------------------------
 

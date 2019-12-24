@@ -1828,6 +1828,8 @@ namespace Delphi {
 
             CPollStack *m_PollStack;
 
+            COnPollEventHandlerEvent m_OnTimer;
+
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
             bool m_FreePollStack;
@@ -1856,7 +1858,7 @@ namespace Delphi {
 
             virtual void DoWrite(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoTimer(CPollEventHandler *AHandler) abstract;
+            virtual void DoTimer(CPollEventHandler *AHandler);
 
             void DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException);
 
@@ -1886,6 +1888,8 @@ namespace Delphi {
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
 
+            const COnPollEventHandlerEvent &OnTimer() { return m_OnTimer; }
+            void OnTimer(COnPollEventHandlerEvent && Value) { m_OnTimer = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1904,8 +1908,6 @@ namespace Delphi {
             void DoRead(CPollEventHandler *AHandler) override;
 
             void DoWrite(CPollEventHandler *AHandler) override;
-
-            void DoTimer(CPollEventHandler *AHandler) override {};
 
             bool DoExecute(CTCPConnection *AConnection) override;
 
@@ -1933,8 +1935,6 @@ namespace Delphi {
             void DoRead(CPollEventHandler *AHandler) override;
 
             void DoWrite(CPollEventHandler *AHandler) override;
-
-            void DoTimer(CPollEventHandler *AHandler) override {};
 
             bool DoExecute(CTCPConnection *AConnection) override;
 
