@@ -3249,26 +3249,33 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPoll::Timer(int AMsec, int Flags) {
+        CEPollTimer *CEPoll::CreateTimer(long int Value, long int Interval, int Flags) {
+            uint64_t res;
 
             CPollEventHandler *Handler;
             CEPollTimer *Timer = CEPollTimer::CreateAs(CLOCK_MONOTONIC, Flags);
 
-            struct itimerspec ts = {};
-            uint64_t res;
-
-            ts.it_interval.tv_sec = 0;
-            ts.it_interval.tv_nsec = 0;
-            ts.it_value.tv_sec = AMsec / 1000;
-            ts.it_value.tv_nsec = (AMsec % 1000) * 1000000;
-
-            Timer->SetTime(0, &ts);
+            UpdateTimer(Timer, Value, Interval);
 
             Handler = m_EventHandlers->Add(Timer->Handle());
             Handler->Binding(Timer, true);
             Handler->Start(etTimer);
 
             Timer->Read(&res, sizeof(res));
+
+            return Timer;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::UpdateTimer(CEPollTimer *Timer, long int Value, long int Interval) {
+            struct itimerspec ts = {};
+
+            ts.it_value.tv_sec = Value / 1000;
+            ts.it_value.tv_nsec = (Value % 1000) * 1000000;
+            ts.it_interval.tv_sec = Interval / 1000;
+            ts.it_interval.tv_nsec = (Interval % 1000) * 1000000;
+
+            Timer->SetTime(0, &ts);
         }
         //--------------------------------------------------------------------------------------------------------------
 

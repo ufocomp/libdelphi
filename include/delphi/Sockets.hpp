@@ -1878,7 +1878,8 @@ namespace Delphi {
 
             bool Wait();
 
-            void Timer(int AMsec, int Flags = 0);
+            CEPollTimer *CreateTimer(long int Value, long int Interval = 0, int Flags = 0);
+            static void UpdateTimer(CEPollTimer *Timer, long int Value, long int Interval = 0);
 
             static void CheckHandler(CPollEventHandler *AHandler);
 
