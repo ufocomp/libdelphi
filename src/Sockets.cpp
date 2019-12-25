@@ -3053,7 +3053,7 @@ namespace Delphi {
         void CEPollTimer::Open() {
             CreateHandle(::timerfd_create(m_ClockId, m_Flags));
             if (m_Handle == INVALID_HANDLE_VALUE)
-                throw EOSError(errno, _T("Could not create file timer error: "));
+                throw EOSError(errno, _T("Could not create file timer. Error: "));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3069,9 +3069,20 @@ namespace Delphi {
             if (m_Handle == INVALID_HANDLE_VALUE)
                 Open();
 
-            if (timerfd_settime(m_Handle, AFlags, AIn, AOut) == -1) {
+            if (::timerfd_settime(m_Handle, AFlags, AIn, AOut) == -1) {
                 Close();
-                throw EOSError(errno, _T("Could not set file time error: "));
+                throw EOSError(errno, _T("Could not set file time. Error: "));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPollTimer::GetTime(struct itimerspec *AOut) {
+            if (m_Handle == INVALID_HANDLE_VALUE)
+                Open();
+
+            if (timerfd_gettime(m_Handle, AOut) == -1) {
+                Close();
+                throw EOSError(errno, _T("Could not get file time error: "));
             }
         }
 
@@ -3249,33 +3260,37 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPollTimer *CEPoll::CreateTimer(long int Value, long int Interval, int Flags) {
-            uint64_t res;
+        CEPollTimer *CEPoll::CreateTimer(int ClockId, long int Value, long int Interval, int Flags, int SetFlags) {
 
             CPollEventHandler *Handler;
-            CEPollTimer *Timer = CEPollTimer::CreateAs(CLOCK_MONOTONIC, Flags);
+            CEPollTimer *Timer = CEPollTimer::CreateAs(ClockId, Flags);
 
-            UpdateTimer(Timer, Value, Interval);
+            SetTimer(Timer, Value, Interval, SetFlags);
 
             Handler = m_EventHandlers->Add(Timer->Handle());
             Handler->Binding(Timer, true);
             Handler->Start(etTimer);
 
-            Timer->Read(&res, sizeof(res));
-
             return Timer;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPoll::UpdateTimer(CEPollTimer *Timer, long int Value, long int Interval) {
-            struct itimerspec ts = {};
+        void CEPoll::SetTimer(CEPollTimer *Timer, long int Value, long int Interval, int Flags) {
+            struct itimerspec ts = {0, 0};
+            struct timespec now = {0, 0};
 
-            ts.it_value.tv_sec = Value / 1000;
-            ts.it_value.tv_nsec = (Value % 1000) * 1000000;
+            if (Flags == TFD_TIMER_ABSTIME) {
+                if (::clock_gettime(Timer->ClockId(), &now) == -1)
+                    throw EOSError(errno, _T("Could not get clock time. Error: "));
+            }
+
+            ts.it_value.tv_sec = now.tv_sec + Value / 1000;
+            ts.it_value.tv_nsec = now.tv_nsec;
+
             ts.it_interval.tv_sec = Interval / 1000;
-            ts.it_interval.tv_nsec = (Interval % 1000) * 1000000;
+            ts.it_interval.tv_nsec = 0;
 
-            Timer->SetTime(0, &ts);
+            Timer->SetTime(Flags, &ts);
         }
         //--------------------------------------------------------------------------------------------------------------
 

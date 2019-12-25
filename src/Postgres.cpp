@@ -1108,6 +1108,9 @@ namespace Delphi {
             for (int I = 0; I < m_EventHandlers->Count(); ++I) {
                 LConnection = GetConnection(m_EventHandlers->Handlers(I));
 
+                if (LConnection == nullptr)
+                    continue;
+
                 if (LConnection->Connected()) {
                     if (LConnection->ConnectionStatus() == qsReady) {
                         LResult = LConnection;

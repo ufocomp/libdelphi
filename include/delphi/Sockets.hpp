@@ -1809,11 +1809,13 @@ namespace Delphi {
             };
 
             int Handle() { return m_Handle; };
+            int ClockId() { return m_ClockId; };
 
             void Open();
             void Close();
 
             void SetTime(int AFlags, const struct itimerspec *AIn, struct itimerspec *AOut = nullptr);
+            void GetTime(struct itimerspec *AOut);
 
         }; // CFileStream
 
@@ -1878,8 +1880,8 @@ namespace Delphi {
 
             bool Wait();
 
-            CEPollTimer *CreateTimer(long int Value, long int Interval = 0, int Flags = 0);
-            static void UpdateTimer(CEPollTimer *Timer, long int Value, long int Interval = 0);
+            CEPollTimer *CreateTimer(int ClockId, long int Value, long int Interval = 0, int Flags = 0, int SetFlags = 0);
+            static void SetTimer(CEPollTimer *Timer, long int Value, long int Interval = 0, int Flags = 0);
 
             static void CheckHandler(CPollEventHandler *AHandler);
 
