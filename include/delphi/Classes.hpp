@@ -1356,6 +1356,7 @@ namespace Delphi {
             virtual CString &operator[] (int Index) { return Strings(Index); }
             virtual const CString &operator[] (int Index) const { return Strings(Index); }
 
+            virtual CString operator[] (const CString &Name) const { return Values(Name); }
             virtual CString operator[] (reference Name) const { return Values(Name); }
         };
 
