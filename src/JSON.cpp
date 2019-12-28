@@ -1786,7 +1786,7 @@ namespace Delphi {
                         return -1;
                     } else if (AInput == _value_null[m_CharIndex]) {
                         m_CharIndex++;
-                        if (m_CharIndex == 3) {
+                        if (m_CharIndex == 4) {
                             m_CharIndex = 0;
                         }
                         CurrentValue().Data().Append(AInput);
