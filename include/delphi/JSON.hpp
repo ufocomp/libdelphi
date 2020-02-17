@@ -177,11 +177,6 @@ namespace Delphi {
                 return *this;
             };
 
-            CJSON &operator=(const CJSONValue &Value) {
-                Assign(Value);
-                return *this;
-            };
-
             CJSON &operator<<(const CJSON &Json) {
                 if (this != &Json)
                     Concat(Json);
