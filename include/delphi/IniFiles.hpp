@@ -92,7 +92,7 @@ namespace Delphi {
             virtual BOOL WriteString(const CString &SectionName, const CString &KeyName, const CString &String) abstract;
 
             virtual INT ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default);
-            virtual BOOL WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, UINT Value);
+            virtual BOOL WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Value);
 
             virtual bool ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default);
             virtual BOOL WriteBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Value);

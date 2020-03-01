@@ -379,7 +379,7 @@ namespace Delphi {
                 ::SecureZeroMemory(MaskingKey, sizeof(MaskingKey));
             }
 
-            void SetMaskingKey(u_int32_t Key) {
+            void SetMaskingKey(uint32_t Key) {
                 Mask = WS_MASK;
                 ::CopyMemory(MaskingKey, &Key, sizeof(Key));
             }

@@ -127,7 +127,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        BOOL CCustomIniFile::WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, UINT Value) {
+        BOOL CCustomIniFile::WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Value) {
             TCHAR szString[_INT_T_LEN + 1] = {0};
             return WriteString(lpszSectionName, lpszKeyName, IntToStr(Value, szString, _INT_T_LEN));
         }

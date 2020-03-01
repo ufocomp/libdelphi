@@ -115,13 +115,13 @@ namespace Delphi {
                 Pointer VPointer;
                 char *VPChar;
                 CObject *VObject;
-                unsigned VUnsigned;
+                uint32_t VUnsigned;
                 wchar_t VWideChar;
                 wchar_t *VPWideChar;
                 const char *VAnsiString;
                 float VFloat;
                 VarData *VVariant;
-                u_int64_t VUInt64;
+                uint64_t VUInt64;
                 const wchar_t *VWideString;
                 int64_t VInt64;
                 CString *VUnicodeString;
@@ -202,7 +202,7 @@ namespace Delphi {
                 varObject = Value;
             }
 
-            explicit VarData(unsigned Value): VarData() {
+            explicit VarData(uint32_t Value): VarData() {
                 VType = vtUnsigned;
                 varUnsigned = Value;
             }
@@ -232,7 +232,7 @@ namespace Delphi {
                 varVariant = Value;
             }
 
-            explicit VarData(u_int64_t Value): VarData() {
+            explicit VarData(uint64_t Value): VarData() {
                 VType = vtUInt64;
                 varUInt64 = Value;
             }
@@ -305,7 +305,7 @@ namespace Delphi {
                 return *this;
             }
 
-            VarData& operator= (unsigned Value) {
+            VarData& operator= (uint32_t Value) {
                 VType = vtUnsigned;
                 varUnsigned = Value;
                 return *this;
@@ -341,7 +341,7 @@ namespace Delphi {
                 return *this;
             }
 
-            VarData& operator= (u_int64_t Value) {
+            VarData& operator= (uint64_t Value) {
                 VType = vtUInt64;
                 varUInt64 = Value;
                 return *this;

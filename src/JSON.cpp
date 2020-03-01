@@ -1436,7 +1436,7 @@ namespace Delphi {
         }
 
         void CJSONObject::Clear() {
-
+            m_pList.Clear();
         }
 
         void CJSONObject::Update(int Index) {
@@ -1444,7 +1444,7 @@ namespace Delphi {
         }
 
         void CJSONObject::Delete(int Index) {
-
+            m_pList.Delete(Index);
         }
 
         //--------------------------------------------------------------------------------------------------------------

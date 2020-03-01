@@ -184,6 +184,7 @@ namespace Delphi {
             };
 
             virtual CJSON &operator=(const CString &String) {
+                Clear();
                 StringToJson(String);
                 return *this;
             };
