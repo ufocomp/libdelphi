@@ -1166,17 +1166,31 @@ namespace Delphi {
                     return 0;
 
                 const CString CRLF(MiscStrings::crlf);
-                const CString boundary(CRLF + "--" + contentType.Options["boundary"]);
+                const auto& boundary = contentType.Options["boundary"];
+
+                CString Boundary(CRLF);
+
+                if (boundary.IsEmpty()) {
+                    int i = 0;
+                    char ch = Content.at(i++);
+                    while (ch != 0 && ch != '\r') {
+                        Boundary.Append(ch);
+                        ch = Content.at(i++);
+                    }
+                } else {
+                    Boundary << "--";
+                    Boundary << boundary;
+                }
 
                 CStringList Data;
 
-                size_t DataBegin = boundary.Size();
-                size_t DataEnd = Content.Find(boundary, DataBegin);
+                size_t DataBegin = Boundary.Size();
+                size_t DataEnd = Content.Find(Boundary, DataBegin);
 
                 while (DataEnd != CString::npos) {
                     Data.Add(Content.SubString(DataBegin, DataEnd - DataBegin));
-                    DataBegin = DataEnd + boundary.Size() + CRLF.Size();
-                    DataEnd = Content.Find(boundary, DataBegin);
+                    DataBegin = DataEnd + Boundary.Size() + CRLF.Size();
+                    DataEnd = Content.Find(Boundary, DataBegin);
                 }
 
                 CStringList& formData = ARequest->FormData;
