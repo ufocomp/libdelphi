@@ -535,6 +535,7 @@ namespace Delphi {
             }
 
             ARequest->AddHeader(_T("User-Agent"), ARequest->UserAgent);
+            ARequest->AddHeader(_T("Accept"), _T("*/*"));
 
             if (!ARequest->Content.IsEmpty()) {
                 ARequest->AddHeader(_T("Accept-Ranges"), _T("bytes"));
@@ -2702,6 +2703,7 @@ namespace Delphi {
                     LConnection->OnDisconnected(std::bind(&CHTTPClient::DoDisconnected, this, _1));
                     AHandler->Start(etIO);
                     DoConnected(LConnection);
+                    DoRequest(LConnection);
                 }
             } catch (Exception::Exception &E) {
                 DoException(LConnection, &E);
@@ -2755,11 +2757,49 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        bool CHTTPClient::DoCommand(CTCPConnection *AConnection) {
+            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AConnection);
+            auto LRequest = LConnection->Request();
+
+            bool Result = CommandHandlers()->Count() > 0;
+
+            if (Result) {
+                DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
+                try {
+                    int i;
+                    for (i = 0; i < CommandHandlers()->Count(); ++i) {
+                        if (CommandHandlers()->Commands(i)->Enabled()) {
+                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(),
+                                                                      LRequest->Method.Size(), AConnection))
+                                break;
+                        }
+                    }
+
+                    if (i == CommandHandlers()->Count())
+                        DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(AConnection, &E);
+                }
+                DoAfterCommandHandler(AConnection);
+            }
+
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         bool CHTTPClient::DoExecute(CTCPConnection *AConnection) {
             if (m_OnExecute != nullptr) {
                 return m_OnExecute(AConnection);
             }
             return DoCommand(AConnection);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPClient::DoRequest(CHTTPClientConnection *AConnection) {
+            if (m_OnRequest != nullptr) {
+                m_OnRequest(AConnection->Request());
+                AConnection->SendRequest(true);
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------

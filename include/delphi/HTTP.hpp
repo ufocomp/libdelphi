@@ -959,7 +959,14 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef std::function<void (CRequest *ARequest)> COnHTTPClientRequestEvent;
+        //--------------------------------------------------------------------------------------------------------------
+
         class CHTTPClient: public CAsyncClient {
+        private:
+
+            COnHTTPClientRequestEvent m_OnRequest;
+
         protected:
 
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
@@ -970,7 +977,11 @@ namespace Delphi {
 
             void DoWrite(CPollEventHandler *AHandler) override;
 
+            bool DoCommand(CTCPConnection *AConnection) override;
+
             bool DoExecute(CTCPConnection *AConnection) override;
+
+            virtual void DoRequest(CHTTPClientConnection *AConnection);
 
         public:
 
@@ -979,6 +990,9 @@ namespace Delphi {
             explicit CHTTPClient(LPCTSTR AHost, unsigned short APort);
 
             ~CHTTPClient() override = default;
+
+            const COnHTTPClientRequestEvent &OnRequest() { return m_OnRequest; }
+            void OnRequest(COnHTTPClientRequestEvent && Value) { m_OnRequest = Value; }
 
         };
 
@@ -1005,7 +1019,7 @@ namespace Delphi {
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
 
-            void DoRequest(CHTTPClientConnection *AConnection);
+            void DoRequest(CHTTPClientConnection *AConnection) override;
 
         public:
 

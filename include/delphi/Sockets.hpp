@@ -1434,6 +1434,7 @@ namespace Delphi {
 
             bool m_EnabledDefault;
             bool m_ParseParamsDefault;
+            bool m_DisconnectDefault;
 
         protected:
 
@@ -1457,6 +1458,9 @@ namespace Delphi {
 
             bool ParseParamsDefault() { return m_ParseParamsDefault; }
             void ParseParamsDefault(bool Value) { m_ParseParamsDefault = Value; }
+
+            bool DisconnectDefault() { return m_DisconnectDefault; }
+            void DisconnectDefault(bool Value) { m_DisconnectDefault = Value; }
 
             CCommandHandler *Commands(int Index) { return GetItem(Index); }
             void Commands(int Index, CCommandHandler *Value) { SetItem(Index, Value); }

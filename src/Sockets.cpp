@@ -2459,6 +2459,7 @@ namespace Delphi {
 
             Result->Enabled(m_EnabledDefault);
             Result->ParseParams(m_ParseParamsDefault);
+            Result->Disconnect(m_DisconnectDefault);
 
             inherited::Added((CCollectionItem *) Result);
             return Result;
