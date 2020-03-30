@@ -107,6 +107,7 @@ namespace Delphi {
         //LIB_DELPHI CDateTime SystemTimeToDateTime(const struct tm *tm, struct timespec *ts);
         LIB_DELPHI CDateTime SystemTimeToDateTime(const struct tm *tm, int msec);
         LIB_DELPHI CDateTime Now();
+        LIB_DELPHI CDateTime UTC();
         LIB_DELPHI unsigned long MsEpoch();
         //--------------------------------------------------------------------------------------------------------------
 

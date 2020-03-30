@@ -434,6 +434,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI CDateTime UTC() {
+
+            struct timeval TV = {};
+            struct tm UT = {};
+
+            gettimeofday(&TV, nullptr);
+
+            gmtime_r(&TV.tv_sec, &UT);
+
+            return SystemTimeToDateTime(&UT, (int) (TV.tv_usec / 1000));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         LIB_DELPHI unsigned long MsEpoch() {
             struct timeval tv = {};
             gettimeofday(&tv, nullptr);
