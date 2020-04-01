@@ -404,6 +404,9 @@ namespace Delphi {
             else
                 Result = Result - EncodeTime(tm->tm_hour, tm->tm_min, tm->tm_sec, (int) (ts->tv_nsec / 1000000));
 
+            if (tm->tm_gmtoff != 0)
+                Result -= (CDateTime) tm->tm_gmtoff * MSecsPerSec / MSecsPerDay;
+
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -966,11 +969,13 @@ namespace Delphi {
         LIB_DELPHI CDateTime StrToDateTimeA(LPCSTR S, LPCSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
-            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec) == EOF)
+            int tz = 0;
+            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
                 throw ExceptionFrm(SInvalidDateTime, S, Format);
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
+            TM.tm_gmtoff = tz * 60 * 60;
             return SystemTimeToDateTime(&TM, &TS);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -978,12 +983,13 @@ namespace Delphi {
         LIB_DELPHI CDateTime StrToDateTimeW(LPCWSTR S, LPCWSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
-            TM.tm_isdst = -1;
-            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec) == EOF)
+            int tz = 0;
+            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
                 throw ExceptionFrm(SInvalidDateTime, S, Format);
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
+            TM.tm_gmtoff = tz * 60 * 60;
             return SystemTimeToDateTime(&TM, &TS);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -991,12 +997,13 @@ namespace Delphi {
         CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default, LPCSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
-            TM.tm_isdst = -1;
-            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec) == EOF)
+            int tz = 0;
+            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
                 return Default;
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
+            TM.tm_gmtoff = tz * 60 * 60;
             return SystemTimeToDateTime(&TM, &TS);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1004,12 +1011,13 @@ namespace Delphi {
         CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
-            TM.tm_isdst = -1;
-            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec) == EOF)
+            int tz = 0;
+            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
                 return Default;
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
+            TM.tm_gmtoff = tz * 60 * 60;
             return SystemTimeToDateTime(&TM, &TS);
         }
     }
