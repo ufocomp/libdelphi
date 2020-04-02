@@ -256,10 +256,10 @@ namespace Delphi {
         CTimeStamp DateTimeToTimeStamp(CDateTime DateTime) {
             CTimeStamp Result;
             long int LTemp, LTemp2;
-            LTemp = DateTime * MSecsPerDay;
-            LTemp2 = round(LTemp / MSecsPerDay);
-            Result.Date = (int) (DateDelta + LTemp2);
-            Result.Time = (int) (labs(LTemp) % MSecsPerDay);
+            LTemp = (long int) round(DateTime * MSecsPerDay);
+            LTemp2 = LTemp / MSecsPerDay;
+            Result.Date = DateDelta + LTemp2;
+            Result.Time = labs(LTemp) % MSecsPerDay;
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -279,12 +279,9 @@ namespace Delphi {
 
             bool Result = false;
 
-            long int T;
-            int Y, M, D, I;
+            int T, Y, M, D, I;
 
-//            PDayTable DayTable;
-
-            T = DateTimeToTimeStamp(DateTime).Date;
+            T = (int) DateTimeToTimeStamp(DateTime).Date;
             if (T <= 0) {
                 Year = 0;
                 Month = 0;
@@ -313,7 +310,6 @@ namespace Delphi {
                 }
                 Y += I;
                 Result = IsLeapYear(Y);
-//                DayTable = &MonthDays[(int) Result];
                 M = 1;
                 while (true) {
                     I = MonthDays[Result][M-1];
@@ -338,7 +334,7 @@ namespace Delphi {
 
         LIB_DELPHI void DecodeTime(CDateTime DateTime, int &Hour, int &Min, int &Sec, int &MSec) {
             int MinCount, MSecCount;
-            DivMod(DateTimeToTimeStamp(DateTime).Time, SecsPerMin * MSecsPerSec, MinCount, MSecCount);
+            DivMod((int) DateTimeToTimeStamp(DateTime).Time, SecsPerMin * MSecsPerSec, MinCount, MSecCount);
             DivMod(MinCount, MinsPerHour, Hour, Min);
             DivMod(MSecCount, MSecsPerSec, Sec, MSec);
         }
