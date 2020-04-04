@@ -30,6 +30,67 @@ namespace Delphi {
 
     namespace Json {
 
+        CString EncodeJsonString(const CString &String) {
+            CString Result;
+            TCHAR ch;
+            for (size_t Index = 0; Index < String.Size(); Index++) {
+                ch = String.at(Index);
+                switch (ch) {
+                    case '\r':
+                        Result.Append("\\r");
+                        break;
+                    case '\n':
+                        Result.Append("\\n");
+                        break;
+                    case '\t':
+                        Result.Append("\\t");
+                        break;
+                    case '"':
+                    case '\\':
+                        Result.Append("\\");
+                        Result.Append(ch);
+                        break;
+                    default:
+                        Result.Append(ch);
+                        break;
+                }
+            }
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString DecodeJsonString(const CString &String) {
+            CString Result;
+            size_t Index = 0;
+
+            TCHAR ch = String.at(Index);
+            while (ch != 0) {
+                if (ch == '\\') {
+                    ch = String.at(++Index);
+                    switch (ch) {
+                        case 'r':
+                            Result.Append('\r');
+                            break;
+                        case 'n':
+                            Result.Append('\n');
+                            break;
+                        case 't':
+                            Result.Append('\t');
+                            break;
+                        default:
+                            Result.Append(ch);
+                            break;
+                    }
+                } else {
+                    Result.Append(ch);
+                }
+
+                ch = String.at(++Index);
+            }
+
+            return Result;
+        }
+
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CJSON -----------------------------------------------------------------------------------------------------
@@ -996,6 +1057,28 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSONValue::Data(const CString &Value) {
+            m_Data = EncodeJsonString(Value);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CJSONValue::AsString() const {
+            return DecodeJsonString(m_Data);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CJSONValue::AsBoolean() const {
+            LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
+
+            for (size_t i = 0; i < chARRAY(LBoolStr); ++i) {
+                if (SameText(LBoolStr[i], m_Data.c_str()))
+                    return Odd(i);
+            }
+
+            throw EConvertError(_T("Invalid conversion string \"%s\" to boolean value."), m_Data.c_str());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONValue::Compare(const CJSONValue &Value) const {
 
             if (IsEmpty())
@@ -1016,7 +1099,7 @@ namespace Delphi {
                         return -1;
 
                     case jvtString:
-                        return AsSiring().Compare(Value.AsSiring());
+                        return AsString().Compare(Value.AsString());
 
                     case jvtNumber:
                         if (AsDouble() == Value.AsDouble())
@@ -1078,6 +1161,7 @@ namespace Delphi {
 
             return S;
         }
+
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CJSONArray ------------------------------------------------------------------------------------------------

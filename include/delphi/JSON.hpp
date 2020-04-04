@@ -45,10 +45,14 @@ namespace Delphi {
         class CJSONParser;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct json_parser_result_s {
+        typedef struct CJSONParserResult {
             int result;
             size_t pos;
         } CJSONParserResult;
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString EncodeJsonString(const CString &String);
+        CString DecodeJsonString(const CString &String);
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -123,9 +127,9 @@ namespace Delphi {
 
             bool IsBoolean() const { return m_ValueType == jvtBoolean; };
 
-            virtual CJSONArray *CreateArray();
+            CJSONArray *CreateArray();
 
-            virtual CJSONObject *CreateObject();
+            CJSONObject *CreateObject();
 
             virtual void Assign(const CJSON &Source);
             virtual void Assign(const CJSONValue &Value);
@@ -795,13 +799,12 @@ namespace Delphi {
 
             bool IsEmpty() const { return m_Data.IsEmpty(); };
 
-            CString &Data() { return m_Data; }
+            void Data(const CString &Value);
 
+            CString &Data() { return m_Data; }
             const CString &Data() const { return m_Data; }
 
-            CString &AsSiring() { return m_Data; }
-
-            const CString &AsSiring() const { return m_Data; }
+            CString AsString() const;
 
             int AsInteger() const { return StrToInt(m_Data.c_str()); };
 
@@ -813,25 +816,14 @@ namespace Delphi {
 
             long double AsDecimal() const { return StrToDecimal(m_Data.c_str()); };
 
-            bool AsBoolean() const {
-                LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
-
-                for (size_t i = 0; i < chARRAY(LBoolStr); ++i) {
-                    if (SameText(LBoolStr[i], m_Data.c_str()))
-                        return Odd(i);
-                }
-
-                throw EConvertError(_T("Invalid conversion string \"%s\" to boolean value."), m_Data.c_str());
-            };
+            bool AsBoolean() const;
 
             int Compare(const CJSONValue& Value) const;
 
             CJSONArray &AsArray() { return *(CJSONArray *) m_Value; }
-
             const CJSONArray &AsArray() const { return *(CJSONArray *) m_Value; }
 
             CJSONObject &AsObject() { return *(CJSONObject *) m_Value; }
-
             const CJSONObject &AsObject() const { return *(CJSONObject *) m_Value; }
 
             virtual bool operator!=(const CJSONValue &AValue) const {
@@ -930,49 +922,49 @@ namespace Delphi {
             explicit CJSONMember(const CString &AString, const CString &AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, const CString &AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(const CString &AString, LPCTSTR AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, LPCTSTR AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, bool AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtBoolean);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, int AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, float AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, double AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data() = AValue;
+                m_Value.Data(AValue);
             }
 
             CString &String() { return m_String; };
@@ -1039,7 +1031,7 @@ namespace Delphi {
                 CString S;
                 while (In.get(C) && C != '\n')
                     S.Append(C);
-                RE.Value().Data() = S;
+                RE.Value().Data(S);
                 return In;
             };
         };
