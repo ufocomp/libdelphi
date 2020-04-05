@@ -1057,7 +1057,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CJSONValue::Data(const CString &Value) {
+        void CJSONValue::StringData(const CString &Value) {
+            m_Data = EncodeJsonString(Value);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSONValue::StringData(CJSONValue::reference AValue) {
+            CString Value(AValue);
             m_Data = EncodeJsonString(Value);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1138,7 +1144,7 @@ namespace Delphi {
 
                 case jvtString:
                     S = "\"";
-                    S += Data();
+                    S += EncodeJsonString(Data());
                     S += "\"";
                     break;
 

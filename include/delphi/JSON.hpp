@@ -310,7 +310,7 @@ namespace Delphi {
 
             virtual int Add(const CString &Value);
 
-            virtual int Add(const reference Value);
+            virtual int Add(reference Value);
 
             virtual void AddElements(const CJSONElements &Source);
 
@@ -799,7 +799,8 @@ namespace Delphi {
 
             bool IsEmpty() const { return m_Data.IsEmpty(); };
 
-            void Data(const CString &Value);
+            void StringData(const CString &Value);
+            void StringData(reference AValue);
 
             CString &Data() { return m_Data; }
             const CString &Data() const { return m_Data; }
@@ -922,49 +923,49 @@ namespace Delphi {
             explicit CJSONMember(const CString &AString, const CString &AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data(AValue);
+                m_Value.StringData(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, const CString &AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data(AValue);
+                m_Value.StringData(AValue);
             }
 
-            explicit CJSONMember(const CString &AString, LPCTSTR AValue) : CPersistent(this) {
+            explicit CJSONMember(const CString &AString, reference AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data(AValue);
+                m_Value.StringData(AValue);
             }
 
-            explicit CJSONMember(LPCTSTR AString, LPCTSTR AValue) : CPersistent(this) {
+            explicit CJSONMember(LPCTSTR AString, reference AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtString);
-                m_Value.Data(AValue);
+                m_Value.StringData(AValue);
             }
 
             explicit CJSONMember(LPCTSTR AString, bool AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtBoolean);
-                m_Value.Data(AValue);
+                m_Value.Data() = AValue;
             }
 
             explicit CJSONMember(LPCTSTR AString, int AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data(AValue);
+                m_Value.Data() = AValue;
             }
 
             explicit CJSONMember(LPCTSTR AString, float AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data(AValue);
+                m_Value.Data() = AValue;
             }
 
             explicit CJSONMember(LPCTSTR AString, double AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value.ValueType(jvtNumber);
-                m_Value.Data(AValue);
+                m_Value.Data() = AValue;
             }
 
             CString &String() { return m_String; };
