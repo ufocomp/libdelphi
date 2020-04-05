@@ -1118,7 +1118,7 @@ namespace Delphi {
             }
 
             friend tostream& operator<< (tostream& Out, const CString& S) {
-                return Out << S.c_str();
+                return Out << (S.IsEmpty() ? "" : S.c_str());
             }
 
             friend tistream& operator>> (tistream& In, CString& S) {

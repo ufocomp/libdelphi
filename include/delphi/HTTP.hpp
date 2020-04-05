@@ -51,6 +51,13 @@ Author:
 #endif
 //----------------------------------------------------------------------------------------------------------------------
 
+#define HTTP_PREFIX "http"
+#define HTTP_PREFIX_SIZE 4
+
+#define HTTPS_PREFIX "https"
+#define HTTPS_PREFIX_SIZE 5
+//----------------------------------------------------------------------------------------------------------------------
+
 extern "C++" {
 
 namespace Delphi {
@@ -61,6 +68,153 @@ namespace Delphi {
             LPCTSTR ExtToType(LPCTSTR Ext);
             bool IsText(LPCTSTR MimeType);
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        typedef struct uri_parser {
+
+            enum {
+                fl_hostname = 0,
+                fl_port,
+                fl_pathname,
+                fl_search,
+                fl_hash
+            } flag;
+
+            CString protocol;
+            CString hostname;
+            CString port;
+            CString pathname;
+            CString search;
+            CString hash;
+
+            uri_parser(): flag(fl_hostname) {
+
+            }
+
+            uri_parser(const uri_parser& uri): uri_parser() {
+                assign(uri);
+            }
+
+            void assign(const uri_parser& uri) {
+                protocol = uri.protocol;
+                hostname = uri.hostname;
+                port = uri.port;
+                pathname = uri.pathname;
+                search = uri.search;
+                hash = uri.hash;
+            };
+
+            void clear() {
+                flag = fl_hostname;
+                protocol.Clear();
+                hostname.Clear();
+                port.Clear();
+                pathname.Clear();
+                search.Clear();
+                hash.Clear();
+            };
+
+            void parse(const CString &uri) {
+                clear();
+
+                size_t pos = 0;
+                size_t end = uri.Find("://", pos);
+
+                if (end != CString::npos) {
+                    protocol = uri.SubString(pos, end);
+                    pos = end + 3;
+                }
+
+                TCHAR ch = uri.at(pos++);
+                while (!IsCtl(ch)) {
+                    if (ch == ':')
+                        flag = fl_port;
+                    if (ch == '/')
+                        flag = fl_pathname;
+                    if (ch == '?')
+                        flag = fl_search;
+                    if (ch == '#')
+                        flag = fl_hash;
+
+                    switch (flag) {
+                        case fl_hostname:
+                            hostname.Append(ch);
+                            break;
+                        case fl_port:
+                            if (ch != ':')
+                                port.Append(ch);
+                            break;
+                        case fl_pathname:
+                            pathname.Append(ch);
+                            break;
+                        case fl_search:
+                            search.Append(ch);
+                            break;
+                        case fl_hash:
+                            hash.Append(ch);
+                            break;
+                    }
+
+                    ch = uri.at(pos++);
+                }
+            };
+
+            CString host() const {
+                CString Result;
+
+                Result = hostname;
+
+                if (!port.IsEmpty()) {
+                    Result << ":";
+                    Result << port;
+                }
+
+                return Result;
+            };
+
+            CString origin() const {
+                CString Result;
+
+                Result = protocol;
+                Result << "://";
+                Result << host();
+
+                return Result;
+            };
+
+            CString toString() const {
+                CString Result;
+
+                Result = origin();
+                Result << pathname;
+                Result << search;
+                Result << hash;
+
+                return Result;
+            };
+
+            CString href() const {
+                return toString();
+            };
+
+            uri_parser& operator= (const uri_parser &uri) {
+                if (this != &uri) {
+                    assign(uri);
+                }
+                return *this;
+            };
+
+            uri_parser& operator= (const CString &uri) {
+                parse(uri);
+                return *this;
+            };
+
+            uri_parser& operator<< (const CString &url) {
+                parse(href() + url);
+                return *this;
+            }
+
+        } CLocation, *PLocation;
         //--------------------------------------------------------------------------------------------------------------
 
         typedef struct http_header {
