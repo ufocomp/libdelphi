@@ -95,6 +95,10 @@ namespace Delphi {
                 assign(uri);
             }
 
+            explicit uri_parser(const CString& uri): uri_parser() {
+                parse(uri);
+            }
+
             void assign(const uri_parser& uri) {
                 protocol = uri.protocol;
                 hostname = uri.hostname;
