@@ -1032,7 +1032,7 @@ namespace Delphi {
                 CString S;
                 while (In.get(C) && C != '\n')
                     S.Append(C);
-                RE.Value().Data(S);
+                RE.Value().Data() = S;
                 return In;
             };
         };
