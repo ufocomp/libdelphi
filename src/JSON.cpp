@@ -1144,7 +1144,7 @@ namespace Delphi {
 
                 case jvtString:
                     S = "\"";
-                    S += EncodeJsonString(Data());
+                    S += Data();
                     S += "\"";
                     break;
 
