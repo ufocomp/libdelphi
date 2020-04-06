@@ -71,6 +71,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef struct uri_parser {
+        private:
 
             enum {
                 fl_hostname = 0,
@@ -80,14 +81,18 @@ namespace Delphi {
                 fl_hash
             } flag;
 
+            CString portStr;
+
+        public:
+
             CString protocol;
             CString hostname;
-            CString port;
+            int port;
             CString pathname;
             CString search;
             CString hash;
 
-            uri_parser(): flag(fl_hostname) {
+            uri_parser(): flag(fl_hostname), port(0) {
 
             }
 
@@ -102,6 +107,7 @@ namespace Delphi {
             void assign(const uri_parser& uri) {
                 protocol = uri.protocol;
                 hostname = uri.hostname;
+                portStr = uri.portStr;
                 port = uri.port;
                 pathname = uri.pathname;
                 search = uri.search;
@@ -112,10 +118,11 @@ namespace Delphi {
                 flag = fl_hostname;
                 protocol.Clear();
                 hostname.Clear();
-                port.Clear();
+                portStr.Clear();
                 pathname.Clear();
                 search.Clear();
                 hash.Clear();
+                port = 0;
             };
 
             void parse(const CString &uri) {
@@ -127,6 +134,12 @@ namespace Delphi {
                 if (end != CString::npos) {
                     protocol = uri.SubString(pos, end);
                     pos = end + 3;
+
+                    if (protocol == HTTP_PREFIX) {
+                        port = 80;
+                    } else if (protocol == HTTPS_PREFIX) {
+                        port = 443;
+                    }
                 }
 
                 TCHAR ch = uri.at(pos++);
@@ -146,7 +159,7 @@ namespace Delphi {
                             break;
                         case fl_port:
                             if (ch != ':')
-                                port.Append(ch);
+                                portStr.Append(ch);
                             break;
                         case fl_pathname:
                             pathname.Append(ch);
@@ -161,6 +174,9 @@ namespace Delphi {
 
                     ch = uri.at(pos++);
                 }
+
+                if (!portStr.IsEmpty())
+                    port = StrToIntDef(portStr.c_str(), 0);
             };
 
             CString host() const {
@@ -168,9 +184,9 @@ namespace Delphi {
 
                 Result = hostname;
 
-                if (!port.IsEmpty()) {
+                if (!portStr.IsEmpty()) {
                     Result << ":";
-                    Result << port;
+                    Result << portStr;
                 }
 
                 return Result;
