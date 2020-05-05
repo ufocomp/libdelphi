@@ -92,6 +92,11 @@ namespace Delphi {
             delete[] LParam;
             delete[] LData;
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI void SplitColumns(const CString &Data, CStringList &Strings, char Delimiter) {
+            SplitColumns(Data.c_str(), Data.Size(), &Strings, Delimiter);
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 

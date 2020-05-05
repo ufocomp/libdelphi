@@ -48,6 +48,28 @@ namespace Delphi {
 
     namespace Postgres {
 
+        CString PQQuoteLiteral(const CString &String) {
+
+            if (String.IsEmpty())
+                return "null";
+
+            CString Result;
+            TCHAR ch;
+
+            Result = "E'";
+
+            for (size_t Index = 0; Index < String.Size(); Index++) {
+                ch = String.at(Index);
+                if ((ch == '\'') || (ch == '\\'))
+                    Result.Append('\\');
+                Result.Append(ch);
+            }
+
+            Result << "'";
+
+            return Result;
+        }
+
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CPQConnInfo -----------------------------------------------------------------------------------------------
@@ -680,7 +702,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPQQuery::~CPQQuery() {
-            Clear();
+            CPQQuery::Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 

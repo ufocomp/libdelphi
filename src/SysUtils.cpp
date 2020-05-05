@@ -80,13 +80,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
 #endif
-        LIB_DELPHI size_t MemoryPos(char *ASubStr, char *ABuffer, size_t ASize) {
+        LIB_DELPHI size_t MemoryPos(LPSTR ASubStr, LPSTR ABuffer, size_t ASize) {
 
             size_t LResult = 0;
             size_t LSize, LSearchLength, LS1;
 
             char LChar;
-            char *LPS, *LPM;
+            LPSTR LPS, LPM;
 
             chVERIFY(SUCCEEDED(StringCchLengthA(ASubStr, MAX_BUFFER_SIZE, &LSize)));
 
@@ -206,7 +206,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI void UpperCase(char *Dest, size_t Len, LPCSTR Source) {
+        LIB_DELPHI void UpperCase(LPSTR Dest, size_t Len, LPCSTR Source) {
             char Ch;
             size_t L = Len;
 
@@ -222,7 +222,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI void LowerCase(char *Dest, size_t Len, LPCSTR Source) {
+        LIB_DELPHI void LowerCase(LPSTR Dest, size_t Len, LPCSTR Source) {
             char Ch;
             size_t L = Len;
 
@@ -496,8 +496,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
 
-        LIB_DELPHI char *ExtractFileDir(char *Dest, LPCSTR Src) {
-            char *str = strcpy(Dest, Src);
+        LIB_DELPHI LPSTR ExtractFileDir(LPSTR Dest, LPCSTR Src) {
+            LPSTR str = strcpy(Dest, Src);
             size_t Pos = 0;
             while (*str)
                 if (*(++str) == '/')
@@ -507,8 +507,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI char *ExtractFilePath(char *Dest, LPCSTR Src) {
-            char *str = strcpy(Dest, Src);
+        LIB_DELPHI LPSTR ExtractFilePath(LPSTR Dest, LPCSTR Src) {
+            LPSTR str = strcpy(Dest, Src);
             size_t Pos = 0;
             while (*str)
                 if (*(++str) == '/')
@@ -518,8 +518,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI char *ExtractFileName(char *Dest, LPCSTR Src) {
-            char *str = strcpy(Dest, Src);
+        LIB_DELPHI LPSTR ExtractFileName(LPSTR Dest, LPCSTR Src) {
+            LPSTR str = strcpy(Dest, Src);
             while (*str)
                 if (*str++ == '/')
                     Dest = str;
@@ -527,8 +527,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI char *ExtractFileExt(char *Dest, LPCSTR Src) {
-            char *str = strcpy(Dest, Src);
+        LIB_DELPHI LPSTR ExtractFileExt(LPSTR Dest, LPCSTR Src) {
+            LPSTR str = strcpy(Dest, Src);
             while (*str)
                 if (*(++str) == '.')
                     Dest = str;
@@ -536,8 +536,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI char *ChangeFileExt(char *Dest, LPCSTR Src, LPCSTR Ext) {
-            char *str = strcpy(Dest, Src);
+        LIB_DELPHI LPSTR ChangeFileExt(LPSTR Dest, LPCSTR Src, LPCSTR Ext) {
+            LPSTR str = strcpy(Dest, Src);
             size_t Pos = 0;
             while (*str)
                 if (*(++str) == '.')
@@ -664,7 +664,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool ValA(LPCSTR S, long int *val) {
-            char *temp;
+            LPSTR temp;
             bool Result = true;
             errno = 0;
             *val = strtol(S, &temp, 0);
@@ -688,7 +688,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool ValA(LPCSTR S, float *val) {
-            char *temp;
+            LPSTR temp;
             bool Result = true;
             errno = 0;
             *val = strtof(S, &temp);
@@ -712,7 +712,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool ValA(LPCSTR S, double *val) {
-            char *temp;
+            LPSTR temp;
             bool Result = true;
             errno = 0;
             *val = strtod(S, &temp);
@@ -736,7 +736,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool ValA(LPCSTR S, long double *val) {
-            char *temp;
+            LPSTR temp;
             bool Result = true;
             errno = 0;
             *val = strtold(S, &temp);

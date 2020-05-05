@@ -120,6 +120,7 @@ namespace Delphi {
         LIB_DELPHI bool IsCurrentThread(CThread *AThread);
 
         LIB_DELPHI void SplitColumns(LPCTSTR AData, size_t ASize, CStringList *AStrings, char ADelim);
+        LIB_DELPHI void SplitColumns(const CString &Data, CStringList &Strings, char Delimiter = ';');
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -312,7 +313,7 @@ namespace Delphi {
 
             size_t Seek(size_t Offset, unsigned short Origin);
 
-            size_t PackReadedSize() { return m_PackReadedSize; }
+            size_t PackReadedSize() const { return m_PackReadedSize; }
 
             void PackReadedSize(size_t Value) { SetPackReadedSize(Value); }
 

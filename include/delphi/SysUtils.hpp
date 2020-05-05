@@ -70,7 +70,7 @@ namespace Delphi {
         LIB_DELPHI void DebugMessage(LPCTSTR lpValue, ...);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI size_t MemoryPos(char *ASubStr, char *ABuffer, size_t ASize);
+        LIB_DELPHI size_t MemoryPos(LPSTR ASubStr, LPSTR ABuffer, size_t ASize);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI BOOL OSCheck(BOOL RetVal);
@@ -93,8 +93,8 @@ namespace Delphi {
         LIB_DELPHI bool IsChar(int ch);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI void UpperCase(char *Dest, size_t Len, LPCSTR Source);
-        LIB_DELPHI void LowerCase(char *Dest, size_t Len, LPCSTR Source);
+        LIB_DELPHI void UpperCase(LPSTR Dest, size_t Len, LPCSTR Source);
+        LIB_DELPHI void LowerCase(LPSTR Dest, size_t Len, LPCSTR Source);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI void DecodeDate(CDateTime DateTime, int &Year, int &Month, int &Day);
@@ -116,11 +116,11 @@ namespace Delphi {
         LIB_DELPHI bool FileExists(LPCTSTR lpszFileName, bool FollowLink = true);
 
         //--------------------------------------------------------------------------------------------------------------
-        LIB_DELPHI char *ExtractFileDir(char *Dest, LPCSTR Src);
-        LIB_DELPHI char *ExtractFilePath(char *Dest, LPCSTR Src);
-        LIB_DELPHI char *ExtractFileName(char *Dest, LPCSTR Src);
-        LIB_DELPHI char *ExtractFileExt(char *Dest, LPCSTR Src);
-        LIB_DELPHI char *ChangeFileExt(char *Dest, LPCSTR Src, LPCSTR Ext);
+        LIB_DELPHI LPSTR ExtractFileDir(LPSTR Dest, LPCSTR Src);
+        LIB_DELPHI LPSTR ExtractFilePath(LPSTR Dest, LPCSTR Src);
+        LIB_DELPHI LPSTR ExtractFileName(LPSTR Dest, LPCSTR Src);
+        LIB_DELPHI LPSTR ExtractFileExt(LPSTR Dest, LPCSTR Src);
+        LIB_DELPHI LPSTR ChangeFileExt(LPSTR Dest, LPCSTR Src, LPCSTR Ext);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI unsigned long HexToDecA(LPCSTR pszHex);

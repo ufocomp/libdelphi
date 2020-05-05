@@ -266,10 +266,10 @@ namespace Delphi {
             bool GetCaseSensitive();
             void SetCaseSensitive(bool Value);
 
-            bool GetModified() { return m_Modified; };
+            bool GetModified() const { return m_Modified; };
             void SetModified(bool Value) { m_Modified = Value; };
 
-            bool GetAutoSave() { return m_AutoSave; };
+            bool GetAutoSave() const { return m_AutoSave; };
             void SetAutoSave(bool Value) { m_AutoSave = Value; };
 
         protected:

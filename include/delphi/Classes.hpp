@@ -117,19 +117,19 @@ namespace Delphi {
 
             Pointer Free(unsigned long ulFlags, Pointer lpMem, size_t ulSize);
 
-            unsigned long Size(unsigned long ulFlags, Pointer lpMem);
+            static unsigned long Size(unsigned long ulFlags, Pointer lpMem);
 
             HANDLE GetHandle() { return m_hHandle; }
 
-            int GetOptions() { return m_Options; }
+            int GetOptions() const { return m_Options; }
 
             void SetOptions(int Value) { m_Options = Value; }
 
-            size_t GetInitialSize() { return m_InitialSize; }
+            size_t GetInitialSize() const { return m_InitialSize; }
 
             void SetInitialSize(size_t Value) { m_InitialSize = Value; }
 
-            size_t GetMaximumSize() { return m_MaximumSize; }
+            size_t GetMaximumSize() const { return m_MaximumSize; }
 
             void SetMaximumSize(size_t Value) { m_MaximumSize = Value; }
         };
@@ -162,10 +162,10 @@ namespace Delphi {
 
             LPCSTR LocaleName() { return m_LocaleName; };
 
-            int Category() { return m_Category; };
+            int Category() const { return m_Category; };
             void Category(int Value) { m_Category = Value; };
 
-            int CategoryMask() { return m_CategoryMask; };
+            int CategoryMask() const { return m_CategoryMask; };
             void CategoryMask(int Value) { m_CategoryMask = Value; };
 
             void SetLocale(LPCSTR Locale);
@@ -243,7 +243,7 @@ namespace Delphi {
 
             int Add(Pointer Item);
 
-            virtual void Clear();
+            void Clear();
 
             void Delete(int Index);
 
@@ -320,7 +320,7 @@ namespace Delphi {
 
             ~CPersistent() override = default;
 
-            int Tag() { return m_Tag; }
+            int Tag() const { return m_Tag; }
             void Tag(int Value) { m_Tag = Value; }
 
         }; // CPersistent
@@ -368,8 +368,8 @@ namespace Delphi {
             virtual void SetItemName(CCollectionItem *Item);
             virtual void Update(CCollectionItem *Item);
 
-            int GetNextId() { return m_NextId; };
-            int GetUpdateCount() { return m_UpdateCount; };
+            int GetNextId() const { return m_NextId; };
+            int GetUpdateCount() const { return m_UpdateCount; };
 
         public:
 
@@ -418,8 +418,8 @@ namespace Delphi {
 
             void Changed(bool AllItems);
             CPersistent *GetOwner() override;
-            virtual void SetCollection(CCollection *Value);
-            virtual void SetIndex(int Value);
+            void SetCollection(CCollection *Value);
+            void SetIndex(int Value);
 
         public:
 
@@ -430,7 +430,7 @@ namespace Delphi {
             CCollection *Collection() { return m_Collection; };
             void Collection(CCollection *Value) { SetCollection(Value); };
 
-            int Id() { return m_Id; };
+            int Id() const { return m_Id; };
 
             int Index() { return GetIndex(); };
             void Index(int Value) { SetIndex(Value); };
@@ -614,7 +614,7 @@ namespace Delphi {
 
             virtual void *Realloc(size_t &NewCapacity);
 
-            size_t Capacity() { return m_Capacity; };
+            size_t Capacity() const { return m_Capacity; };
             void Capacity(size_t Value) { SetCapacity(Value); };
 
         public:
@@ -622,7 +622,7 @@ namespace Delphi {
             CMemoryStream();
 
             explicit CMemoryStream(ssize_t ASize): CMemoryStream() {
-                SetSize(ASize);
+                CMemoryStream::SetSize(ASize);
             };
 
             ~CMemoryStream() override;
@@ -659,7 +659,6 @@ namespace Delphi {
 
         private:
 
-            LPWSTR m_wData;
             LPTSTR m_Data;
 
             size_t m_Size;
@@ -765,26 +764,8 @@ namespace Delphi {
             void SetChar(TCHAR C, size_t Length = 1);
             void AddChar(TCHAR C, size_t Length = 1);
 
-            LPTSTR Str() {
-                if Assigned(m_Data)
-                    m_Data[m_Length] = '\0';
-                return m_Data;
-            };
-
-            LPCSTR AnsiStr() const noexcept {
-                if Assigned(m_Data)
-                    m_Data[m_Length] = '\0';
-                return m_Data;
-            };
-
-            LPCWSTR WideStr() const noexcept {
-                if Assigned(m_wData)
-                    m_wData[m_Length] = L'\0';
-                return m_wData;
-            };
-
             LPCTSTR Str() const noexcept {
-                if Assigned(m_Data)
+                if (Assigned(m_Data))
                     m_Data[m_Length] = '\0';
                 return m_Data;
             };
@@ -801,7 +782,6 @@ namespace Delphi {
 
             size_t Size() const noexcept { return GetSize(); };
 
-            TCHAR GetChar(size_t Index);
             TCHAR GetChar(size_t Index) const;
 
             bool IsEmpty() const noexcept { return m_Data == nullptr; };
@@ -859,7 +839,7 @@ namespace Delphi {
             void Format(LPCTSTR pszFormat, ...);
             void Format(LPCTSTR pszFormat, va_list argList);
 
-            size_t MaxFormatSize() { return m_MaxFormatSize; }
+            size_t MaxFormatSize() const { return m_MaxFormatSize; }
             void MaxFormatSize(size_t Value) { m_MaxFormatSize = Value; }
 
             size_t Find(const CString& S, size_t Pos = 0) const;
@@ -867,10 +847,7 @@ namespace Delphi {
             size_t Find(LPCTSTR Str, size_t Pos, size_t Length) const;
             size_t Find(TCHAR C, size_t Pos = 0) const;
 
-            value_type GetFront() { return GetChar(0); };
             value_type GetFront() const { return GetChar(0); };
-
-            value_type GetBack() { return GetChar(Length() - 1); };
             value_type GetBack() const { return GetChar(Length() - 1); };
 
             int Compare(const CString& S) const;
@@ -905,9 +882,6 @@ namespace Delphi {
 
             LPCTSTR c_str() const noexcept { return Str(); }
 
-            //LPCSTR c_a_str() const noexcept { return AnsiStr(); }
-            //LPCWSTR c_w_str() const noexcept { return WideStr(); }
-
             template <class T>
             int compare(T Value) const { return Compare(Value); }
 
@@ -915,8 +889,8 @@ namespace Delphi {
             void append (T Value) { Append(Value); }
 
             template <class T>
-            size_t find (T Value, size_t Pos = 0) { return Find(Value, Pos); }
-            size_t find (LPCTSTR Str, size_t Pos, size_t Length) { return Find(Str, Pos, Length); }
+            size_t find (T Value, size_t Pos = 0) const { return Find(Value, Pos); }
+            size_t find (LPCTSTR Str, size_t Pos, size_t Length) const { return Find(Str, Pos, Length); }
 
             explicit operator std::basic_string<char>() const {
                 return std::basic_string<char>(IsEmpty() ? "" : c_str());
@@ -954,7 +928,6 @@ namespace Delphi {
 
             CString& operator= (bool Value) {
                 Clear();
-                TCHAR szValue[_INT_T_LEN + 1] = {0};
                 Create(Value ? "true" : "false");
                 return *this;
             };
@@ -1194,7 +1167,7 @@ namespace Delphi {
             bool GetStrictDelimiter() const;
             void SetStrictDelimiter(bool Value);
 
-            void Error(const CString &Msg, int Data);
+            static void Error(const CString &Msg, int Data);
             virtual CString &Get(int Index) abstract;
             virtual const CString &Get(int Index) const abstract;
             virtual int GetCapacity() const noexcept;
@@ -1207,7 +1180,7 @@ namespace Delphi {
             virtual void SetCapacity(int NewCapacity);
             virtual void SetText(const CString &Value);
             virtual void SetUpdateState(bool Updating);
-            int UpdateCount() { return m_UpdateCount; };
+            int UpdateCount() const { return m_UpdateCount; };
             virtual int CompareStrings(const CString &S1, const CString &S2);
 
         public:
@@ -1748,10 +1721,10 @@ namespace Delphi {
 
             void CallOnTerminate();
 
-            void CreateSyncList();
+            static void CreateSyncList();
             void Synchronize(PSynchronizeRecord ASyncRec);
 
-            CThreadPriority GetPriority();
+            static CThreadPriority GetPriority();
             void SetPriority(CThreadPriority Value);
 
             void SetSuspended(bool Value);
@@ -1759,8 +1732,8 @@ namespace Delphi {
         protected:
 
             void AfterConstruction();
-            void CheckThreadError(int ErrCode);
-            void CheckThreadError(bool Success);
+            static void CheckThreadError(int ErrCode);
+            static void CheckThreadError(bool Success);
 
             virtual void DoTerminate();
             virtual void Execute() abstract;

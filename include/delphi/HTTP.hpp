@@ -74,11 +74,11 @@ namespace Delphi {
         private:
 
             enum {
-                fl_hostname = 0,
-                fl_port,
-                fl_pathname,
-                fl_search,
-                fl_hash
+                uri_hostname = 0,
+                uri_port,
+                uri_pathname,
+                uri_search,
+                uri_hash
             } flag;
 
             CString portStr;
@@ -92,7 +92,7 @@ namespace Delphi {
             CString search;
             CString hash;
 
-            uri_parser(): flag(fl_hostname), port(0) {
+            uri_parser(): flag(uri_hostname), port(0) {
 
             }
 
@@ -115,7 +115,7 @@ namespace Delphi {
             };
 
             void clear() {
-                flag = fl_hostname;
+                flag = uri_hostname;
                 protocol.Clear();
                 hostname.Clear();
                 portStr.Clear();
@@ -145,29 +145,29 @@ namespace Delphi {
                 TCHAR ch = uri.at(pos++);
                 while (!IsCtl(ch)) {
                     if (ch == ':')
-                        flag = fl_port;
+                        flag = uri_port;
                     if (ch == '/')
-                        flag = fl_pathname;
+                        flag = uri_pathname;
                     if (ch == '?')
-                        flag = fl_search;
+                        flag = uri_search;
                     if (ch == '#')
-                        flag = fl_hash;
+                        flag = uri_hash;
 
                     switch (flag) {
-                        case fl_hostname:
+                        case uri_hostname:
                             hostname.Append(ch);
                             break;
-                        case fl_port:
+                        case uri_port:
                             if (ch != ':')
                                 portStr.Append(ch);
                             break;
-                        case fl_pathname:
+                        case uri_pathname:
                             pathname.Append(ch);
                             break;
-                        case fl_search:
+                        case uri_search:
                             search.Append(ch);
                             break;
-                        case fl_hash:
+                        case uri_hash:
                             hash.Append(ch);
                             break;
                     }
@@ -280,7 +280,6 @@ namespace Delphi {
             int GetCount() const;
 
             const CString &GetValue(const CString &Name) const;
-            const CString &GetValue(LPCTSTR Name) const;
 
         public:
 
@@ -291,7 +290,6 @@ namespace Delphi {
             void Clear();
 
             int IndexOfName(const CString &Name) const;
-            int IndexOfName(LPCTSTR Name) const;
 
             void Insert(int Index, const CHeader& Header);
 
@@ -314,7 +312,6 @@ namespace Delphi {
             void Assign(const CHeaders& Headers);
 
             const CString &Values(const CString& Name) const { return GetValue(Name); };
-            const CString &Values(LPCTSTR Name) const { return GetValue(Name); };
 
             CHeader& Headers(int Index) { return Get(Index); }
             const CHeader& Headers(int Index) const { return Get(Index); }
@@ -330,8 +327,8 @@ namespace Delphi {
             CHeader& operator[](int Index) { return Get(Index); }
             const CHeader& operator[](int Index) const { return Get(Index); }
 
-            CHeader& operator[](LPCTSTR Name) { return Headers(IndexOfName(Name)); }
-            const CHeader& operator[](LPCTSTR Name) const { return Headers(IndexOfName(Name)); }
+            CHeader& operator[](const CString &Name) { return Headers(IndexOfName(Name)); }
+            const CHeader& operator[](const CString &Name) const { return Headers(IndexOfName(Name)); }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -447,14 +444,17 @@ namespace Delphi {
 
             CString Uri;
 
-            /// The uri parameters to be included in the request.
-            CStringList Params;
-
             int VMajor;
             int VMinor;
 
             /// The headers to be included in the request.
             CHeaders Headers;
+
+            /// The uri parameters to be included in the request.
+            CStringList Params;
+
+            /// The Cookies to be included in the request.
+            CStringList Cookies;
 
             /// The content length to be sent in the request.
             size_t ContentLength = 0;
@@ -513,10 +513,11 @@ namespace Delphi {
                 if (this != &Value) {
                     Method = Value.Method;
                     Uri = Value.Uri;
-                    Params = Value.Params;
                     VMajor = Value.VMajor;
                     VMinor = Value.VMinor;
                     Headers = Value.Headers;
+                    Params = Value.Params;
+                    Cookies = Value.Cookies;
                     ContentLength = Value.ContentLength;
                     ContentType = Value.ContentType;
                     Content = Value.Content;
@@ -763,6 +764,7 @@ namespace Delphi {
                 multiple_choices = 300,
                 moved_permanently = 301,
                 moved_temporarily = 302,
+                see_other = 303,
                 not_modified = 304,
                 bad_request = 400,
                 unauthorized = 401,
@@ -820,6 +822,8 @@ namespace Delphi {
             /// not be changed until the write operation has completed.
             void ToBuffers(CMemoryStream *AStream);
 
+            static LPCTSTR GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta = 0);
+
             /// Add header to headers.
             void AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue);
 
@@ -829,11 +833,17 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
 
+            /// Set cookie.
+            void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = -1,
+                           bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
+
             /// Get a prepare reply.
             static http_reply *GetReply(http_reply *AReply, status_type AStatus, LPCTSTR AContentType = nullptr);
 
             /// Get a stock reply.
             static http_reply *GetStockReply(http_reply *AReply, status_type AStatus);
+
+            static void CheckUnauthorized(http_reply *AReply);
 
         } CReply, *PReply;
 
@@ -1069,7 +1079,7 @@ namespace Delphi {
 
             CReply *Reply() { return GetReply(); };
 
-            bool CloseConnection() { return m_CloseConnection; };
+            bool CloseConnection() const { return m_CloseConnection; };
             void CloseConnection(bool Value) { m_CloseConnection = Value; };
 
             CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
@@ -1087,6 +1097,104 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CSiteConfig -----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        typedef struct site_config {
+
+            CString Site;
+            CJSON Config;
+
+            site_config& operator= (const site_config& H) {
+                if (this != &H) {
+                    Site = H.Site;
+                    Config = H.Config;
+                }
+                return *this;
+            };
+
+            inline bool operator!= (const site_config& AValue) { return Site != AValue.Site; };
+            inline bool operator== (const site_config& AValue) { return Site == AValue.Site; };
+
+        } CSiteConfig, *PSiteConfig;
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CSites ----------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CSites {
+        private:
+
+            TList<CSiteConfig> m_pList;
+
+            CSiteConfig m_Default;
+
+            void Put(int Index, const CSiteConfig& Site);
+
+            CSiteConfig& Get(int Index);
+            const CSiteConfig& Get(int Index) const;
+
+        protected:
+
+            int GetCount() const;
+
+            const CJSON& GetConfig(const CString &SiteName) const;
+
+        public:
+
+            CSites() = default;
+
+            ~CSites();
+
+            void Clear();
+
+            int IndexOfName(const CString &SiteName) const;
+
+            void Insert(int Index, const CSiteConfig& Site);
+
+            int Add(const CSiteConfig& Site);
+            int AddPair(const CString& SiteName, const CJSON& Config);
+
+            void Delete(int Index);
+
+            void SetCount(int NewCount);
+
+            CSiteConfig& First();
+
+            CSiteConfig& Last();
+
+            int Count() const { return GetCount(); }
+
+            void Assign(const CSites& Sites);
+
+            const CJSON& Config(const CString& SiteName) const { return GetConfig(SiteName); };
+
+            CSiteConfig& Sites(int Index) { return Get(Index); }
+            const CSiteConfig& Sites(int Index) const { return Get(Index); }
+
+            void Sites(int Index, const CSiteConfig& Site) { Put(Index, Site); }
+
+            CSites& operator= (const CSites& H) {
+                if (this != &H)
+                    Assign(H);
+                return *this;
+            };
+
+            CSiteConfig& Default() { return m_Default; };
+            const CSiteConfig& Default() const { return m_Default; };
+
+            CSiteConfig& operator[](int Index) { return Get(Index); }
+            const CSiteConfig& operator[](int Index) const { return Get(Index); }
+
+            CSiteConfig& operator[](LPCTSTR Name) { return Sites(IndexOfName(Name)); }
+            const CSiteConfig& operator[](LPCTSTR Name) const { return Sites(IndexOfName(Name)); }
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CHTTPServer -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1094,9 +1202,7 @@ namespace Delphi {
         class CHTTPServer: public CAsyncServer {
         private:
 
-            CString m_sDocRoot;
-
-            void SetDocRoot(LPCTSTR AValue);
+            CSites m_Sites;
 
         protected:
 
@@ -1116,14 +1222,14 @@ namespace Delphi {
 
         public:
 
-            explicit CHTTPServer(unsigned short AListen, LPCTSTR lpDocRoot);
+            explicit CHTTPServer(unsigned short AListen);
 
             ~CHTTPServer() override = default;
 
-            bool URLDecode(const CString& In, CString& Out);
+            static bool URLDecode(const CString& In, CString& Out);
 
-            CString& DocRoot() { return m_sDocRoot; };
-            void DocRoot(LPCTSTR AValue) { SetDocRoot(AValue); };
+            CSites& Sites() { return m_Sites; };
+            const CSites& Sites() const { return m_Sites; };
 
         };
 

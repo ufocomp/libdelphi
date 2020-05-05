@@ -157,8 +157,7 @@ namespace Delphi {
 
             pthread_mutex_unlock(&GThreadLock);
 
-            if (LocalSyncList != nullptr)
-                delete LocalSyncList;
+            delete LocalSyncList;
 
             return Result;
         }
@@ -166,7 +165,7 @@ namespace Delphi {
 
         inline void AddHeap() {
             if (GHeapCount == 0) {
-                GHeap = GHeap->CreateHeap();
+                GHeap = CHeap::CreateHeap();
                 //GHeap->Initialize();
             }
 
@@ -180,7 +179,7 @@ namespace Delphi {
             if (GHeapCount == 0) {
                 // Проверка утечки памяти
                 chVERIFY(GHeap->GetInitialSize() == 0);
-                GHeap->DestroyHeap();
+                CHeap::DestroyHeap();
                 GHeap = nullptr;
             }
         }
@@ -716,7 +715,7 @@ namespace Delphi {
         CCollection::~CCollection() {
             m_UpdateCount = 1;
             if (m_Items != nullptr)
-                Clear();
+                CCollection::Clear();
             delete m_Items;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1161,7 +1160,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        #define MemoryDelta 0x2000
+        #define MemoryDelta 0x2000u
 
         CMemoryStream::CMemoryStream() : CCustomMemoryStream() {
             m_Capacity = 0;
@@ -1169,7 +1168,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CMemoryStream::~CMemoryStream() {
-            Clear();
+            CMemoryStream::Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1271,7 +1270,6 @@ namespace Delphi {
             m_Size = 0;
             m_Position = 0;
             m_Data = nullptr;
-            m_wData = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1345,7 +1343,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        #define StringDelta 16
+        #define StringDelta 16u
 
         CStringStream::CStringStream() : CCustomStringStream() {
             m_Capacity = 0;
@@ -1353,7 +1351,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CStringStream::~CStringStream() {
-            Clear();
+            CStringStream::Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1475,13 +1473,6 @@ namespace Delphi {
                     SetSize(0);
                 m_Length = NewLength;
             }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        TCHAR CCustomString::GetChar(size_t Index) {
-            if (Index >= 0 && Index < m_Length)
-                return m_Data[Index];
-            return '\0';
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2473,7 +2464,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CStringList::~CStringList() {
-            Clear();
+            CStringList::Clear();
             if (m_pList != nullptr)
                 GHeap->Free(0, m_pList, m_nCapacity * sizeof(PStringItem));
         }
@@ -3178,7 +3169,7 @@ namespace Delphi {
         {
             if ( (m_nThreadId != 0) && (!m_bFinished) )
             {
-                Terminate();
+                CThread::Terminate();
                 if ( m_bCreateSuspended )
                     Resume();
                 WaitFor();
