@@ -70,15 +70,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct uri_parser {
+        typedef struct url_parser {
         private:
 
             enum {
-                uri_hostname = 0,
-                uri_port,
-                uri_pathname,
-                uri_search,
-                uri_hash
+                url_hostname = 0,
+                url_port,
+                url_pathname,
+                url_search,
+                url_hash
             } flag;
 
             CString portStr;
@@ -92,94 +92,92 @@ namespace Delphi {
             CString search;
             CString hash;
 
-            uri_parser(): flag(uri_hostname), port(0) {
+            url_parser(): flag(url_hostname), port(80) {
 
             }
 
-            uri_parser(const uri_parser& uri): uri_parser() {
-                assign(uri);
+            url_parser(const url_parser& URL): url_parser() {
+                Assign(URL);
             }
 
-            explicit uri_parser(const CString& uri): uri_parser() {
-                parse(uri);
+            explicit url_parser(const CString& URL): url_parser() {
+                Parse(URL);
             }
 
-            void assign(const uri_parser& uri) {
-                protocol = uri.protocol;
-                hostname = uri.hostname;
-                portStr = uri.portStr;
-                port = uri.port;
-                pathname = uri.pathname;
-                search = uri.search;
-                hash = uri.hash;
+            void Assign(const url_parser& URL) {
+                protocol = URL.protocol;
+                hostname = URL.hostname;
+                portStr = URL.portStr;
+                port = URL.port;
+                pathname = URL.pathname;
+                search = URL.search;
+                hash = URL.hash;
             };
 
-            void clear() {
-                flag = uri_hostname;
+            void Clear() {
+                flag = url_hostname;
                 protocol.Clear();
                 hostname.Clear();
                 portStr.Clear();
                 pathname.Clear();
                 search.Clear();
                 hash.Clear();
-                port = 0;
+                port = 80;
             };
 
-            void parse(const CString &uri) {
-                clear();
+            void Parse(const CString &URL) {
+                Clear();
 
                 size_t pos = 0;
-                size_t end = uri.Find("://", pos);
+                size_t end = URL.Find("://", pos);
 
                 if (end != CString::npos) {
-                    protocol = uri.SubString(pos, end);
+                    protocol = URL.SubString(pos, end);
                     pos = end + 3;
 
-                    if (protocol == HTTP_PREFIX) {
-                        port = 80;
-                    } else if (protocol == HTTPS_PREFIX) {
+                    if (protocol == HTTPS_PREFIX) {
                         port = 443;
                     }
                 }
 
-                TCHAR ch = uri.at(pos++);
+                TCHAR ch = URL.at(pos++);
                 while (!IsCtl(ch)) {
                     if (ch == ':')
-                        flag = uri_port;
+                        flag = url_port;
                     if (ch == '/')
-                        flag = uri_pathname;
+                        flag = url_pathname;
                     if (ch == '?')
-                        flag = uri_search;
+                        flag = url_search;
                     if (ch == '#')
-                        flag = uri_hash;
+                        flag = url_hash;
 
                     switch (flag) {
-                        case uri_hostname:
+                        case url_hostname:
                             hostname.Append(ch);
                             break;
-                        case uri_port:
+                        case url_port:
                             if (ch != ':')
                                 portStr.Append(ch);
                             break;
-                        case uri_pathname:
+                        case url_pathname:
                             pathname.Append(ch);
                             break;
-                        case uri_search:
+                        case url_search:
                             search.Append(ch);
                             break;
-                        case uri_hash:
+                        case url_hash:
                             hash.Append(ch);
                             break;
                     }
 
-                    ch = uri.at(pos++);
+                    ch = URL.at(pos++);
                 }
 
                 if (!portStr.IsEmpty())
                     port = StrToIntDef(portStr.c_str(), 0);
             };
 
-            CString host() const {
+            CString Host() const {
                 CString Result;
 
                 Result = hostname;
@@ -187,17 +185,22 @@ namespace Delphi {
                 if (!portStr.IsEmpty()) {
                     Result << ":";
                     Result << portStr;
+                } else {
+                    if (port != 80) {
+                        Result << ":";
+                        Result << port;
+                    }
                 }
 
                 return Result;
             };
 
-            CString origin() const {
+            CString Origin() const {
                 CString Result;
 
                 Result = protocol;
                 Result << "://";
-                Result << host();
+                Result << Host();
 
                 return Result;
             };
@@ -205,7 +208,7 @@ namespace Delphi {
             CString toString() const {
                 CString Result;
 
-                Result = origin();
+                Result = Origin();
                 Result << pathname;
                 Result << search;
                 Result << hash;
@@ -217,20 +220,20 @@ namespace Delphi {
                 return toString();
             };
 
-            uri_parser& operator= (const uri_parser &uri) {
-                if (this != &uri) {
-                    assign(uri);
+            url_parser& operator= (const url_parser &URL) {
+                if (this != &URL) {
+                    Assign(URL);
                 }
                 return *this;
             };
 
-            uri_parser& operator= (const CString &uri) {
-                parse(uri);
+            url_parser& operator= (const CString &URL) {
+                Parse(URL);
                 return *this;
             };
 
-            uri_parser& operator<< (const CString &url) {
-                parse(href() + url);
+            url_parser& operator<< (const CString &Value) {
+                Parse(href() + Value);
                 return *this;
             }
 
@@ -442,7 +445,7 @@ namespace Delphi {
 
             CString Method;
 
-            CString Uri;
+            CString URI;
 
             int VMajor;
             int VMinor;
@@ -475,12 +478,13 @@ namespace Delphi {
             /// The form data to be included in the request.
             CStringList FormData;
 
-            CString Host;
-            unsigned short Port;
-
+            /// The value of the "User-Agent" header.
             CString UserAgent;
 
             bool CloseConnection = false;
+
+            /// The Location interface represents a location (URL) as an object.
+            CLocation Location;
 
             /// Clear content and headers.
             void Clear();
@@ -502,9 +506,12 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
 
+            void BuildLocation();
+            void BuildCookies();
+
             /// Get a prepare request.
-            static http_request *Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AUri,
-                                         LPCTSTR AContentType = nullptr);
+            static http_request *Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
+                    LPCTSTR AContentType = nullptr);
 
             /// Add Authorization header to headers
             static http_request *Authorization(http_request *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
@@ -512,7 +519,7 @@ namespace Delphi {
             http_request &operator=(const http_request &Value) {
                 if (this != &Value) {
                     Method = Value.Method;
-                    Uri = Value.Uri;
+                    URI = Value.URI;
                     VMajor = Value.VMajor;
                     VMinor = Value.VMinor;
                     Headers = Value.Headers;
@@ -521,10 +528,9 @@ namespace Delphi {
                     ContentLength = Value.ContentLength;
                     ContentType = Value.ContentType;
                     Content = Value.Content;
-                    Host = Value.Host;
-                    Port = Value.Port;
                     UserAgent = Value.UserAgent;
                     CloseConnection = Value.CloseConnection;
+                    Location = Value.Location;
                 }
 
                 return *this;

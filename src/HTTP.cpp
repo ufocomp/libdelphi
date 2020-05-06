@@ -392,7 +392,7 @@ namespace Delphi {
             Method.SaveToStream(AStream);
             StringArrayToStream(AStream, MiscStrings::space);
 
-            Uri.SaveToStream(AStream);
+            URI.SaveToStream(AStream);
             for (int i = 0; i < Params.Count(); ++i) {
                 if (i == 0) {
                     StringArrayToStream(AStream, MiscStrings::question);
@@ -421,13 +421,14 @@ namespace Delphi {
 
         void http_request::Clear() {
             Method = "GET";
-            Uri = "/";
+            URI = "/";
             VMajor = 1;
             VMinor = 1;
             Params.Clear();
             Headers.Clear();
             Content.Clear();
             ContentLength = 0;
+            Location.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -497,23 +498,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        http_request *http_request::Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AUri, LPCTSTR AContentType) {
+        http_request *http_request::Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AURI, LPCTSTR AContentType) {
 
             TCHAR szSize[_INT_T_LEN + 1] = {0};
 
             ARequest->Method = AMethod;
-            ARequest->Uri = AUri;
+            ARequest->URI = AURI;
 
-            CString Host(ARequest->Host);
-            if (!Host.IsEmpty()) {
-                if (ARequest->Port > 0) {
-                    Host << ":";
-                    Host << (int) ARequest->Port;
-                }
-
-                ARequest->AddHeader(_T("Host"), Host);
-            }
-
+            ARequest->AddHeader(_T("Host"), ARequest->Location.Host());
             ARequest->AddHeader(_T("User-Agent"), ARequest->UserAgent);
             ARequest->AddHeader(_T("Accept"), _T("*/*"));
 
@@ -575,6 +567,26 @@ namespace Delphi {
             ARequest->AddHeader("Authorization", LAuthorization);
 
             return ARequest;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void http_request::BuildLocation() {
+            struct servent *sptr;
+            const auto& Host = Headers.Values(_T("host"));
+            Location = Host + URI;
+            if ((sptr = getservbyport(Location.port, "tcp")) != nullptr) {
+                Location.protocol = sptr->s_name;
+            } else {
+                Location.protocol = HTTP_PREFIX;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void http_request::BuildCookies() {
+            const auto& Cookie = Headers.Values(_T("cookie"));
+            if (!Cookie.empty()) {
+                SplitColumns(Cookie, Cookies, ';');
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -809,7 +821,7 @@ namespace Delphi {
                         return false;
                     } else {
                         Context.State = Request::uri;
-                        ARequest->Uri.Append(AInput);
+                        ARequest->URI.Append(AInput);
                         return -1;
                     }
                 case Request::uri:
@@ -822,7 +834,7 @@ namespace Delphi {
                     } else if (IsCtl(AInput)) {
                         return false;
                     } else {
-                        ARequest->Uri.Append(AInput);
+                        ARequest->URI.Append(AInput);
                         return -1;
                     }
                 case Request::uri_param_start:
@@ -1037,17 +1049,8 @@ namespace Delphi {
                         Context.ContentLength = Context.End - Context.Begin;
 
                         if (ARequest->Headers.Count() > 0) {
-                            const auto& host = ARequest->Headers.Values(_T("host"));
-                            if (!host.empty()) {
-                                CLocation Location(host);
-                                ARequest->Host = Location.hostname;
-                                ARequest->Port = Location.port;
-                            }
-
-                            const auto& cookies = ARequest->Headers.Values(_T("cookie"));
-                            if (!cookies.empty()) {
-                                SplitColumns(cookies, ARequest->Cookies, ';');
-                            }
+                            ARequest->BuildLocation();
+                            ARequest->BuildCookies();
 
                             const auto& contentLength = ARequest->Headers.Values(_T("content-length"));
                             if (!contentLength.IsEmpty()) {
@@ -2493,8 +2496,8 @@ namespace Delphi {
         CRequest *CHTTPClientConnection::GetRequest() {
             if (m_Request == nullptr) {
                 m_Request = new CRequest();
-                m_Request->Host = Client()->Host();
-                m_Request->Port = Client()->Port();
+                m_Request->Location.hostname = Client()->Host();
+                m_Request->Location.port = Client()->Port();
                 m_Request->UserAgent = Client()->ClientName();
             }
             return m_Request;
@@ -3024,8 +3027,8 @@ namespace Delphi {
         CRequest *CHTTPProxy::GetRequest() {
             if (m_Request == nullptr) {
                 m_Request = new CRequest();
-                m_Request->Host = Host();
-                m_Request->Port = Port();
+                m_Request->Location.hostname = Host();
+                m_Request->Location.port = Port();
                 m_Request->UserAgent = ClientName();
             }
 
