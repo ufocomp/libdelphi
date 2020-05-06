@@ -2594,12 +2594,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSites::AddPair(const CString &SiteName, const CJSON& Config) {
+        int CSites::AddPair(const CString &Name, const CJSON& Config) {
             int Index = -1;
-            if (SiteName != "*" && SiteName.Lower() != "default")
+            if (Name != "*" && Name.Lower() != "default")
                 Index = Add(CSiteConfig());
             CSiteConfig& Site = Get(Index);
-            Site.Site = SiteName;
+            Site.Name = Name;
             Site.Config = Config;
             return Index;
         }
@@ -2615,10 +2615,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSites::IndexOfName(const CString& SiteName) const {
+        int CSites::IndexOfName(const CString& Name) const {
             for (int I = 0; I < GetCount(); ++I) {
                 const CSiteConfig& Site = Get(I);
-                if (Site.Site == SiteName)
+                if (Site.Name == Name)
                     return I;
             }
             return -1;

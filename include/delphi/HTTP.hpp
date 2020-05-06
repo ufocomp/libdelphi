@@ -1109,19 +1109,19 @@ namespace Delphi {
 
         typedef struct site_config {
 
-            CString Site;
+            CString Name;
             CJSON Config;
 
             site_config& operator= (const site_config& H) {
                 if (this != &H) {
-                    Site = H.Site;
+                    Name = H.Name;
                     Config = H.Config;
                 }
                 return *this;
             };
 
-            inline bool operator!= (const site_config& AValue) { return Site != AValue.Site; };
-            inline bool operator== (const site_config& AValue) { return Site == AValue.Site; };
+            inline bool operator!= (const site_config& AValue) { return Name != AValue.Name; };
+            inline bool operator== (const site_config& AValue) { return Name == AValue.Name; };
 
         } CSiteConfig, *PSiteConfig;
 
@@ -1147,7 +1147,7 @@ namespace Delphi {
 
             int GetCount() const;
 
-            const CJSON& GetConfig(const CString &SiteName) const;
+            const CJSON& GetConfig(const CString &Name) const;
 
         public:
 
@@ -1157,12 +1157,12 @@ namespace Delphi {
 
             void Clear();
 
-            int IndexOfName(const CString &SiteName) const;
+            int IndexOfName(const CString &Name) const;
 
             void Insert(int Index, const CSiteConfig& Site);
 
             int Add(const CSiteConfig& Site);
-            int AddPair(const CString& SiteName, const CJSON& Config);
+            int AddPair(const CString& Name, const CJSON& Config);
 
             void Delete(int Index);
 
@@ -1176,7 +1176,7 @@ namespace Delphi {
 
             void Assign(const CSites& Sites);
 
-            const CJSON& Config(const CString& SiteName) const { return GetConfig(SiteName); };
+            const CJSON& Config(const CString& Name) const { return GetConfig(Name); };
 
             CSiteConfig& Sites(int Index) { return Get(Index); }
             const CSiteConfig& Sites(int Index) const { return Get(Index); }

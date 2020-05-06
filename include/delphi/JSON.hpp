@@ -33,15 +33,12 @@ namespace Delphi {
     namespace Json {
 
         class CJSON;
-
         class CJSONValue;
-
         class CJSONMember;
-
+        class CJSONMembers;
+        class CJSONElements;
         class CJSONArray;
-
         class CJSONObject;
-
         class CJSONParser;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -107,7 +104,7 @@ namespace Delphi {
 
             void ValueType(CJSONValueType AValueType) { m_ValueType = AValueType; };
 
-            int UpdateCount() { return m_UpdateCount; };
+            int UpdateCount() const { return m_UpdateCount; };
 
             virtual void SetUpdateState(bool Updating);
 
@@ -128,11 +125,9 @@ namespace Delphi {
             bool IsBoolean() const { return m_ValueType == jvtBoolean; };
 
             CJSONArray *CreateArray();
-
             CJSONObject *CreateObject();
 
-            virtual void Assign(const CJSON &Source);
-            virtual void Assign(const CJSONValue &Value);
+            virtual void Assign(const CJSON &Value);
 
             virtual void Concat(const CJSON &Source);
 
@@ -165,12 +160,10 @@ namespace Delphi {
             const CJSONObject &Object() const { return *(CJSONObject *) m_Value; }
 
             void LoadFromFile(LPCTSTR lpszFileName);
-
             void LoadFromStream(CStream *Stream);
 
-            void SaveToFile(LPCTSTR lpszFileName);
-
-            void SaveToStream(CStream *Stream);
+            void SaveToFile(LPCTSTR lpszFileName) const;
+            void SaveToStream(CStream *Stream) const;
 
             CString ToString() const { return JsonToString(); };
             void ToJson(const CString &Value) { StringToJson(Value); };
@@ -181,15 +174,15 @@ namespace Delphi {
                 return *this;
             };
 
-            CJSON &operator<<(const CJSON &Json) {
-                if (this != &Json)
-                    Concat(Json);
-                return *this;
-            };
-
             virtual CJSON &operator=(const CString &String) {
                 Clear();
                 StringToJson(String);
+                return *this;
+            };
+
+            CJSON &operator<<(const CJSON &Json) {
+                if (this != &Json)
+                    Concat(Json);
                 return *this;
             };
 
@@ -294,7 +287,7 @@ namespace Delphi {
 
             CString JsonToString() const override;
 
-            void Error(const CString &Msg, int Data);
+            static void Error(const CString &Msg, int Data);
 
             virtual int GetCapacity() const noexcept;
 
@@ -498,6 +491,14 @@ namespace Delphi {
 
             virtual int Add(const CJSONMember &Value);
 
+            virtual int AddPair(const CString &String, const CJSONMembers &Value);
+
+            virtual int AddPair(reference String, const CJSONMembers &Value);
+
+            virtual int AddPair(const CString &String, const CJSONElements &Value);
+
+            virtual int AddPair(reference String, const CJSONElements &Value);
+
             virtual int AddPair(const CString &String, const CJSONValue &Value);
 
             virtual int AddPair(reference String, const CJSONValue &Value);
@@ -539,6 +540,14 @@ namespace Delphi {
             virtual int IndexOfString(reference Value) const;
 
             virtual void Insert(int Index, const CJSONMember &Value) abstract;
+
+            virtual void InsertPair(int Index, const CString &String, const CJSONMembers &Value) abstract;
+
+            virtual void InsertPair(int Index, reference String, const CJSONMembers &Value) abstract;
+
+            virtual void InsertPair(int Index, const CString &String, const CJSONElements &Value) abstract;
+
+            virtual void InsertPair(int Index, reference String, const CJSONElements &Value) abstract;
 
             virtual void InsertPair(int Index, const CString &String, const CJSONValue &Value) abstract;
 
@@ -778,7 +787,12 @@ namespace Delphi {
                     CreateArray();
             };
 
-            explicit CJSONValue(const CJSON& Value) : CJSON(this, jvtObject) {
+            explicit CJSONValue(const CJSONMembers& Value) : CJSON(this, jvtObject) {
+                m_Value = nullptr;
+                CJSON::Assign(Value);
+            };
+
+            explicit CJSONValue(const CJSONElements& Value) : CJSON(this, jvtArray) {
                 m_Value = nullptr;
                 CJSON::Assign(Value);
             };
@@ -795,7 +809,9 @@ namespace Delphi {
 
             ~CJSONValue() override = default;
 
-            void Assign(const CJSONValue &Value) override;
+            void Assign(const CJSONValue &Value);
+            void Assign(const CJSONMembers &Value);
+            void Assign(const CJSONElements &Value);
 
             bool IsEmpty() const { return m_Data.IsEmpty(); };
 
@@ -827,6 +843,23 @@ namespace Delphi {
             CJSONObject &AsObject() { return *(CJSONObject *) m_Value; }
             const CJSONObject &AsObject() const { return *(CJSONObject *) m_Value; }
 
+            CJSONValue &operator=(const CJSONValue &AValue) {
+                if (this != &AValue) {
+                    Assign(AValue);
+                }
+                return *this;
+            }
+
+            CJSONValue &operator=(const CJSONMembers &AValue) {
+                Assign(AValue);
+                return *this;
+            }
+
+            CJSONValue &operator=(const CJSONElements &AValue) {
+                Assign(AValue);
+                return *this;
+            }
+
             virtual bool operator!=(const CJSONValue &AValue) const {
                 if (this != &AValue) {
                     return Data() != AValue.Data();
@@ -854,13 +887,6 @@ namespace Delphi {
             friend tostream &operator<<(tostream &Out, const CJSONValue &RM) {
                 return Out << RM.Data().c_str();
             };
-
-            CJSONValue &operator=(const CJSONValue &AValue) {
-                if (this != &AValue) {
-                    Assign(AValue);
-                }
-                return *this;
-            }
 
             CJSONValue &operator[](int Index) override { return Get(Index); }
 
@@ -906,11 +932,29 @@ namespace Delphi {
                 m_Value.ValueType(ValueType);
             }
 
+            explicit CJSONMember(const CJSONMembers &AValue) : CPersistent(this) {
+                m_Value = AValue;
+            }
+
+            explicit CJSONMember(const CJSONElements &AValue) : CPersistent(this) {
+                m_Value = AValue;
+            }
+
             explicit CJSONMember(const CJSONValue &AValue) : CPersistent(this) {
                 m_Value = AValue;
             }
 
             explicit CJSONMember(const CString &AString, const CJSONValue &AValue) : CPersistent(this) {
+                m_String = AString;
+                m_Value = AValue;
+            }
+
+            explicit CJSONMember(const CString &AString, const CJSONMembers &AValue) : CPersistent(this) {
+                m_String = AString;
+                m_Value = AValue;
+            }
+
+            explicit CJSONMember(const CString &AString, const CJSONElements &AValue) : CPersistent(this) {
                 m_String = AString;
                 m_Value = AValue;
             }
@@ -1074,6 +1118,10 @@ namespace Delphi {
 
             CJSONArray();
 
+            CJSONArray(const CJSONArray &Array);
+
+            explicit CJSONArray(const CString &String);
+
             explicit CJSONArray(CPersistent *AOwner);
 
             ~CJSONArray() override;
@@ -1198,6 +1246,14 @@ namespace Delphi {
 
             int GetCount() const noexcept override;
 
+            void InsertPair(int Index, const CString &String, const CJSONMembers &Value) override;
+
+            void InsertPair(int Index, reference String, const CJSONMembers &Value) override;
+
+            void InsertPair(int Index, const CString &String, const CJSONElements &Value) override;
+
+            void InsertPair(int Index, reference String, const CJSONElements &Value) override;
+
             void InsertPair(int Index, const CString &String, const CJSONValue &Value) override;
 
             void InsertPair(int Index, reference String, const CJSONValue &Value) override;
@@ -1222,13 +1278,15 @@ namespace Delphi {
 
             CJSONObject();
 
+            CJSONObject(const CJSONObject &Object);
+
+            explicit CJSONObject(const CString &String);
+
             explicit CJSONObject(CPersistent *AOwner);
 
             inline static class CJSONObject *Create(CPersistent *AOwner) { return new CJSONObject(AOwner); };
 
             ~CJSONObject() override;
-
-            void Assign(const CJSONMembers &Source) override;
 
             void Clear() override;
 
@@ -1239,6 +1297,14 @@ namespace Delphi {
             int Count() const noexcept override { return GetCount(); };
 
             int Add(const CJSONMember &Value) override;
+
+            int AddPair(const CString &String, const CJSONMembers &Value) override;
+
+            int AddPair(reference String, const CJSONMembers &Value) override;
+
+            int AddPair(const CString &String, const CJSONElements &Value) override;
+
+            int AddPair(reference String, const CJSONElements &Value) override;
 
             int AddPair(const CString &String, const CJSONValue &Value) override;
 
@@ -1418,9 +1484,9 @@ namespace Delphi {
 
             CJSONParserResult Parse(LPTSTR ABegin, LPCTSTR AEnd);
 
-            CParserState State() { return m_State; };
+            CParserState State() const { return m_State; };
 
-            int Result() { return m_Result; };
+            int Result() const { return m_Result; };
 
         };
     }
