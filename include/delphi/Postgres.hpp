@@ -56,9 +56,9 @@ namespace Delphi {
 
             PGPing m_Ping;
 
-            CString m_ConnInfo;
+            mutable CString m_ConnInfo;
 
-            CStringList m_Parameters;
+            mutable CStringList m_Parameters;
 
             CString m_ApplicationName;
 
@@ -66,7 +66,7 @@ namespace Delphi {
 
             bool m_PingValid;
 
-            void UpdateConnInfo();
+            void UpdateConnInfo() const;
 
             void AssignParameters(const CStringList& Strings);
 
@@ -76,7 +76,7 @@ namespace Delphi {
 
             CString GetValue(LPCSTR Keyword) const;
 
-            const CString& GetConnInfo();
+            const CString& GetConnInfo() const;
 
         public:
 
@@ -89,11 +89,11 @@ namespace Delphi {
             explicit CPQConnInfo(LPCSTR AHost, LPCSTR APort, LPCSTR ADataBase, LPCSTR AUserName, LPCSTR APassword,
                 LPCSTR AOptions);
 
-            const CString& ConnInfo() { return GetConnInfo(); };
+            const CString& ConnInfo() const { return GetConnInfo(); };
 
             PGPing Ping() { return GetPing(); };
 
-            bool PingValid() { return m_PingValid; };
+            bool PingValid() const { return m_PingValid; };
 
             void PingValid(bool Value) { m_PingValid = Value; };
 
@@ -103,7 +103,7 @@ namespace Delphi {
 
             void Assign(const CPQConnInfo &Source);
 
-            bool ExpandDBName() { return m_ExpandDBName; };
+            bool ExpandDBName() const { return m_ExpandDBName; };
             void ExpandDBName(bool Value) { m_ExpandDBName = Value; };
 
             void SetParameters(const CStringList& Strings) { AssignParameters(Strings); };
@@ -262,7 +262,7 @@ namespace Delphi {
 
             PostgresPollingStatusType PollingStatus() { return GetPollingStatus(); };
 
-            CSocket Socket() { return m_Socket; };
+            CSocket Socket() const { return m_Socket; };
 
             int PID();
 

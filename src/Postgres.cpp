@@ -112,7 +112,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQConnInfo::UpdateConnInfo() {
+        void CPQConnInfo::UpdateConnInfo() const {
             m_ConnInfo.Clear();
 
             if (GetValue(_T("host")).IsEmpty())
@@ -139,7 +139,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString &CPQConnInfo::GetConnInfo() {
+        const CString &CPQConnInfo::GetConnInfo() const {
             if (m_ConnInfo.IsEmpty())
                 UpdateConnInfo();
             return m_ConnInfo;
@@ -154,8 +154,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CString CPQConnInfo::GetValue(LPCSTR AKeyword) const {
-            CString Keyword(AKeyword);
-            return m_Parameters.Values(Keyword);
+            return m_Parameters.Values(AKeyword);
         }
         //--------------------------------------------------------------------------------------------------------------
 
