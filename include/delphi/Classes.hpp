@@ -683,7 +683,7 @@ namespace Delphi {
             ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
             void SaveToStream(CStream *Stream) const;
-            void SaveToFile(LPCTSTR lpszFileName);
+            void SaveToFile(LPCTSTR lpszFileName) const;
 
             LPTSTR Data() { return m_Data; };
             LPCTSTR Data() const noexcept { return m_Data; };
@@ -728,6 +728,7 @@ namespace Delphi {
             virtual void SetLength(size_t NewLength) abstract;
 
             void LoadFromStream(CStream *Stream);
+
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromFile(const CString& FileName);
 
@@ -1178,10 +1179,10 @@ namespace Delphi {
             virtual void Put(int Index, reference Str);
             virtual void PutObject(int Index, CObject* AObject);
             virtual void SetCapacity(int NewCapacity);
-            virtual void SetText(const CString &Value);
-            virtual void SetUpdateState(bool Updating);
+            void SetText(const CString &Value);
+            void SetUpdateState(bool Updating);
             int UpdateCount() const { return m_UpdateCount; };
-            virtual int CompareStrings(const CString &S1, const CString &S2);
+            static int CompareStrings(const CString &S1, const CString &S2);
 
         public:
 
@@ -1212,15 +1213,10 @@ namespace Delphi {
             virtual void Exchange(int Index1, int Index2);
             virtual bool GetTextStr(LPTSTR Buffer, size_t &SizeBuf);
             virtual CString GetText() const;
-            virtual int IndexOf(const CString &S);
             virtual int IndexOf(const CString &S) const;
-            virtual int IndexOf(reference Str);
             virtual int IndexOf(reference Str) const;
-            virtual int IndexOfName(const CString &Name);
             virtual int IndexOfName(const CString &Name) const;
-            virtual int IndexOfName(reference Name);
             virtual int IndexOfName(reference Name) const;
-            virtual int IndexOfObject(CObject* AObject);
             virtual int IndexOfObject(CObject* AObject) const;
             virtual void Insert(int Index, const CString &S) abstract;
             virtual void Insert(int Index, reference Str) abstract;
@@ -1231,8 +1227,8 @@ namespace Delphi {
             virtual void LoadFromFile(LPCTSTR lpszFileName);
             virtual void LoadFromStream(CStream* Stream);
             virtual void Move(int CurIndex, int NewIndex);
-            virtual void SaveToFile(LPCTSTR lpszFileName);
-            virtual void SaveToStream(CStream* Stream);
+            virtual void SaveToFile(LPCTSTR lpszFileName) const;
+            virtual void SaveToStream(CStream* Stream) const;
             virtual void SetTextStr(LPCTSTR Text, size_t Size);
 
             int Capacity() { return GetCapacity(); };
@@ -1449,7 +1445,7 @@ namespace Delphi {
 
             CStringList(const CStringList& List): CStringList() {
                 if (&List != this) {
-                    Assign(List);
+                    CStringList::Assign(List);
                 }
             }
 
@@ -1491,7 +1487,7 @@ namespace Delphi {
             void Insert(int Index, TCHAR C) override;
             void InsertObject(int Index, TCHAR C, CObject* AObject) override;
 
-            bool OwnsObjects() { return m_fOwnsObjects; };
+            bool OwnsObjects() const { return m_fOwnsObjects; };
 
             CStringList &operator=(const CStringList &Strings) {
                 if (&Strings != this) {
@@ -1635,9 +1631,9 @@ namespace Delphi {
 
             ~CSysError() override = default;
 
-            class CSysError *CreateSysError() { return GSysError = new CSysError(); };
+            static class CSysError *CreateSysError() { return new CSysError(); };
 
-            void DestroySysError() { delete GSysError; };
+            static void DestroySysError() { delete GSysError; };
 
             const CString& StrError(int AError);
         };
@@ -1722,7 +1718,7 @@ namespace Delphi {
             void CallOnTerminate();
 
             static void CreateSyncList();
-            void Synchronize(PSynchronizeRecord ASyncRec);
+            static void Synchronize(PSynchronizeRecord ASyncRec);
 
             static CThreadPriority GetPriority();
             void SetPriority(CThreadPriority Value);
@@ -1739,10 +1735,10 @@ namespace Delphi {
             virtual void Execute() abstract;
             void Synchronize(CThreadMethod *AMethod);
 
-            int ReturnValue() { return m_nReturnValue; };
+            int ReturnValue() const { return m_nReturnValue; };
             void ReturnValue(int Value) { m_nReturnValue = Value; };
 
-            bool Terminated() { return m_bTerminated; };
+            bool Terminated() const { return m_bTerminated; };
 
         public:
 
@@ -1755,19 +1751,19 @@ namespace Delphi {
             virtual void Terminate();
             int WaitFor();
 
-            void Synchronize(CThread *AThread, CThreadMethod *AMethod);
+            static void Synchronize(CThread *AThread, CThreadMethod *AMethod);
 
-            pthread_t Handle() { return m_hHandle; };
+            pthread_t Handle() const { return m_hHandle; };
 
-            pid_t ThreadId() { return m_nThreadId; };
+            pid_t ThreadId() const { return m_nThreadId; };
 
-            bool Suspended() { return m_bSuspended; };
+            bool Suspended() const { return m_bSuspended; };
             void Suspended(bool Value) { SetSuspended(Value); }
 
-            CThreadPriority Priority() { return GetPriority(); }
+            static CThreadPriority Priority() { return GetPriority(); }
             void Priority(CThreadPriority Value) { SetPriority(Value); }
 
-            bool FreeOnTerminate() { return m_bFreeOnTerminate; };
+            bool FreeOnTerminate() const { return m_bFreeOnTerminate; };
             void FreeOnTerminate(bool Value) { m_bFreeOnTerminate = Value; };
 
             const CNotifyEvent& OnTerminate() { return m_OnTerminate; };

@@ -186,7 +186,7 @@ namespace Delphi {
                     Result << ":";
                     Result << portStr;
                 } else {
-                    if (port != 80) {
+                    if (port != 80 && port != 443) {
                         Result << ":";
                         Result << port;
                     }
@@ -341,8 +341,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef struct http_form_data {
-
-            CHeaders Headers;
 
             CString Name;
             CString File;
@@ -840,8 +838,8 @@ namespace Delphi {
             void AddHeader(const CString& Name, const CString& Value);
 
             /// Set cookie.
-            void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = -1,
-                           bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
+            void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
+                    bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Strict"));
 
             /// Get a prepare reply.
             static http_reply *GetReply(http_reply *AReply, status_type AStatus, LPCTSTR AContentType = nullptr);

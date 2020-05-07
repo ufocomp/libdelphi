@@ -1715,9 +1715,11 @@ namespace Delphi {
                 Cookie << lpszPath;
             }
 
-            if (Expires >= 0) {
+            if (Expires > 0) {
                 Cookie << "; Expires=";
                 Cookie << CReply::GetGMT(szDate, sizeof(szDate), Expires);
+            } else if (Expires < 0) {
+                Cookie << "; Max-Age=0";
             }
 
             if (HttpOnly)

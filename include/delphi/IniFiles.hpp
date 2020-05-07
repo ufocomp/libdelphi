@@ -198,15 +198,14 @@ namespace Delphi {
 
         private:
 
-            CStringHash *m_ValueHash;
-            CStringHash *m_NameHash;
+            mutable CStringHash *m_ValueHash;
+            mutable CStringHash *m_NameHash;
 
-            bool m_ValueHashValid;
-            bool m_NameHashValid;
+            mutable bool m_ValueHashValid;
+            mutable bool m_NameHashValid;
 
-            void UpdateValueHash();
-
-            void UpdateNameHash();
+            void UpdateValueHash() const;
+            void UpdateNameHash() const;
 
         public:
 
@@ -232,11 +231,11 @@ namespace Delphi {
 
             ~CHashedStringList() override;
 
-            int IndexOf(const CString &S) override;
-            int IndexOf(LPCTSTR S) override;
+            int IndexOf(const CString &S) const override;
+            int IndexOf(LPCTSTR S) const override;
 
-            int IndexOfName(const CString &Name) override;
-            int IndexOfName(LPCTSTR Name) override;
+            int IndexOfName(const CString &Name) const override;
+            int IndexOfName(LPCTSTR Name) const override;
 
             void Changed();
         };
@@ -263,7 +262,7 @@ namespace Delphi {
 
             CStrings *AddSection(LPCTSTR lpszSectionName);
 
-            bool GetCaseSensitive();
+            bool GetCaseSensitive() const;
             void SetCaseSensitive(bool Value);
 
             bool GetModified() const { return m_Modified; };

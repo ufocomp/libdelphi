@@ -1191,14 +1191,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CMemoryStream::LoadFromFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, O_RDONLY);
-            try {
-                LoadFromStream(Stream);
-            } catch (...) {
-                delete Stream;
-                throw;
-            }
-            delete Stream;
+            CFileStream Stream(lpszFileName, O_RDONLY);
+            LoadFromStream(&Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1328,13 +1322,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomStringStream::SaveToFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, OF_CREATE);
-            try {
-                SaveToStream(Stream);
-            } catch (...) {
-            }
-            delete Stream;
+        void CCustomStringStream::SaveToFile(LPCTSTR lpszFileName) const {
+            CFileStream Stream(lpszFileName, OF_CREATE);
+            SaveToStream(&Stream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1374,14 +1364,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringStream::LoadFromFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, O_RDONLY);
-            try {
-                LoadFromStream(Stream);
-            } catch (...) {
-                delete Stream;
-                throw;
-            }
-            delete Stream;
+            CFileStream Stream(lpszFileName, O_RDONLY);
+            LoadFromStream(&Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2185,32 +2169,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CStrings::IndexOf(const CString &S) {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (Get(I) == S)
-                    return I;
-            }
-
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         int CStrings::IndexOf(const CString &S) const {
             for (int I = 0; I < GetCount(); ++I) {
                 if (Get(I) == S)
                     return I;
             }
-
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CStrings::IndexOf(reference Str) {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (Get(I) == Str)
-                    return I;
-            }
-
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2220,17 +2183,6 @@ namespace Delphi {
                 if (Get(I) == Str)
                     return I;
             }
-
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CStrings::IndexOfName(const CString &Name) {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (GetName(I) == Name)
-                    return I;
-            }
-
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2240,36 +2192,15 @@ namespace Delphi {
                 if (GetName(I) == Name)
                     return I;
             }
-
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CStrings::IndexOfName(reference Name) {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (GetName(I) == Name)
-                    return I;
-            }
-
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOfName(reference Name) const {
-
             for (int I = 0; I < GetCount(); ++I) {
                 if (GetName(I) == Name)
                     return I;
             }
-
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CStrings::IndexOfObject(CObject *AObject) {
-            for (int I = 0; I < GetCount(); ++I)
-                if (GetObject(I) == AObject)
-                    return I;
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2301,19 +2232,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::LoadFromFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, O_RDONLY);
-            try {
-                LoadFromStream(Stream);
-            } catch (...) {
-                delete Stream;
-                throw;
-            }
-            delete Stream;
+            CFileStream Stream(lpszFileName, O_RDONLY);
+            LoadFromStream(&Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::LoadFromStream(CStream *Stream) {
-
             size_t BufSize, Count;
             LPTSTR Buffer;
 
@@ -2359,17 +2283,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SaveToFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, OF_CREATE);
-            try {
-                SaveToStream(Stream);
-            } catch (...) {
-            }
-            delete Stream;
+        void CStrings::SaveToFile(LPCTSTR lpszFileName) const {
+            CFileStream Stream(lpszFileName, OF_CREATE);
+            SaveToStream(&Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SaveToStream(CStream *Stream) {
+        void CStrings::SaveToStream(CStream *Stream) const {
             const CString& S = GetText();
             Stream->WriteBuffer(S.Data(), S.Size());
         }
@@ -2771,7 +2691,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringList::InsertItem(int Index, const CString &S, CObject *AObject) {
-
             if (m_nCount == m_nCapacity)
                 Grow();
 
@@ -2788,7 +2707,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringList::InsertItem(int Index, reference Str, CObject *AObject) {
-
             if (m_nCount == m_nCapacity)
                 Grow();
 
@@ -2805,7 +2723,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringList::InsertItem(int Index, TCHAR C, CObject *AObject) {
-
             if (m_nCount == m_nCapacity)
                 Grow();
 
@@ -3028,7 +2945,7 @@ namespace Delphi {
 
         inline void AddSysError() {
             if (GSysErrorCount == 0) {
-                GSysError = GSysError->CreateSysError();
+                GSysError = CSysError::CreateSysError();
             }
 
             GSysErrorCount++;
@@ -3039,7 +2956,7 @@ namespace Delphi {
             GSysErrorCount--;
 
             if (GSysErrorCount == 0) {
-                GSysError->DestroySysError();
+                CSysError::DestroySysError();
                 GSysError = nullptr;
             }
         }
@@ -3067,6 +2984,7 @@ namespace Delphi {
                 Add(M);
             }
         }
+        //--------------------------------------------------------------------------------------------------------------
 
         const CString& CSysError::StrError(int AError) {
             if (AError >= 0 && AError < Count())
@@ -3152,11 +3070,10 @@ namespace Delphi {
             pthread_cond_init(&m_Suspend, nullptr);
 
             pthread_mutex_init(&m_Lock, nullptr);
-            //m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+            m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
             pthread_attr_init(&m_hAttr);
-
-//            pthread_attr_setdetachstate(&m_hAttr, PTHREAD_CREATE_DETACHED);
+            pthread_attr_setdetachstate(&m_hAttr, PTHREAD_CREATE_DETACHED);
 
             m_nThreadId = pthread_create(&m_hHandle, &m_hAttr, &ThreadProc, (PVOID) this);
 

@@ -406,7 +406,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHashedStringList::UpdateValueHash() {
+        void CHashedStringList::UpdateValueHash() const {
             if (m_ValueHashValid)
                 return;
 
@@ -422,7 +422,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHashedStringList::UpdateNameHash() {
+        void CHashedStringList::UpdateNameHash() const {
             size_t P;
 
             if (m_NameHashValid)
@@ -434,7 +434,7 @@ namespace Delphi {
                 m_NameHash->Clear();
 
             for (int I = 0; I < Count(); ++I) {
-                CString &Key = Get(I);
+                const CString &Key = Get(I);
                 P = Key.Find(NameValueSeparator());
                 if (P != CString::npos) {
                     m_NameHash->Add(Key.SubString(0, P), I);
@@ -451,25 +451,25 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CHashedStringList::IndexOf(const CString &S) {
+        int CHashedStringList::IndexOf(const CString &S) const {
             UpdateValueHash();
             return m_ValueHash->ValueOf(S);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CHashedStringList::IndexOf(LPCTSTR S) {
+        int CHashedStringList::IndexOf(LPCTSTR S) const {
             UpdateValueHash();
             return m_ValueHash->ValueOf(S);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CHashedStringList::IndexOfName(const CString &Name) {
+        int CHashedStringList::IndexOfName(const CString &Name) const {
             UpdateNameHash();
             return m_NameHash->ValueOf(Name);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CHashedStringList::IndexOfName(LPCTSTR Name) {
+        int CHashedStringList::IndexOfName(LPCTSTR Name) const {
             UpdateNameHash();
             return m_NameHash->ValueOf(Name);
         }
@@ -492,7 +492,7 @@ namespace Delphi {
 
         CMemIniFile::~CMemIniFile() {
             if (AutoSave() && Modified())
-                UpdateFile();
+                CMemIniFile::UpdateFile();
             delete m_Sections;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -510,7 +510,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CMemIniFile::GetCaseSensitive() {
+        bool CMemIniFile::GetCaseSensitive() const {
             return m_CaseSensitive; // because Linux
         }
         //--------------------------------------------------------------------------------------------------------------
