@@ -149,7 +149,7 @@ namespace Delphi {
 
             virtual bool CheckForSocketError(ssize_t AResult, int const AIgnore[], int ACount, CErrorGroup AErrGroup);
 
-            void RaiseSocketError(int AErr);
+            static void RaiseSocketError(int AErr);
 
             virtual CSocket Accept(CSocket ASocket, char *VIP, size_t ASize, unsigned short *VPort, unsigned int AFlags);
 
@@ -211,7 +211,7 @@ namespace Delphi {
 
             virtual void SetNonBloking(CSocket ASocket);
 
-            int LastError() { return m_LastError; }
+            int LastError() const { return m_LastError; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ namespace Delphi {
 
             ~CSocketComponent();
 
-            void BeginWork(CWorkMode AWorkMode, ssize_t ASize = 0); // ASize = 0
+            void BeginWork(CWorkMode AWorkMode, ssize_t ASize = 0);
 
             void DoWork(CWorkMode AWorkMode, ssize_t ACount);
 
@@ -359,7 +359,7 @@ namespace Delphi {
 
             void SetPeerIP(LPCSTR Value);
 
-            int GetLastError();
+            static int GetLastError();
 
         public:
 
@@ -375,25 +375,25 @@ namespace Delphi {
 
             void CloseSocket(bool AResetLocal = true);
 
-            bool GetHostName(char *AName, size_t ASize);
+            static bool GetHostName(char *AName, size_t ASize);
 
-            void GetHostByName(const char *AName, char *VHost, size_t ASize);
+            static void GetHostByName(const char *AName, char *VHost, size_t ASize);
 
-            void GetIPByName(const char *AName, char *VIP, size_t ASize);
+            static void GetIPByName(const char *AName, char *VIP, size_t ASize);
 
-            bool GetHostIP(char *AIP, size_t ASize);
+            static bool GetHostIP(char *AIP, size_t ASize);
 
             int Connect(sa_family_t AFamily, LPCSTR AHost, unsigned short APort);
 
             bool CheckConnection();
 
-            int GetSocketError();
+            int GetSocketError() const;
 
-            void GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen);
+            void GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen) const;
 
-            void Listen(int anQueueCount);
+            void Listen(int anQueueCount) const;
 
-            ssize_t Recv(void *ABuffer, size_t ALength);
+            ssize_t Recv(void *ABuffer, size_t ALength) const;
 
             ssize_t RecvFrom(void *ABuffer, size_t ALength);
 
@@ -401,15 +401,15 @@ namespace Delphi {
 
             ssize_t Send(void *ABuffer, size_t ABufferSize);
 
-            ssize_t SendTo(LPCSTR AIP, unsigned short APort, void *ABuffer, size_t ABufferSize);
+            ssize_t SendTo(LPCSTR AIP, unsigned short APort, void *ABuffer, size_t ABufferSize) const;
 
             void SetPeer(LPCSTR asIP, unsigned short anPort);
 
-            void SetSockOpt(int ALevel, int AOptName, const void *AOptVal, socklen_t AOptLen);
+            void SetSockOpt(int ALevel, int AOptName, const void *AOptVal, socklen_t AOptLen) const;
 
-            bool Select(CSocket ASocket, int ATimeOut);
+            static bool Select(CSocket ASocket, int ATimeOut);
 
-            bool SelectWrite(CSocket ASocket, int ATimeOut);
+            static bool SelectWrite(CSocket ASocket, int ATimeOut);
 
             void UpdateBindingLocal();
 
@@ -417,29 +417,29 @@ namespace Delphi {
 
             void UpdateFromPeer();
 
-            int SocketType() { return m_SocketType; }
+            int SocketType() const { return m_SocketType; }
 
-            bool HandleAllocated() { return m_HandleAllocated; }
+            bool HandleAllocated() const { return m_HandleAllocated; }
 
-            bool Nonblocking() { return m_Nonblocking; }
+            bool Nonblocking() const { return m_Nonblocking; }
 
-            CSocket Handle() { return m_Handle; }
+            CSocket Handle() const { return m_Handle; }
 
             char *IP() { return m_IP; }
             void IP(LPCSTR Value) { SetIP(Value); }
 
-            unsigned short Port() { return m_Port; }
+            unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
 
             char *PeerIP() { return m_PeerIP; }
             void PeerIP(LPCSTR Value) { SetPeerIP(Value); }
 
-            unsigned short PeerPort() { return m_PeerPort; }
+            unsigned short PeerPort() const { return m_PeerPort; }
 
-            unsigned short ClientPortMin() { return m_ClientPortMin; }
+            unsigned short ClientPortMin() const { return m_ClientPortMin; }
             void ClientPortMin(unsigned short Value) { m_ClientPortMin = Value; }
 
-            unsigned short ClientPortMax() { return m_ClientPortMax; }
+            unsigned short ClientPortMax() const { return m_ClientPortMax; }
             void ClientPortMax(unsigned short Value) { m_ClientPortMax = Value; }
 
             int LastError() { return GetLastError(); }
@@ -474,7 +474,7 @@ namespace Delphi {
             CSocketHandle *Handles(int Index) { return GetItem(Index); }
             void Handles(int Index, CSocketHandle *Value) { SetItem(Index, Value); }
 
-            unsigned short DefaultPort() { return m_DefaultPort; }
+            unsigned short DefaultPort() const { return m_DefaultPort; }
             void DefaultPort(unsigned short Value) { m_DefaultPort = Value; }
 
             CSocketHandle *operator[] (int Index) override { return Handles(Index); };
@@ -496,7 +496,7 @@ namespace Delphi {
 
             CIOHandler() : CSocketComponent() {};
 
-            virtual ~CIOHandler() { Close(); };
+            virtual ~CIOHandler() { CIOHandler::Close(); };
 
             virtual void AfterAccept() {};
 
@@ -661,9 +661,9 @@ namespace Delphi {
             CIOHandler *IOHandler() { return m_IOHandler; }
             void IOHandler(CIOHandler *Value, bool AFree = true) { SetIOHandler(Value, AFree); }
 
-            bool ClosedGracefully() { return m_ClosedGracefully; }
+            bool ClosedGracefully() const { return m_ClosedGracefully; }
 
-            bool OEM() { return m_OEM; }
+            bool OEM() const { return m_OEM; }
             void OEM(bool Value) { m_OEM = Value; }
 
             bool Connected();
@@ -720,15 +720,15 @@ namespace Delphi {
 
             void ReadStrings(CStrings *AValue, int AReadLinesCount = -1);
 
-            bool ReadLnTimedOut() { return m_ReadLnTimedOut; }
+            bool ReadLnTimedOut() const { return m_ReadLnTimedOut; }
 
-            int ReadTimeOut() { return m_ReadTimeOut; }
+            int ReadTimeOut() const { return m_ReadTimeOut; }
             void ReadTimeOut(int Value) { m_ReadTimeOut = Value; }
 
-            size_t RecvBufferSize() { return m_RecvBufferSize; }
+            size_t RecvBufferSize() const { return m_RecvBufferSize; }
             void RecvBufferSize(size_t Value) { m_RecvBufferSize = Value; }
 
-            size_t MaxLineLength() { return m_MaxLineLength; }
+            size_t MaxLineLength() const { return m_MaxLineLength; }
             void MaxLineLength(size_t Value) { m_MaxLineLength = Value; }
 
             CMaxLineAction MaxLineAction() { return m_MaxLineAction; }
@@ -910,7 +910,7 @@ namespace Delphi {
             CString &Host() { return m_Host; }
             const CString &Host() const { return m_Host; }
 
-            unsigned short Port() { return m_Port; }
+            unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
 
         };
@@ -1035,7 +1035,7 @@ namespace Delphi {
 
             ~CServerIOHandler() override = default;
 
-            CIOHandler *Accept(CSocket ASocket, int AFlags);
+            static CIOHandler *Accept(CSocket ASocket, int AFlags);
 
         }; // CServerIOHandler
 
@@ -1086,7 +1086,7 @@ namespace Delphi {
 
             ~CUDPServer();
 
-            bool Active() { return m_Active; }
+            bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
         };
@@ -1116,7 +1116,7 @@ namespace Delphi {
 
             ~CUDPClient();
 
-            bool Active() { return m_Active; }
+            bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
             CSocketHandle *Socket() { return m_Socket; }
@@ -1391,25 +1391,25 @@ namespace Delphi {
             Pointer Data() { return m_Data; }
             void Data(Pointer Value) { m_Data = Value; }
 
-            char CmdDelimiter() { return m_CmdDelimiter; }
+            char CmdDelimiter() const { return m_CmdDelimiter; }
             void CmdDelimiter(char Value) { m_CmdDelimiter = Value; }
 
             LPCTSTR Command() { return m_Command; }
             void Command(LPCTSTR Value) { m_Command = Value; }
 
-            bool Disconnect() { return m_Disconnect; }
+            bool Disconnect() const { return m_Disconnect; }
             void Disconnect(bool Value) { m_Disconnect = Value; }
 
-            bool Enabled() { return m_Enabled; }
+            bool Enabled() const { return m_Enabled; }
             void Enabled(bool Value) { m_Enabled = Value; }
 
-            char ParamDelimiter() { return m_ParamDelimiter; }
+            char ParamDelimiter() const { return m_ParamDelimiter; }
             void ParamDelimiter(char Value) { m_ParamDelimiter = Value; }
 
-            bool ParseParams() { return m_ParseParams; }
+            bool ParseParams() const { return m_ParseParams; }
             void ParseParams(bool Value) { m_ParseParams = Value; }
 
-            int ReplyExceptionCode() { return m_ReplyExceptionCode; }
+            int ReplyExceptionCode() const { return m_ReplyExceptionCode; }
             void ReplyExceptionCode(int Value) { m_ReplyExceptionCode = Value; }
 
             const COnSocketCommandEvent &OnCommand() { return m_OnCommand; }
@@ -1445,6 +1445,8 @@ namespace Delphi {
 
         public:
 
+            CCommandHandlers();
+
             explicit CCommandHandlers(CSocketServer *AServer);
 
             explicit CCommandHandlers(CSocketClient *AClient);
@@ -1454,13 +1456,13 @@ namespace Delphi {
 
             CCommandHandler *Add();
 
-            bool EnabledDefault() { return m_EnabledDefault; }
+            bool EnabledDefault() const { return m_EnabledDefault; }
             void EnabledDefault(bool Value) { m_EnabledDefault = Value; }
 
-            bool ParseParamsDefault() { return m_ParseParamsDefault; }
+            bool ParseParamsDefault() const { return m_ParseParamsDefault; }
             void ParseParamsDefault(bool Value) { m_ParseParamsDefault = Value; }
 
-            bool DisconnectDefault() { return m_DisconnectDefault; }
+            bool DisconnectDefault() const { return m_DisconnectDefault; }
             void DisconnectDefault(bool Value) { m_DisconnectDefault = Value; }
 
             CCommandHandler *Commands(int Index) { return GetItem(Index); }
@@ -1500,7 +1502,7 @@ namespace Delphi {
 
             CCommandHandler *CommandHandler() { return m_CommandHandler; }
 
-            bool PerformReply() { return m_PerformReply; }
+            bool PerformReply() const { return m_PerformReply; }
             void PerformReply(bool Value) { m_PerformReply = Value; }
 
             CStringList *Params() { return m_Params; }
@@ -1554,7 +1556,7 @@ namespace Delphi {
 
             ~CTCPServer() override;
 
-            bool Active() { return m_Active; }
+            bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
             int IndexOfThreadId(pid_t dwThreadId);
@@ -1621,14 +1623,14 @@ namespace Delphi {
 
             void Del(CPollEventHandler *AEventHandler);
 
-            int TimeOut() { return m_TimeOut; };
+            int TimeOut() const { return m_TimeOut; };
             void TimeOut(int Value) { m_TimeOut = Value; };
 
             int Wait(const sigset_t *ASigmask = nullptr);
 
             CPollEvent *EventList() { return m_EventList; };
 
-            size_t EventSize() { return m_EventSize; };
+            size_t EventSize() const { return m_EventSize; };
 
             CPollEvent *Events(int Index) { return GetEvent(Index); };
 
@@ -1645,7 +1647,7 @@ namespace Delphi {
         typedef std::function<void (CPollEventHandler *AHandler)> COnPollEventHandlerEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CPollEvenType { etNone, etAccept, etConnect, etIO, etTimer };
+        enum CPollEventType { etNull, etAccept, etConnect, etIO, etDelete, etTimer };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CEPoll;
@@ -1663,7 +1665,7 @@ namespace Delphi {
 
             uint32_t m_Events;
 
-            CPollEvenType m_EventType;
+            CPollEventType m_EventType;
 
             CPollConnection *m_Binding;
             bool m_FreeBinding;
@@ -1679,7 +1681,7 @@ namespace Delphi {
 
         protected:
 
-            void SetEventType(CPollEvenType Value);
+            void SetEventType(CPollEventType Value);
 
             void SetBinding(CPollConnection *Value, bool AFree);
 
@@ -1689,28 +1691,26 @@ namespace Delphi {
             void DoConnectEvent();
             void DoReadEvent();
             void DoWriteEvent();
-
-            //void EventType (CPollEvenType Value) { SetEventType(Value); }
-
+            
         public:
 
             explicit CPollEventHandler(CPollEventHandlers *AEventHandlers, CSocket ASocket);
 
             ~CPollEventHandler() override;
 
-            CSocket Socket() { return m_Socket; }
+            CSocket Socket() const { return m_Socket; }
 
-            uint32_t Events() { return m_Events; }
+            uint32_t Events() const { return m_Events; }
 
             CPollConnection *Binding() { return m_Binding; }
             void Binding(CPollConnection *Value, bool AFree = false) { SetBinding(Value, AFree); }
 
-            void Start(CPollEvenType AEventType = etIO);
+            void Start(CPollEventType AEventType = etIO);
             void Stop();
 
-            bool Stoped() { return m_EventType == etNone; };
+            bool Stopped() { return m_EventType == etDelete; };
 
-            CPollEvenType EventType() { return m_EventType; }
+            CPollEventType EventType() { return m_EventType; }
 
             const COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
@@ -1797,7 +1797,11 @@ namespace Delphi {
             int m_ClockId;
             int m_Flags;
 
+            COnPollEventHandlerEvent m_OnTimer;
+
         protected:
+
+            virtual void DoTimer(CPollEventHandler *AHandler);
 
             void Disconnect() override {
                 Close();
@@ -1809,18 +1813,24 @@ namespace Delphi {
 
             ~CEPollTimer() override;
 
-            inline static class CEPollTimer *CreateAs(int AClockId, int AFlags) {
+            inline static class CEPollTimer *CreateTimer(int AClockId, int AFlags) {
                 return new CEPollTimer(AClockId, AFlags);
             };
 
             int Handle() { return m_Handle; };
-            int ClockId() { return m_ClockId; };
+            int ClockId() const { return m_ClockId; };
 
             void Open();
             void Close();
 
             void SetTime(int AFlags, const struct itimerspec *AIn, struct itimerspec *AOut = nullptr);
             void GetTime(struct itimerspec *AOut);
+
+            CPollEventHandler *AllocateTimer(CPollEventHandlers *AEventHandlers, long int Value, long int Interval = 0, int Flags = 0);
+            void SetTimer(long int Value, long int Interval = 0, int Flags = 0);
+
+            const COnPollEventHandlerEvent &OnTimer() { return m_OnTimer; }
+            void OnTimer(COnPollEventHandlerEvent && Value) { m_OnTimer = Value; }
 
         }; // CFileStream
 
@@ -1834,8 +1844,6 @@ namespace Delphi {
         private:
 
             CPollStack *m_PollStack;
-
-            COnPollEventHandlerEvent m_OnTimer;
 
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
@@ -1865,8 +1873,6 @@ namespace Delphi {
 
             virtual void DoWrite(CPollEventHandler *AHandler) abstract;
 
-            virtual void DoTimer(CPollEventHandler *AHandler);
-
             void DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException);
 
         public:
@@ -1878,15 +1884,12 @@ namespace Delphi {
             CPollStack *PollStack() { return m_PollStack; };
             void PollStack(CPollStack *Value) { SetPollStack(Value); };
 
-            bool ExternalPollStack() { return !m_FreePollStack; };
+            bool ExternalPollStack() const { return !m_FreePollStack; };
 
             int TimeOut() { return GetTimeOut(); };
             void TimeOut(int Value) { SetTimeOut(Value); };
 
             bool Wait();
-
-            CEPollTimer *CreateTimer(int ClockId, long int Value, long int Interval = 0, int Flags = 0, int SetFlags = 0);
-            static void SetTimer(CEPollTimer *Timer, long int Value, long int Interval = 0, int Flags = 0);
 
             static void CheckHandler(CPollEventHandler *AHandler);
 
@@ -1896,8 +1899,6 @@ namespace Delphi {
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
 
-            const COnPollEventHandlerEvent &OnTimer() { return m_OnTimer; }
-            void OnTimer(COnPollEventHandlerEvent && Value) { m_OnTimer = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2036,10 +2037,10 @@ namespace Delphi {
 
             ~CAsyncClient() override;
 
-            bool AutoConnect() { return m_AutoConnect; }
+            bool AutoConnect() const { return m_AutoConnect; }
             void AutoConnect(bool Value) { m_AutoConnect = Value; }
 
-            bool Active() { return m_Active; }
+            bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
             void ConnectStart();

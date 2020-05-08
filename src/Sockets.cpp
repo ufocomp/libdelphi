@@ -808,22 +808,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSocketHandle::GetSocketError() {
+        int CSocketHandle::GetSocketError() const {
             return GStack->GetSocketError(Handle());
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen) {
+        void CSocketHandle::GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen) const {
             GStack->CheckForSocketError(GStack->GetSockOpt(Handle(), ALevel, AOptName, AOptVal, &AOptLen), egSystem);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::Listen(int anQueueCount) {
+        void CSocketHandle::Listen(int anQueueCount) const {
             GStack->CheckForSocketError(GStack->Listen(Handle(), anQueueCount), egSystem);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ALength) {
+        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ALength) const {
             return GStack->Recv(Handle(), ABuffer, ALength, 0);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -893,7 +893,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::SendTo(LPCSTR AIP, const unsigned short APort, void *ABuffer, size_t ABufferSize) {
+        ssize_t CSocketHandle::SendTo(LPCSTR AIP, const unsigned short APort, void *ABuffer, size_t ABufferSize) const {
             ssize_t BytesOut;
 
             if (m_SocketType == SOCK_STREAM || m_SocketType == SOCK_SEQPACKET)
@@ -917,7 +917,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::SetSockOpt(int ALevel, int AOptName, const void *AOptVal, socklen_t AOptLen) {
+        void CSocketHandle::SetSockOpt(int ALevel, int AOptName, const void *AOptVal, socklen_t AOptLen) const {
             GStack->CheckForSocketError(GStack->SetSockOpt(Handle(), ALevel, AOptName, AOptVal, AOptLen), egSystem);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1503,7 +1503,7 @@ namespace Delphi {
         size_t CTCPConnection::ReadLn(char *AStr, char ATerminator, int ATimeout, int AMaxLineLength) {
 
             size_t LInputBufferSize;
-            int LSize, LTermPos;
+            size_t LSize, LTermPos;
 
             char LTerminator[2] = {};
 
@@ -1554,7 +1554,8 @@ namespace Delphi {
                     // Can only return 0 if error or timeout
                     m_ReadLnTimedOut = (ReadFromStack(true, ATimeout == TimeoutDefault) == 0);
                     if (ReadLnTimedOut())
-                        return 0;                }
+                        return 0;
+                }
             } while (LTermPos == 0);
 
             // Extract actual data
@@ -1789,12 +1790,12 @@ namespace Delphi {
         CClientIOHandler::CClientIOHandler(): CIOHandlerSocket() {
             m_MaxTries = 5;
             m_Attempts = 0;
-            Open();
+            CClientIOHandler::Open();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CClientIOHandler::~CClientIOHandler() {
-            Close();
+            CClientIOHandler::Close();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1989,7 +1990,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CUDPClient::~CUDPClient() {
-            SetActive(false);
+            CUDPClient::SetActive(false);
             FreeAndNil(m_Socket);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2011,7 +2012,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketThread::CSocketThread(bool ACreateSuspended) : CThread(ACreateSuspended) {
+        CSocketThread::CSocketThread(bool ACreateSuspended): CThread(ACreateSuspended) {
             //pthread_mutex_init(&m_Lock, nullptr);
             m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
@@ -2026,7 +2027,7 @@ namespace Delphi {
 
         CSocketThread::~CSocketThread() {
             FreeOnTerminate(false); //prevent destroy between Terminate & WaitFor
-            Cleanup();
+            CSocketThread::Cleanup();
             pthread_mutex_destroy(&m_Lock);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2433,19 +2434,22 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CCommandHandlers::CCommandHandlers(CSocketServer *AServer): CCollection(this) {
-            m_Server = AServer;
+        CCommandHandlers::CCommandHandlers(): CCollection(this) {
+            m_Server = nullptr;
             m_Client = nullptr;
             m_EnabledDefault = true;
             m_ParseParamsDefault = true;
+            m_DisconnectDefault = false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CCommandHandlers::CCommandHandlers(CSocketClient *AClient): CCollection(this) {
-            m_Server = nullptr;
+        CCommandHandlers::CCommandHandlers(CSocketServer *AServer): CCommandHandlers() {
+            m_Server = AServer;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CCommandHandlers::CCommandHandlers(CSocketClient *AClient): CCommandHandlers() {
             m_Client = AClient;
-            m_EnabledDefault = true;
-            m_ParseParamsDefault = true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2789,7 +2793,6 @@ namespace Delphi {
 
         void CPollStack::Ctl(int AOption, CPollEventHandler *AEventHandler) {
             CSocket Socket;
-            uint32_t Events;
             struct epoll_event ee = {};
 
             if (!Assigned(AEventHandler))
@@ -2799,16 +2802,14 @@ namespace Delphi {
                 Create(0);
 
             Socket = AEventHandler->Socket();
-            Events = AEventHandler->Events();
 
+            ee.events = AEventHandler->Events();
             ee.data.fd = Socket;
 
             if (AOption == EPOLL_CTL_DEL) {
                 ee.data.ptr = nullptr;
-                ee.events = 0;
             } else {
                 ee.data.ptr = AEventHandler;
-                ee.events = Events;
             }
 
             if (epoll_ctl(m_Handle, AOption, Socket, &ee) != 0)
@@ -2865,7 +2866,7 @@ namespace Delphi {
             CCollectionItem(AEventHandlers) {
             m_Socket = ASocket;
             m_Events = 0;
-            m_EventType = etNone;
+            m_EventType = etNull;
             m_Binding = nullptr;
             m_FreeBinding = false;
             m_EventHandlers = AEventHandlers;
@@ -2877,22 +2878,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollEventHandler::~CPollEventHandler() {
+            CPollConnection *Temp;
             Stop();
             if (Assigned(m_Binding)) {
+                Temp = m_Binding;
                 m_Binding->Disconnect();
-                if (m_FreeBinding)
-                    delete m_Binding;
                 m_Binding = nullptr;
+                if (m_FreeBinding)
+                    delete Temp;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::SetEventType(CPollEvenType Value) {
+        void CPollEventHandler::SetEventType(CPollEventType Value) {
             if (m_EventType != Value) {
                 switch (Value) {
-                    case etNone:
+                    case etNull:
                         m_Events = 0;
-                        m_EventHandlers->PollDel(this);
                         break;
                     case etTimer:
                     case etAccept:
@@ -2905,10 +2907,15 @@ namespace Delphi {
                         break;
                     case etIO:
                         m_Events = EPOLLIN | EPOLLOUT | EPOLLET;
-                        if (m_EventType == etNone)
+                        if (m_EventType == etNull)
                             m_EventHandlers->PollAdd(this);
                         else
                             m_EventHandlers->PollMod(this);
+                        break;
+                    case etDelete:
+                        m_Events = 0;
+                        if (m_EventType != etNull)
+                            m_EventHandlers->PollDel(this);
                         break;
                 }
                 m_EventType = Value;
@@ -2927,13 +2934,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::Start(CPollEvenType AEventType) {
+        void CPollEventHandler::Start(CPollEventType AEventType) {
             SetEventType(AEventType);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPollEventHandler::Stop() {
-            SetEventType(etNone);
+            SetEventType(etDelete);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3044,9 +3051,12 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPollTimer::CEPollTimer(int AClockId, int AFlags): CHandleStream(INVALID_HANDLE_VALUE), CPollConnection(this) {
+        CEPollTimer::CEPollTimer(int AClockId, int AFlags): CHandleStream(INVALID_HANDLE_VALUE),
+            CPollConnection(this) {
+
             m_ClockId = AClockId;
             m_Flags = AFlags;
+            m_OnTimer = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3091,6 +3101,49 @@ namespace Delphi {
                 throw EOSError(errno, _T("Could not get file time error: "));
             }
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CPollEventHandler *CEPollTimer::AllocateTimer(CPollEventHandlers *AEventHandlers, long int Value, long int Interval, int Flags) {
+            CPollEventHandler *Handler;
+
+            SetTimer(Value, Interval, Flags);
+
+            Handler = AEventHandlers->Add(m_Handle);
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+            Handler->OnTimerEvent([this](auto && AHandler) { DoTimer(AHandler); });
+#else
+            Handler->OnTimerEvent(std::bind(&CEPollTimer::DoTimer, this, _1));
+#endif
+            Handler->Binding(this, true);
+            Handler->Start(etTimer);
+
+            return Handler;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPollTimer::SetTimer(long int Value, long int Interval, int Flags) {
+            struct itimerspec ts = {0, 0};
+            struct timespec now = {0, 0};
+
+            if (Flags == TFD_TIMER_ABSTIME) {
+                if (::clock_gettime(ClockId(), &now) == -1)
+                    throw EOSError(errno, _T("Could not get clock time. Error: "));
+            }
+
+            ts.it_value.tv_sec = now.tv_sec + Value / 1000;
+            ts.it_value.tv_nsec = now.tv_nsec;
+
+            ts.it_interval.tv_sec = Interval / 1000;
+            ts.it_interval.tv_nsec = 0;
+
+            SetTime(Flags, &ts);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPollTimer::DoTimer(CPollEventHandler *AHandler) {
+            if (m_OnTimer != nullptr)
+                m_OnTimer(AHandler);
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3100,12 +3153,8 @@ namespace Delphi {
 
         CEPoll::CEPoll() {
             m_EventHandlers = nullptr;
-
             m_PollStack = new CPollStack();
-
             m_FreePollStack = true;
-
-            m_OnTimer = nullptr;
             m_OnEventHandlerException = nullptr;
 
             CreatePollEventHandlers();
@@ -3120,7 +3169,11 @@ namespace Delphi {
 
         void CEPoll::CreatePollEventHandlers() {
             m_EventHandlers = new CPollEventHandlers(m_PollStack);
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+            m_EventHandlers->OnException([this](auto && AHandler, auto && AException) { DoEventHandlersException(AHandler, AException); });
+#else
             m_EventHandlers->OnException(std::bind(&CEPoll::DoEventHandlersException, this, _1, _2));
+#endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3151,7 +3204,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPoll::CheckHandler(CPollEventHandler *AHandler) {
-            if (AHandler->Stoped()) {
+            if (AHandler->Stopped()) {
                 delete AHandler;
             }
         }
@@ -3253,8 +3306,6 @@ namespace Delphi {
                     if (EEvents & EPOLLIN) {
                         if (LHandler->OnTimerEvent() != nullptr) {
                             LHandler->DoTimerEvent();
-                        } else {
-                            DoTimer(LHandler);
                         }
                     }
                 }
@@ -3263,46 +3314,6 @@ namespace Delphi {
             }
 
             return true;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CEPollTimer *CEPoll::CreateTimer(int ClockId, long int Value, long int Interval, int Flags, int SetFlags) {
-
-            CPollEventHandler *Handler;
-            CEPollTimer *Timer = CEPollTimer::CreateAs(ClockId, Flags);
-
-            SetTimer(Timer, Value, Interval, SetFlags);
-
-            Handler = m_EventHandlers->Add(Timer->Handle());
-            Handler->Binding(Timer, true);
-            Handler->Start(etTimer);
-
-            return Timer;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPoll::SetTimer(CEPollTimer *Timer, long int Value, long int Interval, int Flags) {
-            struct itimerspec ts = {0, 0};
-            struct timespec now = {0, 0};
-
-            if (Flags == TFD_TIMER_ABSTIME) {
-                if (::clock_gettime(Timer->ClockId(), &now) == -1)
-                    throw EOSError(errno, _T("Could not get clock time. Error: "));
-            }
-
-            ts.it_value.tv_sec = now.tv_sec + Value / 1000;
-            ts.it_value.tv_nsec = now.tv_nsec;
-
-            ts.it_interval.tv_sec = Interval / 1000;
-            ts.it_interval.tv_nsec = 0;
-
-            Timer->SetTime(Flags, &ts);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CEPoll::DoTimer(CPollEventHandler *AHandler) {
-            if (m_OnTimer != nullptr)
-                m_OnTimer(AHandler);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3462,8 +3473,7 @@ namespace Delphi {
                     for (int i = 0; i < m_Bindings->Count(); ++i) {
                         if (AValue >= alBinding && !m_Bindings->Handles(i)->HandleAllocated()) {
                             m_Bindings->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
-                            m_Bindings->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True,
-                                                               sizeof(SO_True));
+                            m_Bindings->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
                             m_Bindings->Handles(i)->Bind();
                             m_Bindings->Handles(i)->Listen(SOMAXCONN);
@@ -3592,11 +3602,17 @@ namespace Delphi {
             auto LEventHandler = m_EventHandlers->Add(LIOHandler->Binding()->Handle());
 
             if (ExternalPollStack()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                LEventHandler->OnTimeOutEvent([this](auto && AHandler) { DoTimeOut(AHandler); });
+                LEventHandler->OnConnectEvent([this](auto && AHandler) { DoConnect(AHandler); });
+                LEventHandler->OnReadEvent([this](auto && AHandler) { DoRead(AHandler); });
+                LEventHandler->OnWriteEvent([this](auto && AHandler) { DoWrite(AHandler); });
+#else
                 LEventHandler->OnTimeOutEvent(std::bind(&CAsyncClient::DoTimeOut, this, _1));
                 LEventHandler->OnConnectEvent(std::bind(&CAsyncClient::DoConnect, this, _1));
                 LEventHandler->OnReadEvent(std::bind(&CAsyncClient::DoRead, this, _1));
                 LEventHandler->OnWriteEvent(std::bind(&CAsyncClient::DoWrite, this, _1));
-                LEventHandler->OnTimerEvent(std::bind(&CAsyncClient::DoTimer, this, _1));
+#endif
             }
 
             LEventHandler->Start(etConnect);
@@ -3681,8 +3697,11 @@ namespace Delphi {
 
                 if (Assigned(LIOHandler)) {
                     LConnection = new CTCPServerConnection(this);
-
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+#else
                     LConnection->OnDisconnected(std::bind(&CTCPAsyncServer::DoDisconnected, this, _1));
+#endif
                     LConnection->IOHandler(LIOHandler);
 
                     LIOHandler->AfterAccept();
@@ -3737,7 +3756,11 @@ namespace Delphi {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 
                 if (LIOHandler->Binding()->CheckConnection()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+#else
                     LConnection->OnDisconnected(std::bind(&CTCPAsyncClient::DoDisconnected, this, _1));
+#endif
                     AHandler->Start(etIO);
                     DoConnected(LConnection);
                 }

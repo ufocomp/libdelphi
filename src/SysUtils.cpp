@@ -62,7 +62,7 @@ namespace Delphi {
                 va_end(args);
             }
 
-            ::write(STDERR_FILENO, (LPTSTR) szBuffer, strlen(szBuffer));
+            ::write(STDERR_FILENO, szBuffer, strlen(szBuffer));
         }
 
 #else
@@ -473,7 +473,7 @@ namespace Delphi {
             struct stat sb = {};
 
             if (lstat(lpszFileName, &sb) != 0)
-                return false;//throw EOSError(errno, _T("Call lstat error: "));
+                return false;
 
             if (S_ISLNK(sb.st_mode)) {
                 if (!FollowLink) {

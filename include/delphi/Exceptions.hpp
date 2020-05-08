@@ -105,7 +105,7 @@ namespace Delphi {
             CString& Message() noexcept { return m_Message; };
             const CString& Message() const noexcept { return m_Message; };
 
-            int ErrorCode() { return m_SysError; };
+            int ErrorCode() const { return m_SysError; };
 
             LPCSTR what() const noexcept override { return m_Message.c_str(); };
         };
@@ -385,7 +385,7 @@ namespace Delphi {
 
             ~ESocketError() override = default;
 
-            int GetLastError() { return m_LastError; }
+            int GetLastError() const { return m_LastError; }
         };
         //--------------------------------------------------------------------------------------------------------------
 

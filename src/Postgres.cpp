@@ -198,6 +198,7 @@ namespace Delphi {
 
             m_OnChangeSocket = nullptr;
 
+            m_OnError = nullptr;
             m_OnStatus = nullptr;
             m_OnPollingStatus = nullptr;
 
@@ -211,6 +212,13 @@ namespace Delphi {
                 return m_OnChangeSocket(APQConnection, AOldSocket, ANewSocket);
             }
             return true;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectionEvent::DoError(CPQConnection *APQConnection) {
+            if (m_OnError != nullptr) {
+                m_OnError(APQConnection);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -250,8 +258,10 @@ namespace Delphi {
             m_Handle = nullptr;
             m_Socket = INVALID_SOCKET;
             m_TryConnect = false;
+            m_Connected = false;
             m_Status = CONNECTION_BAD;
             m_PollingStatus = PGRES_POLLING_WRITING;
+            m_StatusLastUpdate = Now();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -261,7 +271,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPQConnection::~CPQConnection() {
-            Disconnect();
+            CPQConnection::Disconnect();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -269,8 +279,10 @@ namespace Delphi {
             m_Handle = nullptr;
             m_Socket = INVALID_SOCKET;
             m_TryConnect = false;
+            m_Connected = false;
             m_Status = CONNECTION_BAD;
             m_PollingStatus = PGRES_POLLING_WRITING;
+            m_StatusLastUpdate = Now();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -294,20 +306,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQConnection::SetSocket(CSocket ASocket, int AFlags) {
-            if (m_Socket != ASocket) {
-                CSocket LOldSocket = m_Socket;
-                m_Socket = ASocket;
+        void CPQConnection::CheckSocket(bool AsyncMode) {
+            CSocket LSocket, LOldSocket;
+            LSocket = PQSocket();
+            if (m_Socket != LSocket) {
+                LOldSocket = m_Socket;
+                m_Socket = LSocket;
 
-                if (ASocket != SOCKET_ERROR && AFlags != -1) {
-                    if (PQsetnonblocking(m_Handle, AFlags) == -1) {
+                if (LSocket != SOCKET_ERROR && AsyncMode) {
+                    if (PQsetnonblocking(m_Handle, 1) == -1) {
                         throw EDBConnectionError(_T("[%d] Set non blocking connection failed: %s"), m_Socket,
                                                  GetErrorMessage());
                     }
                 }
 
-                if (!DoChangeSocket(this, LOldSocket, ASocket))
-                    throw EDBConnectionError(_T("Cannot change (%d) socket to (%d)"), LOldSocket, ASocket);
+                if (!DoChangeSocket(this, LOldSocket, LSocket))
+                    throw EDBConnectionError(_T("Cannot change (%d) socket to (%d)"), LOldSocket, LSocket);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -320,6 +334,7 @@ namespace Delphi {
         bool CPQConnection::CheckStatus(int const AIgnore[], int ACount) {
             m_Status = PQstatus(m_Handle);
             DoStatus(this);
+            m_StatusLastUpdate = Now();
             for (int i = 0; i < ACount; ++i)
                 if (m_Status == AIgnore[i])
                     return true;
@@ -404,6 +419,27 @@ namespace Delphi {
                 throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
 
             if (m_Status == CONNECTION_OK) {
+                m_Connected = true;
+                SetReceiver();
+                SetProcessor();
+                DoConnected(this);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnection::CheckPollConnection() {
+            if (m_Handle == nullptr)
+                throw EDBConnectionError(_T("Not enough memory."));
+
+            m_TryConnect = true;
+
+            DoPollingStatus(this);
+
+            if (m_PollingStatus == PGRES_POLLING_FAILED)
+                throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
+
+            if (m_PollingStatus == PGRES_POLLING_OK) {
+                m_Connected = true;
                 SetReceiver();
                 SetProcessor();
                 DoConnected(this);
@@ -414,22 +450,22 @@ namespace Delphi {
         void CPQConnection::Connect() {
             m_Handle = PQconnectdb(m_ConnInfo.ConnInfo().c_str());
             CheckConnection();
-            SetSocket(PQsocket(m_Handle));
+            CheckSocket();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnection::ConnectStart() {
             m_Handle = PQconnectStart(m_ConnInfo.ConnInfo().c_str());
-            CheckConnection();
-            SetSocket(PQsocket(m_Handle), 1);
+            CheckPollConnection();
+            CheckSocket(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnection::ConnectPoll() {
             m_PollingStatus = PQconnectPoll(m_Handle);
-            DoPollingStatus(this);
-            CheckConnection();
-            SetSocket(PQsocket(m_Handle), 1);
+            m_StatusLastUpdate = Now();
+            CheckPollConnection();
+            CheckSocket(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -437,15 +473,15 @@ namespace Delphi {
             if (!PQresetStart(m_Handle))
                 throw EDBConnectionError(_T("PQresetStart failed: %s"), GetErrorMessage());
             CheckConnection();
-            SetSocket(PQsocket(m_Handle), 1);
+            CheckSocket(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnection::ResetPoll() {
             m_PollingStatus = PQresetPoll(m_Handle);
-            DoPollingStatus(this);
-            CheckConnection();
-            SetSocket(PQsocket(m_Handle), 1);
+            m_StatusLastUpdate = Now();
+            CheckPollConnection();
+            CheckSocket(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -453,6 +489,23 @@ namespace Delphi {
             if (m_Handle != nullptr)
                 return PQbackendPID(m_Handle);
             return -1;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CPQConnection::PQSocket() {
+            if (m_Handle != nullptr)
+                return PQsocket(m_Handle);
+            return INVALID_SOCKET;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CPQConnection::NeedsPassword() {
+            return PQconnectionNeedsPassword(m_Handle) == 1;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CPQConnection::UsedPassword() {
+            return PQconnectionUsedPassword(m_Handle) == 1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -478,10 +531,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnection::Disconnect() {
-            if (m_TryConnect) {
+            if (m_Connected) {
                 DoDisconnected(this);
+                m_Connected = false;
+            }
+            if (m_TryConnect) {
                 ClosePoll();
                 Finish();
+                m_TryConnect = false;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -732,7 +789,11 @@ namespace Delphi {
                 Result = PQgetResult(m_Connection->Handle());
                 while (Result) {
                     LResult = new CPQResult(this, Result);
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LResult->OnStatus([this](auto && AResult) { DoResultStatus(AResult); });
+#else
                     LResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
+#endif
                     DoResult(LResult, LResult->ResultStatus());
                     Result = PQgetResult(m_Connection->Handle());
                 }
@@ -891,6 +952,7 @@ namespace Delphi {
             m_OnReceiver = nullptr;
             m_OnProcessor = nullptr;
 
+            m_OnError = nullptr;
             m_OnStatus = nullptr;
             m_OnPollingStatus = nullptr;
 
@@ -909,6 +971,13 @@ namespace Delphi {
         void CPQConnectPollEvent::DoProcessor(CPQConnection *AConnection, LPCSTR AMessage) {
             if (m_OnProcessor != nullptr) {
                 m_OnProcessor(AConnection, AMessage);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectPollEvent::DoError(CPQConnection *AConnection) {
+            if (m_OnError != nullptr) {
+                m_OnError(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -941,6 +1010,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPQConnectPoll::CPQConnectPoll(size_t ASizeMin, size_t ASizeMax): CPQConnectPollEvent(), CEPollClient() {
+            m_Timer = nullptr;
+            m_TimerInterval = 0;
+
             m_Active = false;
 
             m_SizeMin = ASizeMin;
@@ -979,6 +1051,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
+            SetTimerInterval(10 * 1000);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -988,8 +1061,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::StopAll() {
+            CPollEventHandler *LHandler;
             for (int I = m_EventHandlers->Count() - 1; I >= 0; --I) {
-                Stop(m_EventHandlers->Handlers(I));
+                LHandler = m_EventHandlers->Handlers(I);
+                if (LHandler->EventType() == etTimer) {
+                    LHandler->Stop();
+                    continue;
+                }
+                Stop(LHandler);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1006,6 +1085,29 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnectPoll::SetTimerInterval(int Value) {
+            if (m_TimerInterval != Value) {
+                m_TimerInterval = Value;
+                UpdateTimer();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectPoll::UpdateTimer() {
+            if (m_Timer == nullptr) {
+                m_Timer = CEPollTimer::CreateTimer(CLOCK_MONOTONIC, TFD_NONBLOCK);
+                m_Timer->AllocateTimer(m_EventHandlers, m_TimerInterval, m_TimerInterval);
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                m_Timer->OnTimer([this](auto && AHandler) { DoTimer(AHandler); });
+#else
+                m_Timer->OnTimer(std::bind(&CPQConnectPoll::DoTimer, this, _1));
+#endif
+            } else {
+                m_Timer->SetTimer(m_TimerInterval, m_TimerInterval);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CPollEventHandler *CPQConnectPoll::NewEventHandler(CPQConnection *AConnection) {
             CPollEventHandler *LEventHandler = nullptr;
 
@@ -1013,9 +1115,15 @@ namespace Delphi {
                 LEventHandler = m_EventHandlers->Add(AConnection->Socket());
 
                 if (ExternalPollStack()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LEventHandler->OnTimeOutEvent([this](auto && AHandler) { DoTimeOut(AHandler); });
+                    LEventHandler->OnReadEvent([this](auto && AHandler) { DoRead(AHandler); });
+                    LEventHandler->OnWriteEvent([this](auto && AHandler) { DoWrite(AHandler); });
+#else
                     LEventHandler->OnTimeOutEvent(std::bind(&CPQConnectPoll::DoTimeOut, this, _1));
                     LEventHandler->OnReadEvent(std::bind(&CPQConnectPoll::DoRead, this, _1));
                     LEventHandler->OnWriteEvent(std::bind(&CPQConnectPoll::DoWrite, this, _1));
+#endif
                 }
 
                 LEventHandler->Binding(AConnection, true);
@@ -1032,7 +1140,7 @@ namespace Delphi {
 
         bool CPQConnectPoll::OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket, CSocket ANewSocket) {
             bool Result = true;
-            CPollEventHandler *LEventHandler = nullptr;
+            CPollEventHandler *LEventHandler;
 
             if (AOldSocket != SOCKET_ERROR) {
                 LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
@@ -1083,7 +1191,37 @@ namespace Delphi {
                                        "(for example, out of memory)."));
                     }
                 }
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                LConnection->OnChangeSocket([this](auto && AConnection, auto && AOldSocket, auto && ANewSocket) { return OnChangeSocket(AConnection, AOldSocket, ANewSocket); });
 
+                if (m_OnReceiver != nullptr) {
+                    LConnection->OnReceiver([this](auto && AConnection, auto && AResult) { DoReceiver(AConnection, AResult); });
+                }
+
+                if (m_OnProcessor != nullptr) {
+                    LConnection->OnProcessor([this](auto && AConnection, auto && AMessage) { DoProcessor(AConnection, AMessage); });
+                }
+
+                if (m_OnError != nullptr) {
+                    LConnection->OnError([this](auto && AConnection) { DoError(AConnection); });
+                }
+
+                if (m_OnStatus != nullptr) {
+                    LConnection->OnStatus([this](auto && AConnection) { DoStatus(AConnection); });
+                }
+
+                if (m_OnPollingStatus != nullptr) {
+                    LConnection->OnPollingStatus([this](auto && AConnection) { DoPollingStatus(AConnection); });
+                }
+
+                if (m_OnConnected != nullptr) {
+                    LConnection->OnConnected([this](auto && Sender) { DoConnected(Sender); });
+                }
+
+                if (m_OnDisconnected != nullptr) {
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                }
+#else
                 LConnection->OnChangeSocket(std::bind(&CPQConnectPoll::OnChangeSocket, this, _1, _2, _3));
 
                 if (m_OnReceiver != nullptr) {
@@ -1109,7 +1247,7 @@ namespace Delphi {
                 if (m_OnDisconnected != nullptr) {
                     LConnection->OnDisconnected(std::bind(&CPQConnectPoll::DoDisconnected, this, _1));
                 }
-
+#endif
                 LConnection->ConnectStart();
                 LConnection->ConnectPoll();
 
@@ -1124,7 +1262,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPQPollConnection *CPQConnectPoll::GetReadyConnection() {
-            CPQPollConnection *LConnection = nullptr;
+            CPQPollConnection *LConnection;
             CPQPollConnection *LResult = nullptr;
 
             for (int I = 0; I < m_EventHandlers->Count(); ++I) {
@@ -1140,6 +1278,7 @@ namespace Delphi {
                     }
                 } else {
                     if (LConnection->Status() == CONNECTION_BAD) {
+                        DoError(LConnection);
                         LConnection->ConnectionStatus(qsReset);
                         LConnection->ResetStart();
                         LConnection->ResetPoll();
@@ -1156,8 +1295,41 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnectPoll::DoTimer(CPollEventHandler *AHandler) {
+            CPQPollConnection *LConnection;
+            CPollEventHandler *LHandler;
+
+            ConnStatusType Status;
+
+            uint64_t exp;
+
+            auto LTimer = dynamic_cast<CEPollTimer *> (AHandler->Binding());
+            LTimer->Read(&exp, sizeof(uint64_t));
+
+            for (int i = 0; i < m_EventHandlers->Count(); ++i) {
+                LHandler = m_EventHandlers->Handlers(i);
+                if (LHandler != AHandler) {
+                    LConnection = GetConnection(LHandler);
+                    if (Assigned(LConnection)) {
+                        Status = PQstatus(LConnection->Handle());
+                        if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->StatusLastUpdate() >= (CDateTime) 10 / 86400))) {
+                            DoError(LConnection);
+                            LHandler->Start(etNull);
+                            Stop(LHandler);
+                        }
+                    }
+                }
+            }
+//            if (m_EventHandlers->Count() == 1)
+//                Active(false);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnectPoll::DoTimeOut(CPollEventHandler *AHandler) {
-            Stop(AHandler);
+            auto LConnection = GetConnection(AHandler);
+            if (Assigned(LConnection))
+                DoError(LConnection);
+            AHandler->Stop();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1196,9 +1368,10 @@ namespace Delphi {
                         break;
                 }
             } catch (Exception::Exception &E) {
+                LConnection->ConnectionStatus(qsError);
                 DoConnectException(LConnection, &E);
                 m_ConnInfo.PingValid(false);
-                LConnection->Disconnect();
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1244,9 +1417,10 @@ namespace Delphi {
                         break;
                 }
             } catch (Exception::Exception &E) {
+                LConnection->ConnectionStatus(qsError);
                 DoConnectException(LConnection, &E);
                 m_ConnInfo.PingValid(false);
-                LConnection->Disconnect();
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------

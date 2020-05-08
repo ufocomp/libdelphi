@@ -153,6 +153,7 @@ namespace Delphi {
 
             COnPQConnectionChangeSocketEvent m_OnChangeSocket;
 
+            COnPQConnectionEvent m_OnError;
             COnPQConnectionEvent m_OnStatus;
             COnPQConnectionEvent m_OnPollingStatus;
 
@@ -161,6 +162,7 @@ namespace Delphi {
 
         protected:
 
+            void DoError(CPQConnection *AConnection);
             void DoStatus(CPQConnection *AConnection);
             void DoPollingStatus(CPQConnection *AConnection);
             void DoConnected(CPQConnection *AConnection);
@@ -182,6 +184,9 @@ namespace Delphi {
 
             const COnPQConnectionChangeSocketEvent &OnChangeSocket() { return m_OnChangeSocket; }
             void OnChangeSocket(COnPQConnectionChangeSocketEvent && Value) { m_OnChangeSocket = Value; }
+
+            const COnPQConnectionEvent &OnError() { return m_OnError; }
+            void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
 
             const COnPQConnectionEvent &OnStatus() { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }
@@ -212,10 +217,13 @@ namespace Delphi {
             CSocket m_Socket;
 
             bool m_TryConnect;
+            bool m_Connected;
+
+            CDateTime m_StatusLastUpdate;
 
             bool GetConnected();
 
-            void SetSocket(CSocket ASocket, int AFlags = -1);
+            void CheckSocket(bool AsyncMode = false);
 
             void SetReceiver();
 
@@ -228,6 +236,7 @@ namespace Delphi {
             void Finish();
 
             void CheckConnection();
+            void CheckPollConnection();
 
             ConnStatusType GetStatus();
 
@@ -243,10 +252,10 @@ namespace Delphi {
 
             ~CPQConnection() override;
 
-            void ConnInfo(const CPQConnInfo &AConnInfo) { m_ConnInfo = AConnInfo; };
+            void ConnInfo(const CPQConnInfo &AConnInfo) { m_ConnInfo = AConnInfo; }
 
-            CPQConnInfo &ConnInfo() { return m_ConnInfo; };
-            const CPQConnInfo &ConnInfo() const { return m_ConnInfo; };
+            CPQConnInfo &ConnInfo() { return m_ConnInfo; }
+            const CPQConnInfo &ConnInfo() const { return m_ConnInfo; }
 
             void CallReceiver(const PGresult *AResult);
 
@@ -258,13 +267,19 @@ namespace Delphi {
 
             LPCSTR PollingStatusString();
 
-            ConnStatusType Status() { return GetStatus(); };
+            ConnStatusType Status() { return GetStatus(); }
 
-            PostgresPollingStatusType PollingStatus() { return GetPollingStatus(); };
+            PostgresPollingStatusType PollingStatus() { return GetPollingStatus(); }
 
-            CSocket Socket() const { return m_Socket; };
+            CSocket Socket() const { return m_Socket; }
 
             int PID();
+
+            CSocket PQSocket();
+
+            bool NeedsPassword();
+
+            bool UsedPassword();
 
             void Connect();
 
@@ -284,9 +299,12 @@ namespace Delphi {
 
             void Disconnect() override;
 
-            bool Connected() { return GetConnected(); };
+            bool Connected() { return GetConnected(); }
 
-            PGconn *Handle() { return m_Handle; };
+            PGconn *Handle() { return m_Handle; }
+
+            CDateTime StatusLastUpdate() const { return m_StatusLastUpdate; }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -508,7 +526,7 @@ namespace Delphi {
         typedef std::function<void (CPQPollQuery *APollQuery, Exception::Exception *AException)> COnPQPollQueryExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        #define POLL_QUERY_START_ERROR 0x10000
+        #define POLL_QUERY_START_ERROR 0x10000u
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQPollQuery: public CPQQuery, public CCollectionItem {
@@ -592,6 +610,7 @@ namespace Delphi {
             COnPQConnectionReceiverEvent m_OnReceiver;
             COnPQConnectionProcessorEvent m_OnProcessor;
 
+            COnPQConnectionEvent m_OnError;
             COnPQConnectionEvent m_OnStatus;
             COnPQConnectionEvent m_OnPollingStatus;
 
@@ -601,6 +620,7 @@ namespace Delphi {
             virtual void DoReceiver(CPQConnection *AConnection, const PGresult *AResult);
             virtual void DoProcessor(CPQConnection *AConnection, LPCSTR AMessage);
 
+            virtual void DoError(CPQConnection *AConnection);
             virtual void DoStatus(CPQConnection *AConnection);
             virtual void DoPollingStatus(CPQConnection *AConnection);
 
@@ -616,6 +636,9 @@ namespace Delphi {
 
             const COnPQConnectionProcessorEvent &OnProcessor() { return m_OnProcessor; }
             void OnProcessor(COnPQConnectionProcessorEvent && Value) { m_OnProcessor = Value; }
+
+            const COnPQConnectionEvent &OnError() { return m_OnError; }
+            void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
 
             const COnPQConnectionEvent &OnStatus() { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }
@@ -650,6 +673,10 @@ namespace Delphi {
 
             CQueue *m_Queue;
 
+            CEPollTimer *m_Timer;
+
+            int m_TimerInterval;
+
             size_t m_SizeMin;
             size_t m_SizeMax;
 
@@ -659,9 +686,11 @@ namespace Delphi {
 
             void CheckQueue();
 
+            void UpdateTimer();
+
             CPollEventHandler *NewEventHandler(CPQConnection *AConnection);
 
-            CPQPollConnection *GetConnection(CPollEventHandler *AHandler);
+            static CPQPollConnection *GetConnection(CPollEventHandler *AHandler);
 
             bool OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket, CSocket ANewSocket);
 
@@ -669,7 +698,7 @@ namespace Delphi {
 
             void Start();
 
-            void Stop(CPollEventHandler *AHandler);
+            static void Stop(CPollEventHandler *AHandler);
 
             void StopAll();
 
@@ -677,12 +706,15 @@ namespace Delphi {
 
             bool NewConnection();
 
+            void DoTimer(CPollEventHandler *AHandler);
+
             void DoTimeOut(CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
             void DoRead(CPollEventHandler *AHandler) override;
             void DoWrite(CPollEventHandler *AHandler) override;
 
             void SetActive(bool Value);
+            void SetTimerInterval(int Value);
 
         public:
 
@@ -697,17 +729,17 @@ namespace Delphi {
             CPQConnInfo &ConnInfo() { return m_ConnInfo; };
             const CPQConnInfo &ConnInfo() const { return m_ConnInfo; };
 
-            bool Active() { return m_Active; };
+            bool Active() const { return m_Active; };
             void Active(bool Value) { SetActive(Value); };
 
             CQueue *Queue() { return m_Queue; };
 
             CPQPollQueryManager *PollQueryManager() { return m_PollQueryManager; };
 
-            size_t SizeMin() { return m_SizeMin; }
+            size_t SizeMin() const { return m_SizeMin; }
             void SizeMin(size_t Value) { m_SizeMin = Value; }
 
-            size_t SizeMax() { return m_SizeMax; }
+            size_t SizeMax() const { return m_SizeMax; }
             void SizeMax(size_t Value) { m_SizeMax = Value; }
 
         };
