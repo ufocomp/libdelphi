@@ -140,7 +140,7 @@ namespace Delphi {
         typedef std::function<void (CPQConnection *AConnection, LPCSTR AMessage)> COnPQConnectionProcessorEvent;
 
         typedef std::function<void (CPQConnection *AConnection)> COnPQConnectionEvent;
-        typedef std::function<bool (CPQConnection *AConnection, CSocket AOldSocket, CSocket ANewSocket)> COnPQConnectionChangeSocketEvent;
+        typedef std::function<void (CPQConnection *AConnection, CSocket AOldSocket)> COnPQConnectionChangeSocketEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQConnectionEvent: public CPollConnection {
@@ -168,7 +168,7 @@ namespace Delphi {
             void DoConnected(CPQConnection *AConnection);
             void DoDisconnected(CPQConnection *AConnection);
 
-            bool DoChangeSocket(CPQConnection *AConnection, CSocket ANewSocket, CSocket AOldSocket);
+            void DoChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
 
         public:
 
@@ -692,7 +692,7 @@ namespace Delphi {
 
             static CPQPollConnection *GetConnection(CPollEventHandler *AHandler);
 
-            bool OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket, CSocket ANewSocket);
+            void OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
 
         protected:
 
