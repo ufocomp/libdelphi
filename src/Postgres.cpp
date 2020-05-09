@@ -1048,7 +1048,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            SetTimerInterval(10 * 1000);
+            //SetTimerInterval(10 * 1000);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1141,15 +1141,15 @@ namespace Delphi {
             CPollEventHandler *LEventHandler = nullptr;
 
             if (AOldSocket != SOCKET_ERROR) {
-                //LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
+                LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
                 if (Assigned(LEventHandler)) {
+                    DoError(AConnection);
                     LEventHandler->Start(etNull);
                     LEventHandler->Stop();
-                    //Stop(LEventHandler);
                 }
             }
 
-            if (NewEventHandler(AConnection) == nullptr)
+            if (AOldSocket == SOCKET_ERROR && NewEventHandler(AConnection) == nullptr)
                 throw EDBConnectionError(_T("Cannot change (%d) socket to (%d)"), AOldSocket, AConnection->Socket());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1260,11 +1260,15 @@ namespace Delphi {
 
         CPQPollConnection *CPQConnectPoll::GetReadyConnection() {
             CPQPollConnection *LConnection;
+            CPollEventHandler *LHandler;
             CPQPollConnection *LResult = nullptr;
 
             for (int I = 0; I < m_EventHandlers->Count(); ++I) {
-                LConnection = GetConnection(m_EventHandlers->Handlers(I));
+                LHandler = m_EventHandlers->Handlers(I);
+                if (LHandler->EventType() != etIO)
+                    continue;
 
+                LConnection = GetConnection(LHandler);
                 if (LConnection == nullptr)
                     continue;
 
@@ -1305,7 +1309,7 @@ namespace Delphi {
 
             for (int i = 0; i < m_EventHandlers->Count(); ++i) {
                 LEventHandler = m_EventHandlers->Handlers(i);
-                if (LEventHandler != AHandler) {
+                if (LEventHandler->EventType() == etIO) {
                     LConnection = GetConnection(LEventHandler);
                     if (Assigned(LConnection)) {
                         Status = PQstatus(LConnection->Handle());
