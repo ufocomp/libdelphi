@@ -147,8 +147,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         PGPing CPQConnInfo::GetPing() {
-            if (!m_PingValid)
-                m_Ping = PQping(ConnInfo().c_str());
+            if (!m_PingValid) {
+                m_Ping = PQping(GetConnInfo().c_str());
+            }
             return m_Ping;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -260,7 +261,7 @@ namespace Delphi {
             m_Connected = false;
             m_Status = CONNECTION_BAD;
             m_PollingStatus = PGRES_POLLING_WRITING;
-            m_StatusLastUpdate = Now();
+            m_AntiFreeze = Now();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -281,7 +282,7 @@ namespace Delphi {
             m_Connected = false;
             m_Status = CONNECTION_BAD;
             m_PollingStatus = PGRES_POLLING_WRITING;
-            m_StatusLastUpdate = Now();
+            m_AntiFreeze = Now();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -331,7 +332,6 @@ namespace Delphi {
         bool CPQConnection::CheckStatus(int const AIgnore[], int ACount) {
             m_Status = PQstatus(m_Handle);
             DoStatus(this);
-            m_StatusLastUpdate = Now();
             for (int i = 0; i < ACount; ++i)
                 if (m_Status == AIgnore[i])
                     return true;
@@ -435,6 +435,9 @@ namespace Delphi {
             if (m_PollingStatus == PGRES_POLLING_FAILED)
                 throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
 
+            if (m_PollingStatus == PGRES_POLLING_WRITING)
+                m_AntiFreeze = Now();
+
             if (m_PollingStatus == PGRES_POLLING_OK) {
                 m_Connected = true;
                 SetReceiver();
@@ -460,7 +463,6 @@ namespace Delphi {
 
         void CPQConnection::ConnectPoll() {
             m_PollingStatus = PQconnectPoll(m_Handle);
-            m_StatusLastUpdate = Now();
             CheckPollConnection();
             CheckSocket(true);
         }
@@ -476,7 +478,6 @@ namespace Delphi {
 
         void CPQConnection::ResetPoll() {
             m_PollingStatus = PQresetPoll(m_Handle);
-            m_StatusLastUpdate = Now();
             CheckPollConnection();
             CheckSocket(true);
         }
@@ -1048,7 +1049,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            //SetTimerInterval(10 * 1000);
+            SetTimerInterval(5 * 1000);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1107,27 +1108,25 @@ namespace Delphi {
 
         CPollEventHandler *CPQConnectPoll::NewEventHandler(CPQConnection *AConnection) {
             CPollEventHandler *LEventHandler = nullptr;
-            CSocket LSocket = AConnection->Socket();
 
             try {
-                if (LSocket != INVALID_SOCKET) {
-                    LEventHandler = m_EventHandlers->Add(LSocket);
+                LEventHandler = m_EventHandlers->Add(AConnection->Socket());
 
-                    if (ExternalPollStack()) {
+                if (ExternalPollStack()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                        LEventHandler->OnTimeOutEvent([this](auto &&AHandler) { DoTimeOut(AHandler); });
-                        LEventHandler->OnReadEvent([this](auto &&AHandler) { DoRead(AHandler); });
-                        LEventHandler->OnWriteEvent([this](auto &&AHandler) { DoWrite(AHandler); });
+                    LEventHandler->OnTimeOutEvent([this](auto &&AHandler) { DoTimeOut(AHandler); });
+                    LEventHandler->OnReadEvent([this](auto &&AHandler) { DoRead(AHandler); });
+                    LEventHandler->OnWriteEvent([this](auto &&AHandler) { DoWrite(AHandler); });
 #else
-                        LEventHandler->OnTimeOutEvent(std::bind(&CPQConnectPoll::DoTimeOut, this, _1));
-                        LEventHandler->OnReadEvent(std::bind(&CPQConnectPoll::DoRead, this, _1));
-                        LEventHandler->OnWriteEvent(std::bind(&CPQConnectPoll::DoWrite, this, _1));
+                    LEventHandler->OnTimeOutEvent(std::bind(&CPQConnectPoll::DoTimeOut, this, _1));
+                    LEventHandler->OnReadEvent(std::bind(&CPQConnectPoll::DoRead, this, _1));
+                    LEventHandler->OnWriteEvent(std::bind(&CPQConnectPoll::DoWrite, this, _1));
 #endif
-                    }
-
-                    LEventHandler->Binding(AConnection, true);
-                    LEventHandler->Start(etIO);
                 }
+
+                LEventHandler->Binding(AConnection, true);
+                LEventHandler->Start(etIO);
+
             } catch (Exception::Exception &E) {
                 DoServerException(&E);
                 FreeAndNil(LEventHandler);
@@ -1138,18 +1137,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket) {
-            CPollEventHandler *LEventHandler = nullptr;
-
             if (AOldSocket != SOCKET_ERROR) {
-                LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
+                auto LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
                 if (Assigned(LEventHandler)) {
                     DoError(AConnection);
                     LEventHandler->Start(etNull);
                     LEventHandler->Stop();
                 }
-            }
-
-            if (AOldSocket == SOCKET_ERROR && NewEventHandler(AConnection) == nullptr)
+            } else if (NewEventHandler(AConnection) == nullptr)
                 throw EDBConnectionError(_T("Cannot change (%d) socket to (%d)"), AOldSocket, AConnection->Socket());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1159,7 +1154,6 @@ namespace Delphi {
             auto LConnection = new CPQPollConnection(m_ConnInfo, m_PollManager);
 
             try {
-
                 m_ConnInfo.PingValid(m_ConnInfo.Ping() == PQPING_OK);
                 while (!m_ConnInfo.PingValid() && (PingCount < 3)) {
                     sleep(1);
@@ -1313,7 +1307,7 @@ namespace Delphi {
                     LConnection = GetConnection(LEventHandler);
                     if (Assigned(LConnection)) {
                         Status = PQstatus(LConnection->Handle());
-                        if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->StatusLastUpdate() >= (CDateTime) 10 / 86400))) {
+                        if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->AntiFreeze() >= (CDateTime) 10 / 86400))) {
                             DoError(LConnection);
                             LEventHandler->Start(etNull);
                             Stop(LEventHandler);
@@ -1321,8 +1315,6 @@ namespace Delphi {
                     }
                 }
             }
-//            if (m_EventHandlers->Count() == 1)
-//                Active(false);
         }
         //--------------------------------------------------------------------------------------------------------------
 

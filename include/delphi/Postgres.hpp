@@ -219,7 +219,7 @@ namespace Delphi {
             bool m_TryConnect;
             bool m_Connected;
 
-            CDateTime m_StatusLastUpdate;
+            CDateTime m_AntiFreeze;
 
             bool GetConnected();
 
@@ -303,7 +303,7 @@ namespace Delphi {
 
             PGconn *Handle() { return m_Handle; }
 
-            CDateTime StatusLastUpdate() const { return m_StatusLastUpdate; }
+            CDateTime AntiFreeze() const { return m_AntiFreeze; }
 
         };
 
