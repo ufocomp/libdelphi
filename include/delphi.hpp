@@ -269,7 +269,7 @@ inline void chMB(LPCSTR szMsg);
 #    include "delphi/HTTP.hpp"
 #  endif
 
-#  ifndef DELPHI_PROCESS_HPP
+#  ifndef DELPHI_SIGANL_HPP
 #    include "delphi/Signal.hpp"
 #  endif
 
