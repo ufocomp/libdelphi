@@ -161,13 +161,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSQLiteQuery::CSQLiteQuery(): CCollection(this) {
-            m_Connection = nullptr;
+            m_pConnection = nullptr;
             m_OnExecuted = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CSQLiteQuery::CSQLiteQuery(CSQLiteConnection *AConnection): CSQLiteQuery() {
-            m_Connection = AConnection;
+            m_pConnection = AConnection;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -182,8 +182,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSQLiteQuery::SetConnection(CSQLiteConnection *Value) {
-            if (m_Connection != Value) {
-                m_Connection = Value;
+            if (m_pConnection != Value) {
+                m_pConnection = Value;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -196,19 +196,19 @@ namespace Delphi {
 
         void CSQLiteQuery::Execute() {
 
-            if (m_Connection == nullptr)
+            if (m_pConnection == nullptr)
                 throw Delphi::Exception::EDBError(_T("Connection has not be empty"));
 
-            if (!m_Connection->Connected()) {
-                if (!m_Connection->Connect())
-                    throw Delphi::Exception::EDBError(m_Connection->GetErrorMessage());
+            if (!m_pConnection->Connected()) {
+                if (!m_pConnection->Connect())
+                    throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
             }
 
             sqlite3_stmt *stmt = nullptr;
-            int ResultCode = sqlite3_prepare_v2(m_Connection->Handle(), m_SQL.c_str(), m_SQL.Length() + 1, &stmt, nullptr);
+            int ResultCode = sqlite3_prepare_v2(m_pConnection->Handle(), m_SQL.c_str(), m_SQL.Length() + 1, &stmt, nullptr);
 
             if (ResultCode != SQLITE_OK) {
-                throw Delphi::Exception::EDBError(m_Connection->GetErrorMessage());
+                throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
             }
 
             for (int i = 0; i < m_Params.Count(); i++) {
@@ -276,7 +276,7 @@ namespace Delphi {
                 }
 
                 if (ResultCode != SQLITE_OK) {
-                    throw Delphi::Exception::EDBError(m_Connection->GetErrorMessage());
+                    throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
                 }
             }
 

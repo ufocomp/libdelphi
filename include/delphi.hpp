@@ -30,15 +30,16 @@ Author:
 #include <cmath>
 #include <climits>
 #include <ctime>
+#include <csignal>
 #include <functional>
 #include <unistd.h>
 #include <fcntl.h>
 #include <malloc.h>
-#include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <syscall.h>
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -266,6 +267,14 @@ inline void chMB(LPCSTR szMsg);
 
 #  ifndef DELPHI_HTTP_HPP
 #    include "delphi/HTTP.hpp"
+#  endif
+
+#  ifndef DELPHI_PROCESS_HPP
+#    include "delphi/Signal.hpp"
+#  endif
+
+#  ifndef DELPHI_APPLICATION_HPP
+#    include "delphi/Application.hpp"
 #  endif
 
 #ifdef WITH_POSTGRESQL

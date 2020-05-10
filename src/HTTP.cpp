@@ -2981,7 +2981,7 @@ namespace Delphi {
 
             m_Request = nullptr;
 
-            m_Connection = AConnection;
+            m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
 
             SetPollStack(Server()->PollStack());

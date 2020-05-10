@@ -442,7 +442,7 @@ namespace Delphi {
             unsigned short ClientPortMax() const { return m_ClientPortMax; }
             void ClientPortMax(unsigned short Value) { m_ClientPortMax = Value; }
 
-            int LastError() { return GetLastError(); }
+            static int LastError() { return GetLastError(); }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -523,7 +523,7 @@ namespace Delphi {
 
         protected:
 
-            CSocketHandle *m_Binding;
+            CSocketHandle *m_pBinding;
 
         public:
 
@@ -541,7 +541,7 @@ namespace Delphi {
 
             ssize_t Send(void *ABuf, size_t ALen) override;
 
-            CSocketHandle *Binding() { return m_Binding; }
+            CSocketHandle *Binding() { return m_pBinding; }
 
         }; // CIOHandlerSocket
 
@@ -576,9 +576,9 @@ namespace Delphi {
         class LIB_DELPHI CPollConnection: public CSocketComponent, public CCollectionItem {
         private:
 
-            CPollConnection *m_Owner;
+            CPollConnection *m_pOwner;
 
-            CPollEventHandler *m_EventHandler;
+            CPollEventHandler *m_pEventHandler;
 
         protected:
 
@@ -590,9 +590,9 @@ namespace Delphi {
 
             explicit CPollConnection(CPollConnection *AOwner, CPollManager *AManager = nullptr);
 
-            CPollConnection *Owner() { return m_Owner; };
+            CPollConnection *Owner() { return m_pOwner; };
 
-            CPollEventHandler *EventHandler() { return m_EventHandler; }
+            CPollEventHandler *EventHandler() { return m_pEventHandler; }
 
             void EventHandler(CPollEventHandler *Value) { SetEventHandler(Value); }
 
@@ -614,14 +614,14 @@ namespace Delphi {
 
         private:
 
-            CIOHandler *m_IOHandler;
-            CIOHandlerSocket *m_Socket;
+            CIOHandler *m_pIOHandler;
+            CIOHandlerSocket *m_pSocket;
 
-            CSimpleBuffer *m_WriteBuffer;
-            CSimpleBuffer *m_RecvBuffer;
+            CSimpleBuffer *m_pWriteBuffer;
+            CSimpleBuffer *m_pRecvBuffer;
 
-            CManagedBuffer *m_InputBuffer;
-            CSimpleBuffer *m_OutputBuffer;
+            CManagedBuffer *m_pInputBuffer;
+            CSimpleBuffer *m_pOutputBuffer;
 
             bool m_ReadLnSplit;
             bool m_ReadLnTimedOut;
@@ -656,9 +656,9 @@ namespace Delphi {
 
             bool CheckForDisconnect(bool ARaiseExceptionIfDisconnected = true);
 
-            CIOHandlerSocket *Socket() { return m_Socket; }
+            CIOHandlerSocket *Socket() { return m_pSocket; }
 
-            CIOHandler *IOHandler() { return m_IOHandler; }
+            CIOHandler *IOHandler() { return m_pIOHandler; }
             void IOHandler(CIOHandler *Value, bool AFree = true) { SetIOHandler(Value, AFree); }
 
             bool ClosedGracefully() const { return m_ClosedGracefully; }
@@ -734,8 +734,8 @@ namespace Delphi {
             CMaxLineAction MaxLineAction() { return m_MaxLineAction; }
             void MaxLineAction(CMaxLineAction Value) { m_MaxLineAction = Value; }
 
-            CManagedBuffer *InputBuffer() { return m_InputBuffer; }
-            CSimpleBuffer *OutputBuffer() { return m_OutputBuffer; }
+            CManagedBuffer *InputBuffer() { return m_pInputBuffer; }
+            CSimpleBuffer *OutputBuffer() { return m_pOutputBuffer; }
 
             const CNotifyEvent& OnDisconnected() { return m_OnDisconnected; }
             void OnDisconnected(CNotifyEvent && Value) { m_OnDisconnected = Value; }
@@ -863,7 +863,7 @@ namespace Delphi {
 
             CString m_AllowedMethods;
 
-            CSocketHandles *m_Bindings;
+            CSocketHandles *m_pBindings;
 
         public:
 
@@ -880,7 +880,7 @@ namespace Delphi {
             CString& AllowedMethods() { return m_AllowedMethods; };
             const CString& AllowedMethods() const { return m_AllowedMethods; };
 
-            CSocketHandles *Bindings() { return m_Bindings; }
+            CSocketHandles *Bindings() { return m_pBindings; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -985,7 +985,7 @@ namespace Delphi {
 
         private:
 
-            CPollSocketServer *m_Server;
+            CPollSocketServer *m_pServer;
 
         public:
 
@@ -993,7 +993,7 @@ namespace Delphi {
 
             ~CTCPServerConnection() override;
 
-            virtual CPollSocketServer *Server() { return m_Server; }
+            virtual CPollSocketServer *Server() { return m_pServer; }
 
         }; // CTCPServerConnection
 
@@ -1008,7 +1008,7 @@ namespace Delphi {
 
         private:
 
-            CPollSocketClient *m_Client;
+            CPollSocketClient *m_pClient;
 
         public:
 
@@ -1016,7 +1016,7 @@ namespace Delphi {
 
             ~CTCPClientConnection() override;
 
-            virtual CPollSocketClient *Client() { return m_Client; }
+            virtual CPollSocketClient *Client() { return m_pClient; }
 
         }; // CTCPClientConnection
 
@@ -1102,7 +1102,7 @@ namespace Delphi {
 
         private:
 
-            CSocketHandle *m_Socket;
+            CSocketHandle *m_pSocket;
 
             bool m_Active;
 
@@ -1119,7 +1119,7 @@ namespace Delphi {
             bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
-            CSocketHandle *Socket() { return m_Socket; }
+            CSocketHandle *Socket() { return m_pSocket; }
 
         };
 
@@ -1213,7 +1213,7 @@ namespace Delphi {
 
         protected:
 
-            CTCPServerConnection *m_Connection;
+            CTCPServerConnection *m_pConnection;
 
             void AfterRun() override;
 
@@ -1229,7 +1229,7 @@ namespace Delphi {
 
         public:
 
-            CTCPServerConnection *Connection() { return m_Connection; }
+            CTCPServerConnection *Connection() { return m_pConnection; }
 
         }; // CPeerThread
 
@@ -1244,8 +1244,8 @@ namespace Delphi {
 
         private:
 
-            CTCPServer *m_Server;
-            CSocketHandle *m_Binding;
+            CTCPServer *m_pServer;
+            CSocketHandle *m_pBinding;
 
         protected:
 
@@ -1255,9 +1255,9 @@ namespace Delphi {
 
             CListenerThread(CTCPServer *AServer, CSocketHandle *ABinding);
 
-            CTCPServer *Server() { return m_Server; }
+            CTCPServer *Server() { return m_pServer; }
 
-            CSocketHandle *Binding() { return m_Binding; }
+            CSocketHandle *Binding() { return m_pBinding; }
 
         }; // CListenerThread
 
@@ -1270,7 +1270,7 @@ namespace Delphi {
         class LIB_DELPHI CThreadMgr {
         protected:
 
-            CThreadList *m_ActiveThreads;
+            CThreadList *m_pActiveThreads;
             CThreadPriority m_ThreadPriority;
 
         public:
@@ -1285,7 +1285,7 @@ namespace Delphi {
 
             virtual void TerminateThreads();
 
-            CThreadList *ActiveThreads() { return m_ActiveThreads; }
+            CThreadList *ActiveThreads() { return m_pActiveThreads; }
 
             CThreadPriority ThreadPriority() { return m_ThreadPriority; }
             void ThreadPriority(CThreadPriority Value) { m_ThreadPriority = Value; }
@@ -1430,8 +1430,8 @@ namespace Delphi {
             typedef CCollection inherited;
         private:
 
-            CSocketServer *m_Server;
-            CSocketClient *m_Client;
+            CSocketServer *m_pServer;
+            CSocketClient *m_pClient;
 
             bool m_EnabledDefault;
             bool m_ParseParamsDefault;
@@ -1451,8 +1451,8 @@ namespace Delphi {
 
             explicit CCommandHandlers(CSocketClient *AClient);
 
-            CSocketServer *Server() { return m_Server; }
-            CSocketClient *Client() { return m_Client; }
+            CSocketServer *Server() { return m_pServer; }
+            CSocketClient *Client() { return m_pClient; }
 
             CCommandHandler *Add();
 
@@ -1483,9 +1483,9 @@ namespace Delphi {
 
         protected:
 
-            CTCPConnection *m_Connection;
-            CCommandHandler *m_CommandHandler;
-            CStringList *m_Params;
+            CTCPConnection *m_pConnection;
+            CCommandHandler *m_pCommandHandler;
+            CStringList *m_pParams;
             bool m_PerformReply;
             LPCTSTR m_RawLine;
             LPCTSTR m_UnparsedParams;
@@ -1498,14 +1498,14 @@ namespace Delphi {
 
             ~CCommand() override;
 
-            CTCPConnection *Connection() { return m_Connection; }
+            CTCPConnection *Connection() { return m_pConnection; }
 
-            CCommandHandler *CommandHandler() { return m_CommandHandler; }
+            CCommandHandler *CommandHandler() { return m_pCommandHandler; }
 
             bool PerformReply() const { return m_PerformReply; }
             void PerformReply(bool Value) { m_PerformReply = Value; }
 
-            CStringList *Params() { return m_Params; }
+            CStringList *Params() { return m_pParams; }
 
             LPCTSTR RawLine() { return m_RawLine; }
 
@@ -1526,11 +1526,11 @@ namespace Delphi {
 
         private:
 
-            CThreadMgr *m_ThreadMgr;
-            CServerIOHandler *m_IOHandler;
-            CThreadSafeList *m_Threads;
-            CThreadList *m_ListenerThreads;
-            CCommandHandlers *m_CommandHandlers;
+            CThreadMgr *m_pThreadMgr;
+            CServerIOHandler *m_pIOHandler;
+            CThreadSafeList *m_pThreads;
+            CThreadList *m_pListenerThreads;
+            CCommandHandlers *m_pCommandHandlers;
 
             bool m_Active;
 
@@ -1563,15 +1563,15 @@ namespace Delphi {
 
             CPeerThread *FindThread(pid_t  dwThreadId);
 
-            CThreadSafeList *Threads() { return m_Threads; }
+            CThreadSafeList *Threads() { return m_pThreads; }
 
-            CServerIOHandler *IOHandler() { return m_IOHandler; }
+            CServerIOHandler *IOHandler() { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
 
             CThreadMgr *ThreadMgr() { return GetThreadMgr(); }
 
-            CCommandHandlers *CommandHandlers() { return m_CommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_CommandHandlers = Value; }
+            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
+            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
         };
 
@@ -1593,7 +1593,7 @@ namespace Delphi {
 
             CSocketPoll m_Handle;
 
-            CPollEvent *m_EventList;
+            CPollEvent *m_pEventList;
 
             int m_EventSize;
 
@@ -1628,7 +1628,7 @@ namespace Delphi {
 
             int Wait(const sigset_t *ASigmask = nullptr);
 
-            CPollEvent *EventList() { return m_EventList; };
+            CPollEvent *EventList() { return m_pEventList; };
 
             size_t EventSize() const { return m_EventSize; };
 
@@ -1667,7 +1667,7 @@ namespace Delphi {
 
             CPollEventType m_EventType;
 
-            CPollConnection *m_Binding;
+            CPollConnection *m_pBinding;
             bool m_FreeBinding;
 
             CPollEventHandlers *m_EventHandlers;
@@ -1702,7 +1702,7 @@ namespace Delphi {
 
             uint32_t Events() const { return m_Events; }
 
-            CPollConnection *Binding() { return m_Binding; }
+            CPollConnection *Binding() { return m_pBinding; }
             void Binding(CPollConnection *Value, bool AFree = false) { SetBinding(Value, AFree); }
 
             void Start(CPollEventType AEventType = etIO);
@@ -1747,7 +1747,7 @@ namespace Delphi {
 
         private:
 
-            CPollStack *m_PollStack;
+            CPollStack *m_pPollStack;
 
             COnPollEventHandlerExceptionEvent m_OnException;
 
@@ -1766,8 +1766,8 @@ namespace Delphi {
 
             explicit CPollEventHandlers(CPollStack *APollStack);
 
-            CPollStack *PollStack() { return m_PollStack; };
-            void PollStack(CPollStack *Value) { m_PollStack = Value; };
+            CPollStack *PollStack() { return m_pPollStack; };
+            void PollStack(CPollStack *Value) { m_pPollStack = Value; };
 
             CPollEventHandler *Add(CSocket ASocket);
 
@@ -1843,7 +1843,7 @@ namespace Delphi {
         class LIB_DELPHI CEPoll {
         private:
 
-            CPollStack *m_PollStack;
+            CPollStack *m_pPollStack;
 
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
@@ -1881,7 +1881,7 @@ namespace Delphi {
 
             ~CEPoll();
 
-            CPollStack *PollStack() { return m_PollStack; };
+            CPollStack *PollStack() { return m_pPollStack; };
             void PollStack(CPollStack *Value) { SetPollStack(Value); };
 
             bool ExternalPollStack() const { return !m_FreePollStack; };
@@ -1968,11 +1968,11 @@ namespace Delphi {
 
         private:
 
-            CServerIOHandler *m_IOHandler;
+            CServerIOHandler *m_pIOHandler;
 
             CActiveLevel m_ActiveLevel;
 
-            CCommandHandlers *m_CommandHandlers;
+            CCommandHandlers *m_pCommandHandlers;
 
         protected:
 
@@ -1993,11 +1993,11 @@ namespace Delphi {
             CActiveLevel ActiveLevel() { return m_ActiveLevel; }
             void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
 
-            CServerIOHandler *IOHandler() { return m_IOHandler; }
+            CServerIOHandler *IOHandler() { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
 
-            CCommandHandlers *CommandHandlers() { return m_CommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_CommandHandlers = Value; }
+            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
+            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
         };
 
@@ -2012,7 +2012,7 @@ namespace Delphi {
 
         private:
 
-            CCommandHandlers *m_CommandHandlers;
+            CCommandHandlers *m_pCommandHandlers;
 
         protected:
 
@@ -2047,8 +2047,8 @@ namespace Delphi {
 
             void Disconnect() { SetActive(false); };
 
-            CCommandHandlers *CommandHandlers() { return m_CommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_CommandHandlers = Value; }
+            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
+            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------

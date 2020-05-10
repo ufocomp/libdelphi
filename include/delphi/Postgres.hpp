@@ -208,7 +208,7 @@ namespace Delphi {
 
             CPQConnInfo m_ConnInfo;
 
-            PGconn *m_Handle;
+            PGconn *m_pHandle;
 
             ConnStatusType m_Status;
 
@@ -301,7 +301,7 @@ namespace Delphi {
 
             bool Connected() { return GetConnected(); }
 
-            PGconn *Handle() { return m_Handle; }
+            PGconn *Handle() { return m_pHandle; }
 
             CDateTime AntiFreeze() const { return m_AntiFreeze; }
 
@@ -357,7 +357,7 @@ namespace Delphi {
         class CPQResult: public CCollectionItem {
         private:
 
-            PGresult *m_Handle;
+            PGresult *m_pHandle;
 
             CPQQuery *m_Query;
 
@@ -379,7 +379,7 @@ namespace Delphi {
 
             void Clear();
 
-            PGresult *Handle() { return m_Handle; };
+            PGresult *Handle() { return m_pHandle; };
 
             CPQQuery *Query() { return m_Query; };
 
@@ -450,7 +450,7 @@ namespace Delphi {
 
         private:
 
-            CPQConnection *m_Connection;
+            CPQConnection *m_pConnection;
 
             CStringList m_SQL;
 
@@ -480,7 +480,7 @@ namespace Delphi {
 
             ~CPQQuery() override;
 
-            CPQConnection *Connection() { return m_Connection; };
+            CPQConnection *Connection() { return m_pConnection; };
 
             void Connection(CPQConnection *Value) { SetConnection(Value); };
 
@@ -532,7 +532,7 @@ namespace Delphi {
         class CPQPollQuery: public CPQQuery, public CCollectionItem {
         private:
 
-            CPQConnectPoll *m_Server;
+            CPQConnectPoll *m_pServer;
 
             CPollConnection *m_PollConnection;
 
@@ -556,7 +556,7 @@ namespace Delphi {
 
             void RemoveFromQueue();
 
-            CPQConnectPoll *Server() { return m_Server; };
+            CPQConnectPoll *Server() { return m_pServer; };
 
             CPollConnection *PollConnection() { return m_PollConnection; };
             void PollConnection(CPollConnection *Value) { m_PollConnection = Value; };
@@ -667,13 +667,13 @@ namespace Delphi {
 
             CPQConnInfo m_ConnInfo;
 
-            CPQPollQueryManager *m_PollQueryManager;
+            CPQPollQueryManager *m_pPollQueryManager;
 
-            CPollManager *m_PollManager;
+            CPollManager *m_pPollManager;
 
-            CQueue *m_Queue;
+            CQueue *m_pQueue;
 
-            CEPollTimer *m_Timer;
+            CEPollTimer *m_pTimer;
 
             int m_TimerInterval;
 
@@ -732,9 +732,9 @@ namespace Delphi {
             bool Active() const { return m_Active; };
             void Active(bool Value) { SetActive(Value); };
 
-            CQueue *Queue() { return m_Queue; };
+            CQueue *Queue() { return m_pQueue; };
 
-            CPQPollQueryManager *PollQueryManager() { return m_PollQueryManager; };
+            CPQPollQueryManager *PollQueryManager() { return m_pPollQueryManager; };
 
             size_t SizeMin() const { return m_SizeMin; }
             void SizeMin(size_t Value) { m_SizeMin = Value; }

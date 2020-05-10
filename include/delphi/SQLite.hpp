@@ -159,7 +159,7 @@ namespace Delphi {
 
         private:
 
-            CSQLiteConnection *m_Connection;
+            CSQLiteConnection *m_pConnection;
 
             CString m_SQL;
 
@@ -183,7 +183,7 @@ namespace Delphi {
 
             ~CSQLiteQuery() override;
 
-            CSQLiteConnection *Connection() { return m_Connection; };
+            CSQLiteConnection *Connection() { return m_pConnection; };
 
             void Connection(CSQLiteConnection *Value) { SetConnection(Value); };
 

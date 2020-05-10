@@ -303,18 +303,18 @@ namespace Delphi {
         {
         private:
 
-            CPersistent *m_Owner;
+            CPersistent *m_pOwner;
 
             int m_Tag;
 
         protected:
 
-            virtual CPersistent *GetOwner() { return m_Owner; };
-            virtual CPersistent *GetOwner() const { return m_Owner; };
+            virtual CPersistent *GetOwner() { return m_pOwner; };
+            virtual CPersistent *GetOwner() const { return m_pOwner; };
 
         public:
 
-            explicit CPersistent(CPersistent *AOwner): CObject(), m_Owner(AOwner) {
+            explicit CPersistent(CPersistent *AOwner): CObject(), m_pOwner(AOwner) {
                 m_Tag = 0;
             };
 

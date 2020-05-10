@@ -1292,7 +1292,7 @@ namespace Delphi {
         class CHTTPProxy: public CCollectionItem, public CHTTPClient {
         private:
 
-            CHTTPServerConnection *m_Connection;
+            CHTTPServerConnection *m_pConnection;
 
             CRequest *m_Request;
 
@@ -1309,9 +1309,9 @@ namespace Delphi {
 
             explicit CHTTPProxy(CHTTPServerConnection *AConnection, CHTTPProxyManager *AManager);
 
-            CHTTPServerConnection *Connection() { return m_Connection; }
+            CHTTPServerConnection *Connection() { return m_pConnection; }
 
-            CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_Connection->Server()); }
+            CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
             CRequest *Request() { return GetRequest(); }
 
