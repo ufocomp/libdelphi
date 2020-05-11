@@ -987,6 +987,8 @@ namespace Delphi {
 
             CPollSocketServer *m_pServer;
 
+            CString m_Data;
+
         public:
 
             explicit CTCPServerConnection(CPollSocketServer *AServer);
@@ -994,6 +996,9 @@ namespace Delphi {
             ~CTCPServerConnection() override;
 
             virtual CPollSocketServer *Server() { return m_pServer; }
+
+            CString &Data() { return m_Data; }
+            const CString &Data() const { return m_Data; }
 
         }; // CTCPServerConnection
 
@@ -1010,6 +1015,8 @@ namespace Delphi {
 
             CPollSocketClient *m_pClient;
 
+            CString m_Data;
+
         public:
 
             explicit CTCPClientConnection(CPollSocketClient *AClient);
@@ -1017,6 +1024,9 @@ namespace Delphi {
             ~CTCPClientConnection() override;
 
             virtual CPollSocketClient *Client() { return m_pClient; }
+
+            CString &Data() { return m_Data; }
+            const CString &Data() const { return m_Data; }
 
         }; // CTCPClientConnection
 
