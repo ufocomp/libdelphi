@@ -504,7 +504,7 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
 
-            void BuildLocation();
+            bool BuildLocation();
             void BuildCookies();
 
             /// Get a prepare request.

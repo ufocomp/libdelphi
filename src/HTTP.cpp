@@ -570,15 +570,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::BuildLocation() {
+        bool http_request::BuildLocation() {
             struct servent *sptr;
-            const auto& Host = Headers.Values(_T("host"));
-            Location = Host + URI;
+            const auto &Host = Headers.Values(_T("host"));
+            CString decodeURI;
+            if (!CHTTPServer::URLDecode(URI, decodeURI))
+                return false;
+            Location = Host + decodeURI;
             if ((sptr = getservbyport(Location.port, "tcp")) != nullptr) {
                 Location.protocol = sptr->s_name;
             } else {
                 Location.protocol = HTTP_PREFIX;
             }
+            return true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -800,7 +804,7 @@ namespace Delphi {
             switch (Context.State) {
                 case Request::method_start:
                     if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         Context.State = Request::method;
                         ARequest->Method.Append(AInput);
@@ -811,14 +815,14 @@ namespace Delphi {
                         Context.State = Request::uri;
                         return -1;
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Method.Append(AInput);
                         return -1;
                     }
                 case Request::uri_start:
                     if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         Context.State = Request::uri;
                         ARequest->URI.Append(AInput);
@@ -829,10 +833,11 @@ namespace Delphi {
                         Context.State = Request::http_version_h;
                         return -1;
                     } else if (AInput == '?') {
+                        ARequest->URI.Append(AInput);
                         Context.State = Request::uri_param_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->URI.Append(AInput);
                         return -1;
@@ -842,10 +847,11 @@ namespace Delphi {
                         Context.State = Request::http_version_h;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
-                        Context.State = Request::uri_param;
+                        ARequest->URI.Append(AInput);
                         ARequest->Params.Add(AInput);
+                        Context.State = Request::uri_param;
                         return -1;
                     }
                 case Request::uri_param:
@@ -853,19 +859,27 @@ namespace Delphi {
                         Context.State = Request::http_version_h;
                         return -1;
                     } else if (AInput == '&') {
+                        ARequest->URI.Append(AInput);
                         Context.State = Request::uri_param_start;
                         return -1;
+                    } else if (AInput == '#') {
+                        ARequest->URI.Append(AInput);
+                        Context.State = Request::uri;
+                        return -1;
                     } else if (AInput == '%') {
+                        ARequest->URI.Append(AInput);
                         Context.MimeIndex = 0;
                         ::SecureZeroMemory(Context.MIME, sizeof(Context.MIME));
                         Context.State = Request::uri_param_mime;
                         return -1;
                     } else if (AInput == '+') {
+                        ARequest->URI.Append(AInput);
                         ARequest->Params.back().Append(' ');
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
+                        ARequest->URI.Append(AInput);
                         ARequest->Params.back().Append(AInput);
                         return -1;
                     }
@@ -874,28 +888,28 @@ namespace Delphi {
                         Context.State = Request::http_version_t_1;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_t_1:
                     if (AInput == 'T') {
                         Context.State = Request::http_version_t_2;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_t_2:
                     if (AInput == 'T') {
                         Context.State = Request::http_version_p;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_p:
                     if (AInput == 'P') {
                         Context.State = Request::http_version_slash;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_slash:
                     if (AInput == '/') {
@@ -904,7 +918,7 @@ namespace Delphi {
                         Context.State = Request::http_version_major_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_major_start:
                     if (IsDigit(AInput)) {
@@ -912,7 +926,7 @@ namespace Delphi {
                         Context.State = Request::http_version_major;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_major:
                     if (AInput == '.') {
@@ -922,7 +936,7 @@ namespace Delphi {
                         ARequest->VMajor = ARequest->VMajor * 10 + AInput - '0';
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_minor_start:
                     if (IsDigit(AInput)) {
@@ -930,7 +944,7 @@ namespace Delphi {
                         Context.State = Request::http_version_minor;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::http_version_minor:
                     if (AInput == '\r') {
@@ -940,14 +954,14 @@ namespace Delphi {
                         ARequest->VMinor = ARequest->VMinor * 10 + AInput - '0';
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::expecting_newline_1:
                     if (AInput == '\n') {
                         Context.State = Request::header_line_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::header_line_start:
                     if (AInput == '\r') {
@@ -957,7 +971,7 @@ namespace Delphi {
                         Context.State = Request::header_lws;
                         return -1;
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Add(CHeader());
                         ARequest->Headers.Last().Name.Append(AInput);
@@ -972,7 +986,7 @@ namespace Delphi {
                     } else if (AInput == ' ' || AInput == '\t') {
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Last().Value.Append(AInput);
                         Context.State = Request::header_value;
@@ -983,7 +997,7 @@ namespace Delphi {
                         Context.State = Request::space_before_header_value;
                         return -1;
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Last().Name.Append(AInput);
                         return -1;
@@ -993,7 +1007,7 @@ namespace Delphi {
                         Context.State = Request::header_value;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::header_value:
                     if (AInput == '\r') {
@@ -1004,7 +1018,7 @@ namespace Delphi {
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Last().Value.Append(AInput);
                         return -1;
@@ -1014,7 +1028,7 @@ namespace Delphi {
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Last().Value.Append(AInput);
                         ARequest->Headers.Last().Options.Add(AInput);
@@ -1031,7 +1045,7 @@ namespace Delphi {
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->Headers.Last().Value.Append(AInput);
                         ARequest->Headers.Last().Options.back().Append(AInput);
@@ -1042,14 +1056,15 @@ namespace Delphi {
                         Context.State = Request::header_line_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::expecting_newline_3:
                     if (AInput == '\n') {
                         Context.ContentLength = Context.End - Context.Begin;
 
                         if (ARequest->Headers.Count() > 0) {
-                            ARequest->BuildLocation();
+                            if (!ARequest->BuildLocation())
+                                return 0;
                             ARequest->BuildCookies();
 
                             const auto& contentLength = ARequest->Headers.Values(_T("content-length"));
@@ -1073,9 +1088,9 @@ namespace Delphi {
                             return -1;
                         }
 
-                        return true;
+                        return 1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Request::content:
                     ARequest->Content.Append(AInput);
@@ -1084,12 +1099,12 @@ namespace Delphi {
                         return -1;
                     }
 
-                    return true;
+                    return 1;
                 case Request::form_data_start:
                     ARequest->Content.Append(AInput);
 
                     if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         Context.State = Request::form_data;
                         ARequest->FormData.Add(AInput);
@@ -1099,7 +1114,7 @@ namespace Delphi {
                     ARequest->Content.Append(AInput);
 
                     if (AInput == '\n') {
-                        return true;
+                        return 1;
                     } else if (AInput == '\r') {
                         return -1;
                     } else if (AInput == '&') {
@@ -1114,7 +1129,7 @@ namespace Delphi {
                         Context.State = Request::form_mime;
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         ARequest->FormData.back().Append(AInput);
 
@@ -1123,8 +1138,9 @@ namespace Delphi {
                         }
                     }
 
-                    return true;
+                    return 1;
                 case Request::uri_param_mime:
+                    ARequest->URI.Append(AInput);
                     Context.MIME[Context.MimeIndex++] = AInput;
                     if (Context.MimeIndex == 2) {
                         ARequest->Params.back().Append((TCHAR) HexToDec(Context.MIME));
@@ -1140,7 +1156,7 @@ namespace Delphi {
                     }
                     return -1;
                 default:
-                    return false;
+                    return 0;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
