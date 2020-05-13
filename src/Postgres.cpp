@@ -69,6 +69,68 @@ namespace Delphi {
 
             return Result;
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void PQResultToJson(CPQResult *Result, CString &Json) {
+            LPCSTR Value = nullptr;
+            Oid Type;
+
+            if (Result->nTuples() > 0) {
+
+                if (Result->nTuples() > 1) {
+                    Json = "[";
+                }
+
+                for (int Row = 0; Row < Result->nTuples(); ++Row) {
+                    if (Row > 0) {
+                        Json += ", ";
+                    }
+
+                    Json += "{";
+
+                    for (int Col = 0; Col < Result->nFields(); ++Col) {
+                        if (Col > 0) {
+                            Json += ", ";
+                        }
+
+                        Json += "\"";
+                        Json += Result->fName(Col);
+                        Json += "\"";
+                        Json += ": ";
+
+                        Value = Result->GetValue(Row, Col);
+                        Type = Result->fType(Col);
+
+                        if (Result->GetIsNull(Row, Col)) {
+                            Json += _T("null");
+                        } else if (Type == BOOLOID) {
+                            if (SameText(Value, _T("t"))) {
+                                Json += _T("true");
+                            } else if (SameText(Value, _T("f"))) {
+                                Json += _T("false");
+                            }
+                        } else if (((Type == INT2OID) || (Type == INT4OID) || (Type == INT8OID)) ||
+                                   ((Type == JSONBOID) || (Type == JSONPATHOID)) ||
+                                   ((Type == NUMERICOID) && ((strchr(Value, '.') == nullptr) && (strchr(Value, ',') == nullptr)))) {
+                            Json += Value;
+                        } else {
+                            Json += "\"";
+                            Json += Delphi::Json::EncodeJsonString(Value);
+                            Json += "\"";
+                        }
+                    }
+
+                    Json += "}";
+                }
+
+                if (Result->nTuples() > 1) {
+                    Json += "]";
+                }
+
+            } else {
+                Json = "{}";
+            }
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 

@@ -43,7 +43,11 @@ namespace Delphi {
 
     namespace Postgres {
 
+        class CPQResult;
+        //--------------------------------------------------------------------------------------------------------------
+
         CString PQQuoteLiteral(const CString &String);
+        void PQResultToJson(CPQResult *Result, CString& Json);
 
         //--------------------------------------------------------------------------------------------------------------
 
