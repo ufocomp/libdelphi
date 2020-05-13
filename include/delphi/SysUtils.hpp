@@ -112,6 +112,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI time_t FileAge(LPCTSTR lpszFileName);
+        LIB_DELPHI ssize_t FileSize(LPCTSTR lpszFileName);
         LIB_DELPHI bool DirectoryExists(LPCTSTR lpszDirectory);
         LIB_DELPHI bool FileExists(LPCTSTR lpszFileName, bool FollowLink = true);
 

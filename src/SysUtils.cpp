@@ -461,6 +461,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI ssize_t FileSize(LPCTSTR lpszFileName) {
+            struct stat sb = {};
+            if (stat(lpszFileName, &sb) == 0)
+                return sb.st_size;
+            return -1;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         LIB_DELPHI bool DirectoryExists(LPCTSTR lpszDirectory){
             struct stat sb = {};
             if (stat(lpszDirectory, &sb) == 0)

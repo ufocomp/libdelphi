@@ -1766,18 +1766,6 @@ namespace Delphi {
                 AReply->AddHeader(_T("Date"), szDate);
             }
 
-            switch (AStatus) {
-                case not_allowed:
-                case not_implemented:
-                    AReply->AddHeader(_T("Allow"), AReply->AllowedMethods);
-                    break;
-                case unauthorized:
-                    CheckUnauthorized(AReply);
-                    break;
-                default:
-                    break;
-            }
-
             if (!AReply->Content.IsEmpty()) {
                 AReply->AddHeader(_T("Accept-Ranges"), _T("bytes"));
 
@@ -1809,6 +1797,21 @@ namespace Delphi {
 
                 AReply->AddHeader(_T("Content-Type"), AContentType);
                 AReply->AddHeader(_T("Content-Length"), IntToStr((int) AReply->Content.Size(), szSize, sizeof(szSize)));
+            }
+
+            switch (AStatus) {
+                case not_allowed:
+                case not_implemented:
+                    AReply->AddHeader(_T("Allow"), AReply->AllowedMethods);
+                    break;
+                case unauthorized:
+                    CheckUnauthorized(AReply);
+                    break;
+                case no_content:
+                    AReply->Content.Clear();
+                    break;
+                default:
+                    break;
             }
 
             if (AReply->CloseConnection)
