@@ -554,7 +554,7 @@ namespace Delphi {
 
             explicit CPQPollQuery(CPQConnectPoll *AServer);
 
-            int QueryStart();
+            int Start();
 
             int AddToQueue();
 

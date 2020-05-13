@@ -942,7 +942,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CPQPollQuery::QueryStart() {
+        int CPQPollQuery::Start() {
             try {
                 auto LConnection = m_pServer->GetReadyConnection();
 
@@ -1487,7 +1487,7 @@ namespace Delphi {
             if (m_pQueue->Count() > 0) {
                 LPollQuery = (CPQPollQuery *) m_pQueue->First()->First();
                 LPollQuery->RemoveFromQueue();
-                LPollQuery->QueryStart();
+                LPollQuery->Start();
             }
         }
 
