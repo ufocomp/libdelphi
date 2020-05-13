@@ -442,6 +442,8 @@ namespace Delphi {
                     return "Check if we could make a writable connection.";
                 case CONNECTION_CONSUME:
                     return "Wait for any pending message and consume them.";
+                case CONNECTION_GSS_STARTUP:
+                    return "Negotiating GSSAPI.";
             }
 
             return nullptr;
