@@ -110,7 +110,7 @@ namespace Delphi {
                                 Json += _T("false");
                             }
                         } else if (((Type == INT2OID) || (Type == INT4OID) || (Type == INT8OID)) ||
-                                   ((Type == JSONBOID) || (Type == JSONPATHOID)) ||
+                                   ((Type == JSONOID) || (Type == JSONBOID)) ||
                                    ((Type == NUMERICOID) && ((strchr(Value, '.') == nullptr) && (strchr(Value, ',') == nullptr)))) {
                             Json += Value;
                         } else {

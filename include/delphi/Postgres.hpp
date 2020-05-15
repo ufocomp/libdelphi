@@ -32,6 +32,7 @@ Author:
 #define INT8OID 20
 #define INT2OID 21
 #define INT4OID 23
+#define JSONOID 114
 #define NUMERICOID 1700
 #define JSONBOID 3802
 #define JSONPATHOID 4072
