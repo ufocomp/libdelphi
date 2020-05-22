@@ -348,7 +348,7 @@ namespace Delphi {
             int m_UpdateCount;
             int m_NextId;
 
-            int GetCount();
+            int GetCount() const;
 
             void InsertItem(CCollectionItem *Item);
             void RemoveItem(CCollectionItem *Item);
@@ -387,7 +387,7 @@ namespace Delphi {
 
             CCollectionItem *FindItemId(int Id);
 
-            int Count() { return GetCount(); };
+            int Count() const { return GetCount(); };
 
             virtual CCollectionItem *Items(int Index) { return GetItem(Index); }
             virtual void Items(int Index, CCollectionItem *Value) { SetItem(Index, Value); }
