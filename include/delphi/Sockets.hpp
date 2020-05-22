@@ -987,7 +987,7 @@ namespace Delphi {
 
             CPollSocketServer *m_pServer;
 
-            CStringList *m_pData;
+            CStringList m_Data;
 
         public:
 
@@ -997,8 +997,8 @@ namespace Delphi {
 
             virtual CPollSocketServer *Server() { return m_pServer; }
 
-            CStringList &Data() { return *m_pData; }
-            const CStringList &Data() const { return *m_pData; }
+            CStringList &Data() { return m_Data; }
+            const CStringList &Data() const { return m_Data; }
 
         }; // CTCPServerConnection
 
@@ -1015,7 +1015,7 @@ namespace Delphi {
 
             CPollSocketClient *m_pClient;
 
-            CStringList *m_pData;
+            CStringList m_Data;
 
         public:
 
@@ -1025,8 +1025,8 @@ namespace Delphi {
 
             virtual CPollSocketClient *Client() { return m_pClient; }
 
-            CStringList &Data() { return *m_pData; }
-            const CStringList &Data() const { return *m_pData; }
+            CStringList &Data() { return m_Data; }
+            const CStringList &Data() const { return m_Data; }
 
         }; // CTCPClientConnection
 
