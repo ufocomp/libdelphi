@@ -190,6 +190,28 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSON::Delete(const CString &Value) {
+            if (Assigned(m_Value)) {
+                if (m_Value->ValueType() == jvtObject) {
+                    int Index = Object().IndexOfString(Value);
+                    if (Index != -1)
+                        Object().Delete(Index);
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSON::Delete(reference Value) {
+            if (Assigned(m_Value)) {
+                if (m_Value->ValueType() == jvtObject) {
+                    int Index = Object().IndexOfString(Value);
+                    if (Index != -1)
+                        Object().Delete(Index);
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSON::GetCount() const noexcept {
             if (Assigned(m_Value)) {
                 if (m_Value->ValueType() == jvtObject)

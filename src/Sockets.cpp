@@ -1736,10 +1736,12 @@ namespace Delphi {
         CTCPServerConnection::CTCPServerConnection(CPollSocketServer *AServer):
                 CTCPConnection(AServer) {
             m_pServer = AServer;
+            m_pData = new CStringList(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CTCPServerConnection::~CTCPServerConnection() {
+            FreeAndNil(m_pData);
             m_pServer = nullptr;
         }
 
@@ -1752,10 +1754,12 @@ namespace Delphi {
         CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient):
                 CTCPConnection(AClient) {
             m_pClient = AClient;
+            m_pData = new CStringList(true);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CTCPClientConnection::~CTCPClientConnection() {
+            FreeAndNil(m_pData);
             m_pClient = nullptr;
         }
 

@@ -131,6 +131,9 @@ namespace Delphi {
 
             virtual void Concat(const CJSON &Source);
 
+            virtual void Delete(const CString &Value);
+            virtual void Delete(reference Value);
+
             virtual int Count() const noexcept { return GetCount(); };
 
             virtual void Clear();
@@ -177,6 +180,16 @@ namespace Delphi {
             virtual CJSON &operator=(const CString &String) {
                 Clear();
                 StringToJson(String);
+                return *this;
+            };
+
+            virtual CJSON &operator-(const CString &String) {
+                Delete(String);
+                return *this;
+            };
+
+            virtual CJSON &operator-(reference Str) {
+                Delete(Str);
                 return *this;
             };
 
