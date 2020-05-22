@@ -2474,6 +2474,8 @@ namespace Delphi {
             if (L != CString::npos) {
                 Name.SetLength(L);
                 R->String.Copy(Name.Data(), L);
+            } else {
+                Name = R->String;
             }
 
             return Name;
