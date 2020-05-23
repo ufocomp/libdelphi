@@ -188,7 +188,7 @@ namespace Delphi {
                 return *this;
             };
 
-            virtual CJSON &operator-(reference Str) {
+            virtual CJSON &operator-=(reference Str) {
                 Delete(Str);
                 return *this;
             };
