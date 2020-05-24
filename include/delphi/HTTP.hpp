@@ -246,6 +246,13 @@ namespace Delphi {
             CString Value;
             CStringList Options;
 
+            http_header() = default;
+
+            http_header(const CString &Name, const CString &Value) {
+                this->Name = Name;
+                this->Value = Value;
+            }
+
             http_header& operator= (const http_header& H) {
                 if (this != &H) {
                     Name = H.Name;
@@ -253,7 +260,7 @@ namespace Delphi {
                     Options = H.Options;
                 }
                 return *this;
-            };
+            }
 
             inline bool operator!= (const http_header& AValue) { return Name != AValue.Name; };
             inline bool operator== (const http_header& AValue) { return Name == AValue.Name; };
@@ -283,6 +290,7 @@ namespace Delphi {
             int GetCount() const;
 
             const CString &GetValue(const CString &Name) const;
+            void SetValue(const CString &Name, const CString &Value);
 
         public:
 
@@ -315,6 +323,7 @@ namespace Delphi {
             void Assign(const CHeaders& Headers);
 
             const CString &Values(const CString& Name) const { return GetValue(Name); };
+            void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
 
             CHeader& Headers(int Index) { return Get(Index); }
             const CHeader& Headers(int Index) const { return Get(Index); }

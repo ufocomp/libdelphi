@@ -153,6 +153,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CHeaders::SetValue(const CString &Name, const CString &Value) {
+            int I = IndexOfName(Name);
+
+            if (!Value.IsEmpty()) {
+                if (I < 0) I = Add(CHeader());
+                Put(I, CHeader(Name, Value));
+            } else {
+                if (I >= 0)
+                    Delete(I);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHeaders::Clear() {
             m_pList.Clear();
         }
