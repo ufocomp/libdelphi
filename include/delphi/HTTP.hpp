@@ -321,6 +321,7 @@ namespace Delphi {
             int Count() const { return GetCount(); }
 
             void Assign(const CHeaders& Headers);
+            void Concat(const CHeaders& Headers);
 
             const CString &Values(const CString& Name) const { return GetValue(Name); };
             void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
@@ -333,6 +334,12 @@ namespace Delphi {
             CHeaders& operator= (const CHeaders& H) {
                 if (this != &H)
                     Assign(H);
+                return *this;
+            };
+
+            CHeaders& operator<< (const CHeaders& H) {
+                if (this != &H)
+                    Concat(H);
                 return *this;
             };
 
