@@ -150,14 +150,14 @@ namespace Delphi {
         CJSONObject *CJSON::CreateObject() {
             m_ValueType = jvtObject;
             m_Value = new CJSONObject(this);
-            return (CJSONObject *) m_Value;
+            return dynamic_cast<CJSONObject *> (m_Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONArray *CJSON::CreateArray() {
             m_ValueType = jvtArray;
             m_Value = new CJSONArray(this);
-            return (CJSONArray *) m_Value;
+            return dynamic_cast<CJSONArray *> (m_Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -166,33 +166,41 @@ namespace Delphi {
             m_ValueType = Source.ValueType();
 
             if (Assigned(Source.Value())) {
-                if (Source.Value()->ValueType() == jvtObject) {
+                if (Source.Value()->IsObject())
                     CreateObject()->Assign(Source.Object());
-                }
 
-                if (Source.Value()->ValueType() == jvtArray) {
+                if (Source.Value()->IsArray())
                     CreateArray()->Assign(Source.Array());
-                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSON::Concat(const CJSON& Source) {
             if (Assigned(Source.Value()) && (ValueType() == Source.Value()->ValueType())) {
-                if (Source.Value()->ValueType() == jvtObject) {
+                if (Source.Value()->IsObject())
                     CreateObject()->Concat(Source.Object());
-                }
 
-                if (Source.Value()->ValueType() == jvtArray) {
+                if (Source.Value()->IsArray())
                     CreateArray()->Concat(Source.Array());
-                }
             }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CJSON::HasOwnProperty(const CString &String) const {
+            if (Assigned(m_Value)) {
+                if (m_Value->IsObject())
+                    return Object().HasOwnProperty(String);
+                if (m_Value->IsArray())
+                    return Array().HasOwnProperty(String);
+                return dynamic_cast<CJSONValue *> (m_Value)->HasOwnProperty(String);
+            }
+            return false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSON::Delete(const CString &Value) {
             if (Assigned(m_Value)) {
-                if (m_Value->ValueType() == jvtObject) {
+                if (m_Value->IsObject()) {
                     int Index = Object().IndexOfString(Value);
                     if (Index != -1)
                         Object().Delete(Index);
@@ -203,7 +211,7 @@ namespace Delphi {
 
         void CJSON::Delete(reference Value) {
             if (Assigned(m_Value)) {
-                if (m_Value->ValueType() == jvtObject) {
+                if (m_Value->IsObject()) {
                     int Index = Object().IndexOfString(Value);
                     if (Index != -1)
                         Object().Delete(Index);
@@ -212,12 +220,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSON::Delete(int Index) {
+            if (Assigned(m_Value)) {
+                if (m_Value->IsObject())
+                    Object().Delete(Index);
+
+                if (m_Value->IsArray())
+                    Array().Delete(Index);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSON::GetCount() const noexcept {
             if (Assigned(m_Value)) {
-                if (m_Value->ValueType() == jvtObject)
+                if (m_Value->IsObject())
                     return Object().Count();
 
-                if (m_Value->ValueType() == jvtArray)
+                if (m_Value->IsArray())
                     return Array().Count();
             }
 
@@ -227,10 +246,10 @@ namespace Delphi {
 
         void CJSON::Clear() {
             if (Assigned(m_Value)) {
-                if (m_Value->ValueType() == jvtObject)
+                if (m_Value->IsObject())
                     return Object().Clear();
 
-                if (m_Value->ValueType() == jvtArray)
+                if (m_Value->IsArray())
                     return Array().Clear();
             }
         }
@@ -258,7 +277,7 @@ namespace Delphi {
                 S += "}";
             }
 
-            if (ValueType() == jvtArray) {
+            if (IsArray()) {
 
                 S = "[";
 
@@ -991,10 +1010,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSONValue::Get(int Index) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[Index];
 
-            if (ValueType() == jvtArray)
+            if (IsArray())
                 return AsArray()[Index];
 
             return *this;
@@ -1002,10 +1021,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         const CJSONValue &CJSONValue::Get(int Index) const {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[Index];
 
-            if (ValueType() == jvtArray)
+            if (IsArray())
                 return AsArray()[Index];
 
             return *this;
@@ -1013,10 +1032,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSONValue::Put(int Index, const CJSONValue &Value) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 AsObject()[Index] = Value;
 
-            if (ValueType() == jvtArray)
+            if (IsArray())
                 AsArray()[Index] = Value;
 
             *this = Value;
@@ -1024,7 +1043,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSONValue::GetValue(const CString &String) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[String];
 
             return *this;
@@ -1032,7 +1051,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         const CJSONValue &CJSONValue::GetValue(const CString &String) const {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[String];
 
             return *this;
@@ -1040,7 +1059,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSONValue::GetValue(reference String) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[String];
 
             return *this;
@@ -1048,7 +1067,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         const CJSONValue &CJSONValue::GetValue(reference String) const {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 return AsObject()[String];
 
             return *this;
@@ -1056,7 +1075,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSONValue::SetValue(const CString &String, const CJSONValue &Value) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 AsObject()[String] = Value;
 
             *this = Value;
@@ -1064,7 +1083,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSONValue::SetValue(CJSONValue::reference String, const CJSONValue &Value) {
-            if (ValueType() == jvtObject)
+            if (IsObject())
                 AsObject()[String] = Value;
 
             *this = Value;
@@ -1344,6 +1363,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        bool CJSONArray::HasOwnProperty(const CString &String) const {
+            int Index = 0;
+            while (Index < GetCount() && Get(Index).Data() != String)
+                Index++;
+            return Index != GetCount();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CJSONArray::Sort(CJSONListSortCompare Compare) {
             if (m_pList.Count() > 0)
                 QuickSort(m_pList, 0, GetCount() - 1, Compare);
@@ -1597,6 +1624,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        bool CJSONObject::HasOwnProperty(const CString &String) const {
+            int Index = 0;
+            while (Index < GetCount() && Get(Index).String() != String)
+                Index++;
+            return Index != GetCount();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CJSONObject::SetCapacity(int NewCapacity) {
             m_pList.SetCapacity(NewCapacity);
         }
@@ -1681,26 +1716,26 @@ namespace Delphi {
         CJSONObject &CJSONParser::CurrentObject() {
             if (CurrentJson().ValueType() != jvtObject)
                 throw Exception::Exception(_T("Invalid JSON type!"));
-            return *(CJSONObject *) &CurrentJson();
+            return dynamic_cast<CJSONObject &> (CurrentJson());
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONArray &CJSONParser::CurrentArray() {
             if (CurrentJson().ValueType() != jvtArray)
                 throw Exception::Exception(_T("Invalid JSON type!"));
-            return *(CJSONArray *) &CurrentJson();
+            return dynamic_cast<CJSONArray &> (CurrentJson());
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSONParser::CurrentValue() {
-            if (CurrentJson().ValueType() == jvtObject)
+            if (CurrentJson().IsObject())
                 return CurrentObject().Last().Value();
             return CurrentArray().Last();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSONParser::CreateValue(CJSONValueType ValueType) {
-            if (CurrentJson().ValueType() == jvtObject) {
+            if (CurrentJson().IsObject()) {
                 switch (ValueType) {
                     case jvtObject:
                         m_pJsonList->Add(CurrentValue().CreateObject());
@@ -1712,7 +1747,7 @@ namespace Delphi {
                         CurrentValue().ValueType(ValueType);
                         break;
                 }
-            } else if (CurrentJson().ValueType() == jvtArray) {
+            } else if (CurrentJson().IsArray()) {
                 switch (ValueType) {
                     case jvtObject:
                     case jvtArray:
@@ -1838,7 +1873,7 @@ namespace Delphi {
                             return true;
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
@@ -1880,7 +1915,7 @@ namespace Delphi {
                         m_State = value_end;
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
@@ -1902,7 +1937,7 @@ namespace Delphi {
                         m_State = value_end;
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
@@ -1927,7 +1962,7 @@ namespace Delphi {
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
@@ -1949,7 +1984,7 @@ namespace Delphi {
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
@@ -1971,7 +2006,7 @@ namespace Delphi {
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (AInput == ',') {
-                        if (CurrentJson().ValueType() == jvtObject)
+                        if (CurrentJson().IsObject())
                             m_State = string_start;
                         else
                             m_State = value_start;
