@@ -893,11 +893,13 @@ namespace Delphi {
             size_t find (T Value, size_t Pos = 0) const { return Find(Value, Pos); }
             size_t find (LPCTSTR Str, size_t Pos, size_t Length) const { return Find(Str, Pos, Length); }
 
-            explicit operator std::basic_string<char>() const {
-                return std::basic_string<char>(IsEmpty() ? "" : c_str());
+            operator std::basic_string<char>() const {
+                if (IsEmpty())
+                    return std::basic_string<char>();
+                return std::basic_string<char>(Data(), Size());
             };
 
-            explicit operator const char *() const {
+            operator const char *() const {
                 return IsEmpty() ? "" : c_str();
             };
 
