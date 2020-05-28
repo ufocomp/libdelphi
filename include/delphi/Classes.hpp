@@ -1255,7 +1255,7 @@ namespace Delphi {
             CString Values(reference Name) const { return GetValue(Name); };
 
             void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
-            void Values(reference Name, reference Value) { SetValue(Name, Value); };
+            //void Values(reference Name, reference Value) { SetValue(Name, Value); };
 
             CString ValueFromIndex(int Index) const { return GetValueFromIndex(Index); };
             void ValueFromIndex(int Index, const CString &Value) { SetValueFromIndex(Index, Value); };
