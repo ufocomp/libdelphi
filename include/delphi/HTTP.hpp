@@ -131,6 +131,12 @@ namespace Delphi {
                 size_t pos = 0;
                 size_t end = URL.Find("://", pos);
 
+                size_t findSearch = URL.Find( '?', pos);
+                size_t findHash = URL.Find( '#', pos);
+
+                if (end > findSearch || end > findHash)
+                    end = CString::npos;
+
                 if (end != CString::npos) {
                     protocol = URL.SubString(pos, end);
                     pos = end + 3;
@@ -142,13 +148,13 @@ namespace Delphi {
 
                 TCHAR ch = URL.at(pos++);
                 while (!IsCtl(ch)) {
-                    if (ch == ':')
+                    if (ch == ':' && flag < url_port)
                         flag = url_port;
-                    if (ch == '/')
+                    if (ch == '/' && flag < url_pathname)
                         flag = url_pathname;
-                    if (ch == '?')
+                    if (ch == '?' && flag < url_search)
                         flag = url_search;
-                    if (ch == '#')
+                    if (ch == '#' && flag < url_hash)
                         flag = url_hash;
 
                     switch (flag) {
@@ -240,32 +246,6 @@ namespace Delphi {
         } CLocation, *PLocation;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct http_header {
-
-            CString Name;
-            CString Value;
-            CStringList Options;
-
-            http_header() = default;
-
-            http_header(const CString &Name, const CString &Value) {
-                this->Name = Name;
-                this->Value = Value;
-            }
-
-            http_header& operator= (const http_header& H) {
-                if (this != &H) {
-                    Name = H.Name;
-                    Value = H.Value;
-                    Options = H.Options;
-                }
-                return *this;
-            }
-
-            inline bool operator!= (const http_header& AValue) { return Name != AValue.Name; };
-            inline bool operator== (const http_header& AValue) { return Name == AValue.Name; };
-
-        } CHeader, *PHeader;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -273,82 +253,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHeaders {
-        private:
-
-            TList<CHeader> m_pList;
-
-            CString m_NullValue;
-
-            void Put(int Index, const CHeader& Header);
-
-            CHeader& Get(int Index);
-            const CHeader& Get(int Index) const;
-
-        protected:
-
-            int GetCount() const;
-
-            const CString &GetValue(const CString &Name) const;
-            void SetValue(const CString &Name, const CString &Value);
-
-        public:
-
-            CHeaders() = default;
-
-            ~CHeaders();
-
-            void Clear();
-
-            int IndexOfName(const CString &Name) const;
-
-            void Insert(int Index, const CHeader& Header);
-
-            int Add(const CHeader& Header);
-
-            int AddPair(LPCTSTR lpszName, LPCTSTR lpszValue);
-            int AddPair(LPCTSTR lpszName, const CString& Value);
-            int AddPair(const CString& Name, const CString& Value);
-
-            void Delete(int Index);
-
-            void SetCount(int NewCount);
-
-            CHeader& First();
-
-            CHeader& Last();
-
-            int Count() const { return GetCount(); }
-
-            void Assign(const CHeaders& Headers);
-            void Concat(const CHeaders& Headers);
-
-            const CString &Values(const CString& Name) const { return GetValue(Name); };
-            void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
-
-            CHeader& Headers(int Index) { return Get(Index); }
-            const CHeader& Headers(int Index) const { return Get(Index); }
-
-            void Headers(int Index, const CHeader& Header) { Put(Index, Header); }
-
-            CHeaders& operator= (const CHeaders& H) {
-                if (this != &H)
-                    Assign(H);
-                return *this;
-            };
-
-            CHeaders& operator<< (const CHeaders& H) {
-                if (this != &H)
-                    Concat(H);
-                return *this;
-            };
-
-            CHeader& operator[](int Index) { return Get(Index); }
-            const CHeader& operator[](int Index) const { return Get(Index); }
-
-            CHeader& operator[](const CString &Name) { return Headers(IndexOfName(Name)); }
-            const CHeader& operator[](const CString &Name) const { return Headers(IndexOfName(Name)); }
-        };
+        typedef TPair<CString> CHeader;
+        typedef TPairs<CString> CHeaders;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -863,7 +769,7 @@ namespace Delphi {
             /// Get a stock reply.
             static http_reply *GetStockReply(http_reply *AReply, status_type AStatus);
 
-            static void CheckUnauthorized(http_reply *AReply);
+            static void AddUnauthorized(http_reply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
 
         } CReply, *PReply;
 
@@ -1117,107 +1023,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CSiteConfig -----------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        typedef struct site_config {
-
-            CString Name;
-            CJSON Config;
-
-            site_config& operator= (const site_config& H) {
-                if (this != &H) {
-                    Name = H.Name;
-                    Config = H.Config;
-                }
-                return *this;
-            };
-
-            inline bool operator!= (const site_config& AValue) { return Name != AValue.Name; };
-            inline bool operator== (const site_config& AValue) { return Name == AValue.Name; };
-
-        } CSiteConfig, *PSiteConfig;
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CSites ----------------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CSites {
-        private:
-
-            TList<CSiteConfig> m_pList;
-
-            CSiteConfig m_Default;
-
-            void Put(int Index, const CSiteConfig& Site);
-
-            CSiteConfig& Get(int Index);
-            const CSiteConfig& Get(int Index) const;
-
-        protected:
-
-            int GetCount() const;
-
-            const CJSON& GetConfig(const CString &Name) const;
-
-        public:
-
-            CSites() = default;
-
-            ~CSites();
-
-            void Clear();
-
-            int IndexOfName(const CString &Name) const;
-
-            void Insert(int Index, const CSiteConfig& Site);
-
-            int Add(const CSiteConfig& Site);
-            int AddPair(const CString& Name, const CJSON& Config);
-
-            void Delete(int Index);
-
-            void SetCount(int NewCount);
-
-            CSiteConfig& First();
-
-            CSiteConfig& Last();
-
-            int Count() const { return GetCount(); }
-
-            void Assign(const CSites& Sites);
-
-            const CJSON& Config(const CString& Name) const { return GetConfig(Name); };
-
-            CSiteConfig& Sites(int Index) { return Get(Index); }
-            const CSiteConfig& Sites(int Index) const { return Get(Index); }
-
-            void Sites(int Index, const CSiteConfig& Site) { Put(Index, Site); }
-
-            CSites& operator= (const CSites& H) {
-                if (this != &H)
-                    Assign(H);
-                return *this;
-            };
-
-            CSiteConfig& Default() { return m_Default; };
-            const CSiteConfig& Default() const { return m_Default; };
-
-            CSiteConfig& operator[](int Index) { return Get(Index); }
-            const CSiteConfig& operator[](int Index) const { return Get(Index); }
-
-            CSiteConfig& operator[](LPCTSTR Name) { return Sites(IndexOfName(Name)); }
-            const CSiteConfig& operator[](LPCTSTR Name) const { return Sites(IndexOfName(Name)); }
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
         //-- CHTTPServer -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
+
+        typedef TPairs<CJSON> CSites;
 
         class CHTTPServer: public CAsyncServer {
         private:
@@ -1246,6 +1056,7 @@ namespace Delphi {
 
             ~CHTTPServer() override = default;
 
+            static CString URLEncode(const CString& In);
             static bool URLDecode(const CString& In, CString& Out);
 
             CSites& Sites() { return m_Sites; };

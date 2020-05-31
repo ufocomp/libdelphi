@@ -119,153 +119,6 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CHeaders --------------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        CHeaders::~CHeaders() {
-            Clear();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Put(int Index, const CHeader &Header) {
-            m_pList.Delete(Index);
-            m_pList.Insert(Index, Header);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CHeader &CHeaders::Get(int Index) {
-            return m_pList.Items(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CHeader &CHeaders::Get(int Index) const {
-            return m_pList.Items(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CString &CHeaders::GetValue(const CString &Name) const {
-            int Index = IndexOfName(Name);
-            if (Index != -1) {
-                const CHeader& Header = Get(Index);
-                return Header.Value;
-            }
-            return m_NullValue;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::SetValue(const CString &Name, const CString &Value) {
-            int I = IndexOfName(Name);
-
-            if (!Value.IsEmpty()) {
-                if (I < 0) I = Add(CHeader());
-                Put(I, CHeader(Name, Value));
-            } else {
-                if (I >= 0)
-                    Delete(I);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Clear() {
-            m_pList.Clear();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Insert(int Index, const CHeader &Header) {
-            m_pList.Insert(Index, Header);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::Add(const CHeader &Header) {
-            int Result = GetCount();
-            Insert(Result, Header);
-            return Result;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::AddPair(LPCTSTR lpszName, LPCTSTR lpszValue) {
-            int Index = Add(CHeader());
-            Last().Name = lpszName;
-            Last().Value = lpszValue;
-            return Index;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::AddPair(LPCTSTR lpszName, const CString &Value) {
-            int Index = Add(CHeader());
-            Last().Name = lpszName;
-            Last().Value = Value;
-            return Index;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::AddPair(const CString &Name, const CString &Value) {
-            int Index = Add(CHeader());
-            Last().Name = Name;
-            Last().Value = Value;
-            return Index;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Delete(int Index) {
-            m_pList.Delete(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::GetCount() const {
-            return m_pList.GetCount();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CHeaders::IndexOfName(const CString& Name) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                const CHeader& Header = Get(I);
-                if (Header.Name.Lower() == Name.Lower())
-                    return I;
-            }
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CHeader &CHeaders::First() {
-            return m_pList.First();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CHeader &CHeaders::Last() {
-            return m_pList.Last();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::SetCount(int NewCount) {
-            int LCount = GetCount();
-            if (NewCount > LCount) {
-                for (int I = LCount; I < NewCount; ++I)
-                    Add(CHeader());
-            } else {
-                for (int I = LCount - 1; I >= NewCount; --I)
-                    Delete(I);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Assign(const CHeaders &Headers) {
-            Clear();
-            for (int I = 0; I < Headers.GetCount(); ++I) {
-                Add(Headers[I]);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHeaders::Concat(const CHeaders &Headers) {
-            for (int I = 0; I < Headers.GetCount(); ++I) {
-                Add(Headers[I]);
-            }
-        }
-
-        //--------------------------------------------------------------------------------------------------------------
-
         //-- CFormData -------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -429,9 +282,9 @@ namespace Delphi {
 
             for (int i = 0; i < Headers.Count(); ++i) {
                 CHeader &H = Headers[i];
-                H.Name.SaveToStream(AStream);
+                H.Name().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::separator);
-                H.Value.SaveToStream(AStream);
+                H.Value().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::crlf);
             }
 
@@ -593,7 +446,7 @@ namespace Delphi {
 
         bool http_request::BuildLocation() {
             struct servent *sptr;
-            const auto &Host = Headers.Values(_T("host"));
+            const auto &Host = Headers.Values(_T("Host"));
             CString decodeURI;
             if (!CHTTPServer::URLDecode(URI, decodeURI))
                 return false;
@@ -608,7 +461,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void http_request::BuildCookies() {
-            const auto& Cookie = Headers.Values(_T("cookie"));
+            const auto& Cookie = Headers.Values(_T("Cookie"));
             if (!Cookie.empty()) {
                 SplitColumns(Cookie, Cookies, ';');
             }
@@ -995,7 +848,7 @@ namespace Delphi {
                         return 0;
                     } else {
                         ARequest->Headers.Add(CHeader());
-                        ARequest->Headers.Last().Name.Append(AInput);
+                        ARequest->Headers.Last().Name().Append(AInput);
 
                         Context.State = Request::header_name;
                         return -1;
@@ -1009,7 +862,7 @@ namespace Delphi {
                     } else if (IsCtl(AInput)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value.Append(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
                         Context.State = Request::header_value;
                         return -1;
                     }
@@ -1020,7 +873,7 @@ namespace Delphi {
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Name.Append(AInput);
+                        ARequest->Headers.Last().Name().Append(AInput);
                         return -1;
                     }
                 case Request::space_before_header_value:
@@ -1035,13 +888,13 @@ namespace Delphi {
                         Context.State = Request::expecting_newline_2;
                         return -1;
                     } else if (AInput == ';') {
-                        ARequest->Headers.Last().Value.Append(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value.Append(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
                         return -1;
                     }
                 case Request::header_value_options_start:
@@ -1051,8 +904,8 @@ namespace Delphi {
                     } else if (IsCtl(AInput)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value.Append(AInput);
-                        ARequest->Headers.Last().Options.Add(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
+                        ARequest->Headers.Last().Data().Add(AInput);
 
                         Context.State = Request::header_value_options;
                         return -1;
@@ -1062,14 +915,14 @@ namespace Delphi {
                         Context.State = Request::expecting_newline_2;
                         return -1;
                     } else if (AInput == ';') {
-                        ARequest->Headers.Last().Value.Append(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(AInput)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value.Append(AInput);
-                        ARequest->Headers.Last().Options.back().Append(AInput);
+                        ARequest->Headers.Last().Value().Append(AInput);
+                        ARequest->Headers.Last().Data().back().Append(AInput);
                         return -1;
                     }
                 case Request::expecting_newline_2:
@@ -1088,15 +941,15 @@ namespace Delphi {
                                 return 0;
                             ARequest->BuildCookies();
 
-                            const auto& contentLength = ARequest->Headers.Values(_T("content-length"));
+                            const auto& contentLength = ARequest->Headers.Values(_T("Content-Length"));
                             if (!contentLength.IsEmpty()) {
                                 ARequest->ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
                             } else {
                                 ARequest->ContentLength = Context.ContentLength;
                             }
 
-                            const auto& contentType = ARequest->Headers.Values(_T("content-type"));
-                            if (contentType == "application/x-www-form-urlencoded") {
+                            const auto& contentType = ARequest->Headers.Values(_T("Content-Type"));
+                            if (contentType.Find("application/x-www-form-urlencoded") != CString::npos) {
                                 Context.State = Request::form_data_start;
                                 return -1;
                             }
@@ -1199,11 +1052,11 @@ namespace Delphi {
 
             try {
                 const CHeader& contentType = ARequest->Headers["content-type"];
-                if (contentType.Value.Find("multipart/form-data") == CString::npos)
+                if (contentType.Value().Find("multipart/form-data") == CString::npos)
                     return 0;
 
                 const CString CRLF(MiscStrings::crlf);
-                const auto& boundary = contentType.Options["boundary"];
+                const auto& boundary = contentType.Data()["boundary"];
 
                 CString Boundary(CRLF);
 
@@ -1243,8 +1096,8 @@ namespace Delphi {
 
                         const CHeader& contentDisposition = Request.Headers["content-disposition"];
 
-                        DataItem.Name = contentDisposition.Options["name"];
-                        DataItem.File = contentDisposition.Options["filename"];
+                        DataItem.Name = contentDisposition.Data()["name"];
+                        DataItem.File = contentDisposition.Data()["filename"];
                         DataItem.Data = Request.Content;
 
                         if (DataItem.Data.Find('\n') == CString::npos) {
@@ -1507,9 +1360,9 @@ namespace Delphi {
 
             for (int i = 0; i < Headers.Count(); ++i) {
                 CHeader &H = Headers[i];
-                H.Name.SaveToStream(AStream);
+                H.Name().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::separator);
-                H.Value.SaveToStream(AStream);
+                H.Value().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::crlf);
             }
 
@@ -1640,22 +1493,22 @@ namespace Delphi {
 
         void http_reply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
             Headers.Add(CHeader());
-            Headers.Last().Name = lpszName;
-            Headers.Last().Value = lpszValue;
+            Headers.Last().Name() = lpszName;
+            Headers.Last().Value() = lpszValue;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void http_reply::AddHeader(LPCTSTR lpszName, const CString &Value) {
             Headers.Add(CHeader());
-            Headers.Last().Name = lpszName;
-            Headers.Last().Value = Value;
+            Headers.Last().Name() = lpszName;
+            Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void http_reply::AddHeader(const CString &Name, const CString &Value) {
             Headers.Add(CHeader());
-            Headers.Last().Name = Name;
-            Headers.Last().Value = Value;
+            Headers.Last().Name() = Name;
+            Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1825,8 +1678,8 @@ namespace Delphi {
                 case not_implemented:
                     AReply->AddHeader(_T("Allow"), AReply->AllowedMethods);
                     break;
-                case unauthorized:
-                    CheckUnauthorized(AReply);
+                case service_unavailable:
+                    AReply->AddHeader(_T("Retry-After"), _T("30"));
                     break;
                 case no_content:
                     AReply->Content.Clear();
@@ -1852,11 +1705,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::CheckUnauthorized(http_reply *AReply) {
-            auto& LAuthenticate = AReply->Headers.Values(_T("www-authenticate"));
+        void http_reply::AddUnauthorized(http_reply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
+            auto& LAuthenticate = AReply->Headers.Values(_T("WWW-Authenticate"));
             if (LAuthenticate.IsEmpty()) {
-                AReply->AddHeader(_T("WWW-Authenticate"),
-                                  _T("Basic realm=\"Access to the staging site\", charset=\"UTF-8\""));
+                CString Basic(_T("Basic realm=\"Access denied\", charset=\"UTF-8\""));
+
+                CString Bearer;
+                Bearer.Format(_T("Bearer realm=\"Access denied\", error=\"%s\", error_description=\"%s\", charset=\"UTF-8\""), AError, AMessage);
+
+                AReply->AddHeader(_T("WWW-Authenticate"), ABearer ? Bearer : Basic);
             }
         }
 
@@ -1999,7 +1856,7 @@ namespace Delphi {
                         return false;
                     } else {
                         AReply->Headers.Add(CHeader());
-                        AReply->Headers.Last().Name.Append(AInput);
+                        AReply->Headers.Last().Name().Append(AInput);
 
                         Context.State = Reply::header_name;
                         return -1;
@@ -2014,7 +1871,7 @@ namespace Delphi {
                         return false;
                     } else {
                         Context.State = Reply::header_value;
-                        AReply->Headers.Last().Value.Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     }
                 case Reply::header_name:
@@ -2024,7 +1881,7 @@ namespace Delphi {
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
                         return false;
                     } else {
-                        AReply->Headers.Last().Name.Append(AInput);
+                        AReply->Headers.Last().Name().Append(AInput);
                         return -1;
                     }
                 case Reply::space_before_header_value:
@@ -2040,25 +1897,25 @@ namespace Delphi {
                         return -1;
                     } else if (AInput == ';') {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value.Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
                         return false;
                     } else {
-                        AReply->Headers.Last().Value.Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     }
                 case Reply::header_value_options_start:
                     if ((AInput == ' ' || AInput == '\t')) {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value.Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
                         return false;
                     } else {
                         Context.State = Reply::header_value_options;
-                        AReply->Headers.Last().Value.Append(AInput);
-                        AReply->Headers.Last().Options.Add(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Data().Add(AInput);
                         return -1;
                     }
                 case Reply::header_value_options:
@@ -2067,13 +1924,13 @@ namespace Delphi {
                         return -1;
                     } else if (AInput == ';') {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value.Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
                         return false;
                     } else {
-                        AReply->Headers.Last().Value.Append(AInput);
-                        AReply->Headers.Last().Options.back().Append(AInput);
+                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Data().back().Append(AInput);
                         return -1;
                     }
                 case Reply::expecting_newline_2:
@@ -2088,7 +1945,7 @@ namespace Delphi {
                         Context.ContentLength = Context.End - Context.Begin;
 
                         if (AReply->Headers.Count() > 0) {
-                            const CString &contentLength = AReply->Headers.Values(_T("content-length"));
+                            const CString &contentLength = AReply->Headers.Values(_T("Content-Length"));
                             if (!contentLength.IsEmpty()) {
                                 AReply->ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
                             } else {
@@ -2341,7 +2198,7 @@ namespace Delphi {
         void CHTTPServerConnection::SendReply(http_reply::status_type AStatus, LPCTSTR AContentType, bool ASendNow) {
 
             if (AStatus == CReply::ok) {
-                const CString &Value = GetRequest()->Headers.Values(_T("connection"));
+                const CString &Value = GetRequest()->Headers.Values(_T("Connection")).Lower();
                 if (!Value.IsEmpty()) {
                     if (Value == _T("keep-alive") || Value == _T("upgrade"))
                         CloseConnection(false);
@@ -2584,120 +2441,6 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CSites ----------------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSites::~CSites() {
-            Clear();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::Put(int Index, const CSiteConfig &Site) {
-            m_pList.Insert(Index, Site);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSiteConfig &CSites::Get(int Index) {
-            if (Index < 0 || Index >= m_pList.Count())
-                return m_Default;
-            return m_pList.Items(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CSiteConfig &CSites::Get(int Index) const {
-            if (Index < 0 || Index >= m_pList.Count())
-                return m_Default;
-            return m_pList.Items(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CJSON &CSites::GetConfig(const CString &SiteName) const {
-            int Index = IndexOfName(SiteName);
-            const auto& Site = Get(Index);
-            return Site.Config;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::Clear() {
-            m_pList.Clear();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::Insert(int Index, const CSiteConfig &Site) {
-            Put(Index, Site);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CSites::Add(const CSiteConfig &Site) {
-            int Result = GetCount();
-            Insert(Result, Site);
-            return Result;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CSites::AddPair(const CString &Name, const CJSON& Config) {
-            int Index = -1;
-            if (Name != "*" && Name.Lower() != "default")
-                Index = Add(CSiteConfig());
-            CSiteConfig& Site = Get(Index);
-            Site.Name = Name;
-            Site.Config = Config;
-            return Index;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::Delete(int Index) {
-            m_pList.Delete(Index);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CSites::GetCount() const {
-            return m_pList.GetCount();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        int CSites::IndexOfName(const CString& Name) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                const CSiteConfig& Site = Get(I);
-                if (Site.Name == Name)
-                    return I;
-            }
-            return -1;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSiteConfig &CSites::First() {
-            return m_pList.First();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSiteConfig &CSites::Last() {
-            return m_pList.Last();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::SetCount(int NewCount) {
-            int LCount = GetCount();
-            if (NewCount > LCount) {
-                for (int I = LCount; I < NewCount; ++I)
-                    Add(CSiteConfig());
-            } else {
-                for (int I = LCount - 1; I >= NewCount; --I)
-                    Delete(I);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSites::Assign(const CSites &Sites) {
-            Clear();
-            for (int I = 0; I < Sites.GetCount(); ++I) {
-                Add(Sites[I]);
-            }
-        }
-
-        //--------------------------------------------------------------------------------------------------------------
-
         //-- CHTTPServer -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2707,10 +2450,32 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CString CHTTPServer::URLEncode(const CString &In) {
+            const static TCHAR HexCodes[] = "0123456789ABCDEF";
+            TCHAR ch;
+            CString Out;
+            for (int i = 0; i < In.Size(); i++) {
+                ch = In.at(i);
+                if (ch == ' ') {
+                    Out += '+';
+                } else if (isalnum(ch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
+                    Out += ch;
+                } else {
+                    Out += "%";
+                    Out += HexCodes[(ch >> 4) & 0x0F];
+                    Out += HexCodes[ch & 0x0F];
+                }
+            }
+            return Out;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         bool CHTTPServer::URLDecode(const CString &In, CString &Out) {
+            TCHAR ch;
             Out.Clear();
             for (size_t i = 0; i < In.size(); ++i) {
-                if (In[i] == '%') {
+                ch = In.at(i);
+                if (ch == '%') {
                     if (i + 3 <= In.size()) {
                         int value = (int) HexToDec(In.substr(i + 1, 2).c_str());
                         Out += static_cast<char>(value);
@@ -2718,10 +2483,10 @@ namespace Delphi {
                     } else {
                         return false;
                     }
-                } else if (In[i] == '+') {
+                } else if (ch == '+') {
                     Out += ' ';
                 } else {
-                    Out += In[i];
+                    Out += ch;
                 }
             }
             return true;

@@ -233,7 +233,7 @@ namespace Delphi {
 
             friend tostream &operator<<(tostream &Out, const CJSON &RM) {
                 const CString& S = RM.JsonToString();
-                Out << S.c_str();
+                Out << (S.IsEmpty() ? "" : S.c_str());
                 return Out;
             };
 
@@ -419,7 +419,7 @@ namespace Delphi {
 
             friend tostream &operator<<(tostream &Out, CJSONElements &RM) {
                 const CString& S = RM.JsonToString();
-                return Out << S.c_str();
+                return Out << (S.IsEmpty() ? "" : S.c_str());
             };
 
             friend tistream &operator>>(tistream &In, CJSONElements &RM) {
@@ -679,7 +679,7 @@ namespace Delphi {
 
             friend tostream &operator<<(tostream &Out, CJSONMembers &RM) {
                 const CString& S = RM.JsonToString();
-                return Out << S.c_str();
+                return Out << (S.IsEmpty() ? "" : S.c_str());
             };
 
             friend tistream &operator>>(tistream &In, CJSONMembers &RM) {
@@ -840,13 +840,9 @@ namespace Delphi {
             CString AsString() const;
 
             int AsInteger() const { return StrToInt(m_Data.c_str()); }
-
             long AsLong() const { return StrToInt(m_Data.c_str()); }
-
             float AsFloat() const { return StrToFloat(m_Data.c_str()); }
-
             double AsDouble() const { return StrToDouble(m_Data.c_str()); }
-
             long double AsDecimal() const { return StrToDecimal(m_Data.c_str()); }
 
             bool AsBoolean() const;
@@ -901,7 +897,7 @@ namespace Delphi {
             }
 
             friend tostream &operator<<(tostream &Out, const CJSONValue &RM) {
-                return Out << RM.Data().c_str();
+                return Out << (RM.Data().IsEmpty() ? "" : RM.Data().c_str());
             }
 
             CJSONValue &operator[](int Index) override { return Get(Index); }
@@ -1082,7 +1078,8 @@ namespace Delphi {
             };
 
             friend tostream &operator<<(tostream &Out, const CJSONMember &RE) {
-                return Out << RE.Value().Data().c_str();
+                const auto& Data = RE.Value().Data();
+                return Out << (Data.IsEmpty() ? "" : Data.c_str());
             };
 
             friend tistream &operator>>(tistream &In, CJSONMember &RE) {
@@ -1204,7 +1201,7 @@ namespace Delphi {
 
             friend tostream &operator<<(tostream &Out, CJSONArray &RM) {
                 const CString& S = RM.JsonToString();
-                return Out << S.c_str();
+                return Out << (S.IsEmpty() ? "" : S.c_str());
             };
 
             friend tistream &operator>>(tistream &In, CJSONArray &RM) {
@@ -1392,7 +1389,7 @@ namespace Delphi {
 
             friend tostream &operator<<(tostream &Out, CJSONObject &RM) {
                 const CString& S = RM.JsonToString();
-                return Out << S.c_str();
+                return Out << (S.IsEmpty() ? "" : S.c_str());
             };
 
             friend tistream &operator>>(tistream &In, CJSONObject &RM) {
