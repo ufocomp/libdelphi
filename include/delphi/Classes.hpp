@@ -899,7 +899,7 @@ namespace Delphi {
                 return std::basic_string<char>(Data(), Size());
             };
 
-            operator const char *() const {
+            explicit operator const char *() const {
                 return IsEmpty() ? "" : c_str();
             };
 
