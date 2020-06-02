@@ -93,6 +93,7 @@ namespace Delphi {
 
             CAuthParam(const CAuthParam &Other): CAuthParam() {
                 if (this != &Other) {
+                    this->Provider = Other.Provider;
                     this->Params = Other.Params;
                     this->Keys = Other.Keys;
                     this->StatusTime = Other.StatusTime;
