@@ -456,6 +456,8 @@ namespace Delphi {
 
         protected:
 
+            CString m_DefaultIP;
+
             unsigned short m_DefaultPort;
 
             CSocketHandle *GetItem(int Index) override;
@@ -473,6 +475,9 @@ namespace Delphi {
 
             CSocketHandle *Handles(int Index) { return GetItem(Index); }
             void Handles(int Index, CSocketHandle *Value) { SetItem(Index, Value); }
+
+            CString& DefaultIP() { return m_DefaultIP; }
+            const CString& DefaultIP() const { return m_DefaultIP; }
 
             unsigned short DefaultPort() const { return m_DefaultPort; }
             void DefaultPort(unsigned short Value) { m_DefaultPort = Value; }
@@ -854,6 +859,9 @@ namespace Delphi {
         class LIB_DELPHI CSocketServer: public CSocketComponent {
         private:
 
+            CString& GetDefaultIP();
+            const CString& GetDefaultIP() const;
+
             unsigned short GetDefaultPort();
             virtual void SetDefaultPort(unsigned short Value);
 
@@ -870,6 +878,9 @@ namespace Delphi {
             CSocketServer();
 
             ~CSocketServer();
+
+            CString& DefaultIP() { return GetDefaultIP(); }
+            const CString& DefaultIP() const { return GetDefaultIP(); }
 
             unsigned short DefaultPort() { return GetDefaultPort(); }
             void DefaultPort(unsigned short Value) { SetDefaultPort(Value); }
@@ -1990,7 +2001,8 @@ namespace Delphi {
 
             void SetIOHandler(CServerIOHandler *Value);
 
-            virtual void InitializeCommandHandlers() {};
+            virtual void InitializeCommandHandlers();
+            virtual void InitializeBindings() abstract;
 
             bool DoCommand(CTCPConnection *AConnection) override;
 

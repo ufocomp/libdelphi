@@ -212,7 +212,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.1.2")
+#define DELPHI_LIB_VERSION      _T("2.1.3")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -263,6 +263,10 @@ inline void chMB(LPCSTR szMsg);
 
 #  ifndef DELPHI_SOCKETS_HPP
 #    include "delphi/Sockets.hpp"
+#  endif
+
+#  ifndef DELPHI_OAUTH2_HPP
+#    include "delphi/OAuth2.hpp"
 #  endif
 
 #  ifndef DELPHI_HTTP_HPP

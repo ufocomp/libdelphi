@@ -993,6 +993,8 @@ namespace Delphi {
         CSocketHandle *CSocketHandles::Add() {
             auto Result = new CSocketHandle(this);
             inherited::Added((CCollectionItem *) Result);
+            if (!DefaultIP().IsEmpty())
+                Result->IP(DefaultIP().c_str());
             Result->Port(DefaultPort());
             return Result;
         }
@@ -1915,6 +1917,16 @@ namespace Delphi {
 
         CSocketServer::~CSocketServer() {
             FreeAndNil(m_pBindings);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString &CSocketServer::GetDefaultIP() {
+            return m_pBindings->DefaultIP();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        const CString &CSocketServer::GetDefaultIP() const {
+            return m_pBindings->DefaultIP();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3453,6 +3465,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CAsyncServer::InitializeCommandHandlers() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CAsyncServer::SetActiveLevel(CActiveLevel AValue) {
 
             CPollEventHandler *LEventHandler = nullptr;
@@ -3468,7 +3485,7 @@ namespace Delphi {
                         m_pIOHandler = new CServerIOHandler();
 
                     if (m_pBindings->Count() == 0)
-                        m_pBindings->Add();
+                        InitializeBindings();
 
                     for (int i = 0; i < m_pBindings->Count(); ++i) {
                         if (AValue >= alBinding && !m_pBindings->Handles(i)->HandleAllocated()) {

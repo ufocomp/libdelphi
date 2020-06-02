@@ -30,6 +30,12 @@ namespace Delphi {
 
     namespace Classes {
 
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- TList -----------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
         template<class ClassName>
         class TList : public CObject, public CHeapComponent {
             typedef ClassName *PClassName;
@@ -132,7 +138,84 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- TList<ClassName> ------------------------------------------------------------------------------------------
+        //-- TEnumerator -----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        template<class ClassItem, class ClassItems>
+        class TEnumerator: public CObject {
+            typedef CObject inherited;
+
+            typedef TList<ClassItem> ClassList;
+            typedef ClassList *PClassList;
+
+            typedef ClassItem& reference;
+            typedef ClassItem* pointer;
+            typedef const ClassItem& const_reference;
+            typedef const ClassItem* const_pointer;
+
+        private:
+
+            mutable int m_Index;
+            PClassList  m_pList;
+
+        public:
+
+            explicit TEnumerator(ClassItems *List): inherited() {
+                m_Index = -1;
+                m_pList = List->Expand();
+            }
+
+            explicit TEnumerator(const ClassItems &List): inherited() {
+                m_Index = -1;
+                m_pList = ((ClassItems *) std::addressof(List))->Expand();
+            }
+
+            ~TEnumerator() override = default;
+
+            reference GetCurrent() {
+                return m_pList->Items(m_Index);
+            }
+
+            const_reference GetCurrent() const {
+                return m_pList->Items(m_Index);
+            }
+
+            bool MoveNext() const {
+                if (m_Index < m_pList->Count() - 1) {
+                    m_Index++;
+                    return true;
+                }
+                return false;
+            }
+
+            int Index() const { return m_Index; }
+
+            reference Current() { return GetCurrent(); }
+            const_reference Current() const { return GetCurrent(); }
+
+            // Forward iterator requirements
+            reference operator*() const { return *Current(); }
+
+            pointer operator->() const { return Current(); }
+
+            TEnumerator& operator++() {
+                ++m_Index;
+                return *this;
+            }
+
+            TEnumerator& operator--() {
+                --m_Index;
+                return *this;
+            }
+
+            const ClassItem& base() const { return Current(); }
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- TList -----------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 

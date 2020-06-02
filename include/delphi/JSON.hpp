@@ -21,10 +21,8 @@ Author:
 
 --*/
 
-#ifndef APOSTOL_JSON_HPP
-#define APOSTOL_JSON_HPP
-
-#include "Classes.hpp"
+#ifndef DELPHI_JSON_HPP
+#define DELPHI_JSON_HPP
 
 extern "C++" {
 
@@ -1510,4 +1508,4 @@ namespace Delphi {
 using namespace Delphi::Json;
 }
 
-#endif //APOSTOL_JSON_HPP
+#endif //DELPHI_JSON_HPP

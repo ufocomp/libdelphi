@@ -923,9 +923,9 @@ namespace Delphi {
                 return *this;
             };
 
-            CString& operator= (const std::string& s) {
+            CString& operator= (const std::string& str) {
                 Clear();
-                Create(s.c_str());
+                Create(str.c_str());
                 return *this;
             }
 
@@ -1128,8 +1128,7 @@ namespace Delphi {
         class CStringsEnumerator;
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CStrings: public CPersistent
-        {
+        class LIB_DELPHI CStrings: public CPersistent {
             typedef CPersistent inherited;
             typedef LPCTSTR reference;
 
@@ -1333,51 +1332,6 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CStringsEnumerator ----------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class LIB_DELPHI CStringsEnumerator: public CObject
-        {
-            typedef CObject inherited;
-
-        private:
-
-            int         m_Index;
-            CStrings   *m_Strings;
-
-        public:
-
-            explicit CStringsEnumerator(CStrings* AStrings): CObject() {
-                m_Index = -1;
-                m_Strings = AStrings;
-            }
-
-            inline ~CStringsEnumerator() override = default;
-
-            CString &GetCurrent() {
-                return m_Strings->Strings(m_Index);
-            }
-
-            const CString &GetCurrent() const {
-                return m_Strings->Strings(m_Index);
-            }
-
-            bool MoveNext() {
-                if (m_Index < m_Strings->Count() - 1) {
-                    m_Index++;
-                    return true;
-                }
-                return false;
-            }
-
-            CString& Current() { return GetCurrent(); };
-
-            const CString& Current() const { return GetCurrent(); };
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
         //-- CStringList -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1397,8 +1351,7 @@ namespace Delphi {
         typedef int (*PStringListSortCompare)(CStringList *List, int Index1, int Index2);
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CStringList: public CHeapComponent, public CStrings
-        {
+        class LIB_DELPHI CStringList: public CHeapComponent, public CStrings {
             typedef CStrings inherited;
             typedef LPCTSTR reference;
 
@@ -1508,6 +1461,13 @@ namespace Delphi {
                 if (Str != nullptr) {
                     size_t Size = strlen(Str);
                     SetTextStr(Str, Size);
+                }
+                return *this;
+            }
+
+            CStringList &operator<<(const CStringList &Strings) {
+                if (&Strings != this) {
+                    AddStrings(Strings);
                 }
                 return *this;
             }

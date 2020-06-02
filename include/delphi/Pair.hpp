@@ -30,21 +30,22 @@ namespace Delphi {
 
     namespace Classes {
 
-        template<class ClassName>
-        class TPair : public CObject {
-            typedef ClassName *PClassName;
+        template<class ClassValue>
+        class TPair: public CObject {
+            typedef ClassValue *PClassValue;
 
         private:
 
             CString m_Name;
-            ClassName m_Value;
+            ClassValue m_Value;
             CStringList m_Data;
 
         public:
 
             TPair() = default;
+            ~TPair() override = default;
 
-            TPair(const CString &Name, const ClassName &Value) {
+            TPair(const CString &Name, const ClassValue &Value) {
                 m_Name = Name;
                 m_Value = Value;
             }
@@ -63,8 +64,8 @@ namespace Delphi {
             CString &Name() {return m_Name; }
             const CString &Name() const {return m_Name; }
 
-            ClassName &Value() {return m_Value; }
-            const ClassName &Value() const {return m_Value; }
+            ClassValue &Value() {return m_Value; }
+            const ClassValue &Value() const {return m_Value; }
 
             CStringList &Data() {return m_Data; }
             const CStringList &Data() const {return m_Data; }
@@ -81,12 +82,19 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         template<class ClassValue>
-        class TPairs {
+        class TPairs: public CObject {
+            typedef TPairs<ClassValue> ClassPairs;
             typedef TPair<ClassValue> ClassPair;
+            typedef TList<ClassPair> ClassList;
+
+            typedef ClassPair& reference;
+            typedef ClassPair* pointer;
+            typedef const ClassPair& const_reference;
+            typedef const ClassPair* const_pointer;
 
         private:
 
-            TList<ClassPair> m_pList;
+            ClassList m_pList;
 
             ClassPair m_Default;
 
@@ -96,10 +104,14 @@ namespace Delphi {
             }
 
             ClassPair &Get(int Index) {
+                if (Index == -1)
+                    return m_Default;
                 return m_pList.Items(Index);
             }
-            
+
             const ClassPair &Get(int Index) const {
+                if (Index == -1)
+                    return m_Default;
                 return m_pList.Items(Index);
             }
 
@@ -117,7 +129,7 @@ namespace Delphi {
                 }
                 return m_Default.Value();
             }
-            
+
             void SetValue(const CString &Name, const ClassValue &Value) {
                 int Index = IndexOfName(Name);
                 if (!Value.IsEmpty()) {
@@ -131,18 +143,25 @@ namespace Delphi {
 
         public:
 
+            typedef TEnumerator<ClassPair, ClassPairs> Enumerator;
+            typedef const TEnumerator<ClassPair, ClassPairs> ConstEnumerator;
+
             TPairs() = default;
 
             TPairs(const TPairs &Value) {
                 Assign(Value);
             }
 
-            ~TPairs() {
+            ~TPairs() override {
                 Clear();
             }
 
             void Clear() {
                 m_pList.Clear();
+            }
+
+            ClassList *Expand() {
+                return m_pList.Expand();
             }
 
             int IndexOfName(const CString &Name) const {
@@ -191,6 +210,22 @@ namespace Delphi {
                 return m_pList.Last();
             }
 
+            reference begin() {
+                return m_pList.First();
+            }
+
+            const_reference cbegin() const {
+                return m_pList.First();
+            }
+
+            reference end() {
+                return m_pList.Last();
+            }
+
+            const_reference cend() const {
+                return m_pList.Last();
+            }
+
             int Count() const { return GetCount(); }
 
             void Concat(const TPairs &Value) {
@@ -210,10 +245,10 @@ namespace Delphi {
             const ClassValue &Values(const CString &Name) const { return GetValue(Name); }
             void Values(const CString &Name, const ClassValue &Value) { SetValue(Name, Value); }
 
-            ClassPair &Pairs(int Index) { return Get(Index); }
-            const ClassPair &Pairs(int Index) const { return Get(Index); }
+            ClassPair &Items(int Index) { return Get(Index); }
+            const ClassPair &Items(int Index) const { return Get(Index); }
 
-            void Pairs(int Index, const ClassPair &Pair) { Put(Index, Pair); }
+            void Items(int Index, const ClassPair &Pair) { Put(Index, Pair); }
 
             TPairs &operator=(const TPairs &Value) {
                 if (this != &Value)
@@ -230,11 +265,8 @@ namespace Delphi {
             ClassPair &operator[](int Index) { return Get(Index); }
             const ClassPair &operator[](int Index) const { return Get(Index); }
 
-            ClassPair &operator[](LPCTSTR Name) { return Pairs(IndexOfName(Name)); }
-            const ClassPair &operator[](LPCTSTR Name) const { return Pairs(IndexOfName(Name)); }
-
-            ClassPair &operator[](const CString &Name) { return Pairs(IndexOfName(Name)); }
-            const ClassPair &operator[](const CString &Name) const { return Pairs(IndexOfName(Name)); }
+            ClassPair &operator[](const CString &Name) { return Items(IndexOfName(Name)); }
+            const ClassPair &operator[](const CString &Name) const { return Items(IndexOfName(Name)); }
 
         };
 

@@ -261,7 +261,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::ToBuffers(CMemoryStream *AStream) {
+        void CRequest::ToBuffers(CMemoryStream *AStream) {
 
             Method.SaveToStream(AStream);
             StringArrayToStream(AStream, MiscStrings::space);
@@ -293,7 +293,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::Clear() {
+        void CRequest::Clear() {
             Method = "GET";
             URI = "/";
             VMajor = 1;
@@ -306,22 +306,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
+        void CRequest::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
             Headers.AddPair(lpszName, lpszValue);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::AddHeader(LPCTSTR lpszName, const CString &Value) {
+        void CRequest::AddHeader(LPCTSTR lpszName, const CString &Value) {
             Headers.AddPair(lpszName, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::AddHeader(const CString &Name, const CString &Value) {
+        void CRequest::AddHeader(const CString &Name, const CString &Value) {
             Headers.AddPair(Name, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::ToText() {
+        void CRequest::ToText() {
             CString Temp;
             TCHAR ch;
             if (!Content.IsEmpty()) {
@@ -336,7 +336,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::ToJSON() {
+        void CRequest::ToJSON() {
             CString Temp;
             if (!Content.IsEmpty()) {
                 Temp = Content;
@@ -372,7 +372,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        http_request *http_request::Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AURI, LPCTSTR AContentType) {
+        CRequest *CRequest::Prepare(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI, LPCTSTR AContentType) {
 
             TCHAR szSize[_INT_T_LEN + 1] = {0};
 
@@ -388,22 +388,22 @@ namespace Delphi {
 
                 if (AContentType == nullptr) {
                     switch (ARequest->ContentType) {
-                        case content_type::html:
+                        case CContentType::html:
                             AContentType = _T("text/html");
                             break;
-                        case content_type::json:
+                        case CContentType::json:
                             AContentType = _T("application/json");
                             ARequest->ToJSON();
                             break;
-                        case content_type::xml:
+                        case CContentType::xml:
                             AContentType = _T("application/xml");
                             ARequest->ToText();
                             break;
-                        case content_type::text:
+                        case CContentType::text:
                             AContentType = _T("text/plain");
                             ARequest->ToText();
                             break;
-                        case content_type::sbin:
+                        case CContentType::sbin:
                             AContentType = _T("application/octet-stream");
                             break;
                         default:
@@ -425,7 +425,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        http_request *http_request::Authorization(http_request *ARequest, LPCTSTR AMethod, LPCTSTR ALogin,
+        CRequest *CRequest::Authorization(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin,
                 LPCTSTR APassword) {
 
             CString LPassphrase, LAuthorization;
@@ -444,7 +444,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool http_request::BuildLocation() {
+        bool CRequest::BuildLocation() {
             struct servent *sptr;
             const auto &Host = Headers.Values(_T("Host"));
             CString decodeURI;
@@ -460,7 +460,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_request::BuildCookies() {
+        void CRequest::BuildCookies() {
             const auto& Cookie = Headers.Values(_T("Cookie"));
             if (!Cookie.empty()) {
                 SplitColumns(Cookie, Cookies, ';');
@@ -1176,7 +1176,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        static const CReply::status_type StatusArray[] = {
+        static const CReply::CStatusType StatusArray[] = {
                 CReply::switching_protocols,
                 CReply::ok,
                 CReply::created,
@@ -1225,7 +1225,7 @@ namespace Delphi {
             const TCHAR service_unavailable[] = _T("Service Unavailable");
             const TCHAR gateway_timeout[] = _T("Gateway Timeout");
 
-            size_t ToBuffer(CReply::status_type AStatus, CStream *AStream) {
+            size_t ToBuffer(CReply::CStatusType AStatus, CStream *AStream) {
                 switch (AStatus) {
                     case CReply::switching_protocols:
                         return StringArrayToStream(AStream, switching_protocols);
@@ -1274,7 +1274,7 @@ namespace Delphi {
                 }
             }
 
-            void ToString(CReply::status_type AStatus, CString &AString) {
+            void ToString(CReply::CStatusType AStatus, CString &AString) {
                 switch (AStatus) {
                     case CReply::switching_protocols:
                         AString = switching_protocols;
@@ -1422,10 +1422,10 @@ namespace Delphi {
             LPCTSTR service_unavailable[]   = CreateStockReplies(503, Service Unavailable);
             LPCTSTR gateway_timeout[]       = CreateStockReplies(504, Gateway Timeout);
 
-            LPCTSTR ToString(CReply::status_type AStatus, CReply::content_type AMessage) {
+            LPCTSTR ToString(CReply::CStatusType AStatus, CReply::CContentType AMessage) {
 
-                if (AMessage > CReply::content_type::json)
-                    AMessage = CReply::content_type::html;
+                if (AMessage > CReply::CContentType::json)
+                    AMessage = CReply::CContentType::html;
 
                 switch (AStatus) {
                     case CReply::switching_protocols:
@@ -1478,41 +1478,41 @@ namespace Delphi {
         } // namespace stock_replies
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::Clear() {
+        void CReply::Clear() {
             VMajor = 1;
             VMinor = 1;
-            Status = status_type::internal_server_error;
+            Status = CStatusType::internal_server_error;
             StatusString.Clear();
             StatusText.Clear();
-            ContentType = content_type::html;
+            ContentType = CContentType::html;
             CloseConnection = true;
             Headers.Clear();
             Content.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
+        void CReply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
             Headers.Add(CHeader());
             Headers.Last().Name() = lpszName;
             Headers.Last().Value() = lpszValue;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::AddHeader(LPCTSTR lpszName, const CString &Value) {
+        void CReply::AddHeader(LPCTSTR lpszName, const CString &Value) {
             Headers.Add(CHeader());
             Headers.Last().Name() = lpszName;
             Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::AddHeader(const CString &Name, const CString &Value) {
+        void CReply::AddHeader(const CString &Name, const CString &Value) {
             Headers.Add(CHeader());
             Headers.Last().Name() = Name;
             Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::ToText() {
+        void CReply::ToText() {
             CString Temp;
             TCHAR ch;
             if (!Content.IsEmpty()) {
@@ -1527,7 +1527,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::ToJSON() {
+        void CReply::ToJSON() {
             CString Temp;
             if (!Content.IsEmpty()) {
                 Temp = Content;
@@ -1563,7 +1563,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::StringToStatus() {
+        void CReply::StringToStatus() {
             int I = StrToInt(StatusString.c_str());
             for (const auto S : StatusArray) {
                 if (I == S) {
@@ -1574,7 +1574,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LPCTSTR http_reply::GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta) {
+        LPCTSTR CReply::GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta) {
             time_t timer = 0;
             struct tm *gmt;
 
@@ -1589,7 +1589,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath, time_t Expires,
+        void CReply::SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath, time_t Expires,
                 bool HttpOnly, LPCTSTR lpszSameSite) {
 
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
@@ -1624,7 +1624,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        http_reply *CReply::GetReply(http_reply *AReply, status_type AStatus, LPCTSTR AContentType) {
+        CReply *CReply::GetReply(CReply *AReply, CStatusType AStatus, LPCTSTR AContentType) {
 
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
             TCHAR szSize[_INT_T_LEN + 1] = {0};
@@ -1645,22 +1645,22 @@ namespace Delphi {
 
                 if (AContentType == nullptr) {
                     switch (AReply->ContentType) {
-                        case content_type::html:
+                        case CContentType::html:
                             AContentType = _T("text/html");
                             break;
-                        case content_type::json:
+                        case CContentType::json:
                             AContentType = _T("application/json");
                             AReply->ToJSON();
                             break;
-                        case content_type::xml:
+                        case CContentType::xml:
                             AContentType = _T("application/xml");
                             AReply->ToText();
                             break;
-                        case content_type::text:
+                        case CContentType::text:
                             AContentType = _T("text/plain");
                             AReply->ToText();
                             break;
-                        case content_type::sbin:
+                        case CContentType::sbin:
                             AContentType = _T("application/octet-stream");
                             break;
                         default:
@@ -1697,7 +1697,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        http_reply *CReply::GetStockReply(http_reply *AReply, CReply::status_type AStatus) {
+        CReply *CReply::GetStockReply(CReply *AReply, CReply::CStatusType AStatus) {
             if (AStatus != CReply::no_content)
                 AReply->Content = StockReplies::ToString(AStatus, AReply->ContentType);
             AReply = GetReply(AReply, AStatus);
@@ -1705,7 +1705,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void http_reply::AddUnauthorized(http_reply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
+        void CReply::AddUnauthorized(CReply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
             auto& LAuthenticate = AReply->Headers.Values(_T("WWW-Authenticate"));
             if (LAuthenticate.IsEmpty()) {
                 CString Basic(_T("Basic realm=\"Access denied\", charset=\"UTF-8\""));
@@ -2185,7 +2185,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::SendStockReply(http_reply::status_type AStatus, bool ASendNow) {
+        void CHTTPServerConnection::SendStockReply(CReply::CStatusType AStatus, bool ASendNow) {
 
             GetReply()->CloseConnection = CloseConnection();
 
@@ -2195,7 +2195,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::SendReply(http_reply::status_type AStatus, LPCTSTR AContentType, bool ASendNow) {
+        void CHTTPServerConnection::SendReply(CReply::CStatusType AStatus, LPCTSTR AContentType, bool ASendNow) {
 
             if (AStatus == CReply::ok) {
                 const CString &Value = GetRequest()->Headers.Values(_T("Connection")).Lower();
@@ -2445,8 +2445,27 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPServer::CHTTPServer(unsigned short AListen): CAsyncServer() {
-            DefaultPort(AListen);
+        CHTTPServer::CHTTPServer(const CString &IP, unsigned short Port): CAsyncServer() {
+            DefaultIP() = IP;
+            DefaultPort(Port);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServer::InitializeBindings() {
+            CSocketHandle* LBinding = m_pBindings->Add();
+            for (int i = 0; i < m_Sites.Count(); ++i) {
+                const auto& Site = m_Sites[i];
+                const auto& Port = Site.Value()["listen"];
+                if (Site.Name() == "*") {
+                    if (!Port.IsEmpty())
+                        LBinding->Port(Port.AsInteger());
+                } else {
+                    if (!Port.IsEmpty() && Port.AsInteger() != DefaultPort()) {
+                        LBinding = Bindings()->Add();
+                        LBinding->Port(Port.AsInteger());
+                    }
+                }
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 

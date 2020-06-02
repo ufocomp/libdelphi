@@ -26,7 +26,7 @@ Author:
 //----------------------------------------------------------------------------------------------------------------------
 
 #define DefaultServerName  DELPHI_LIB_VER
-#define DefaultAllowedMethods  _T("OPTIONS, GET")
+#define DefaultAllowedMethods  _T("HEAD, OPTIONS, GET")
 //----------------------------------------------------------------------------------------------------------------------
 
 #define WS_FIN                  0x80u
@@ -70,7 +70,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct url_parser {
+        struct CLocation {
         private:
 
             enum {
@@ -92,19 +92,19 @@ namespace Delphi {
             CString search;
             CString hash;
 
-            url_parser(): flag(url_hostname), port(80) {
+            CLocation(): flag(url_hostname), port(80) {
 
             }
 
-            url_parser(const url_parser& URL): url_parser() {
+            CLocation(const CLocation& URL): CLocation() {
                 Assign(URL);
             }
 
-            explicit url_parser(const CString& URL): url_parser() {
+            explicit CLocation(const CString& URL): CLocation() {
                 Parse(URL);
             }
 
-            void Assign(const url_parser& URL) {
+            void Assign(const CLocation& URL) {
                 protocol = URL.protocol;
                 hostname = URL.hostname;
                 portStr = URL.portStr;
@@ -226,26 +226,153 @@ namespace Delphi {
                 return toString();
             };
 
-            url_parser& operator= (const url_parser &URL) {
+            CLocation& operator= (const CLocation &URL) {
                 if (this != &URL) {
                     Assign(URL);
                 }
                 return *this;
             };
 
-            url_parser& operator= (const CString &URL) {
+            CLocation& operator= (const CString &URL) {
                 Parse(URL);
                 return *this;
             };
 
-            url_parser& operator<< (const CString &Value) {
+            CLocation& operator<< (const CString &Value) {
                 Parse(href() + Value);
                 return *this;
             }
 
-        } CLocation, *PLocation;
+        };
+
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CAuthorization --------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CAuthorizationError : public ExceptionFrm {
+            typedef ExceptionFrm inherited;
+
+        public:
+
+            CAuthorizationError() : inherited() {};
+
+            explicit CAuthorizationError(LPCTSTR AFormat, ...) : inherited() {
+                CString Format("Authorization error: ");
+                Format << AFormat;
+                va_list argList;
+                va_start(argList, AFormat);
+                FormatMessage(Format.c_str(), argList);
+                va_end(argList);
+            };
+
+            ~CAuthorizationError() override = default;
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        struct CCleanToken {
+
+            const CString Header;
+            const CString Payload;
+
+            int64_t DeltaExp;
+
+            const bool Valid;
+
+            explicit CCleanToken(const CString& Header, const CString& Payload, bool Valid, int64_t DeltaExp = 3600):
+                    Header(Header), Payload(Payload), Valid(Valid), DeltaExp(DeltaExp) {
+
+            }
+
+        };
+        //--------------------------------------------------------------------------------------------------------------
+
+        struct CAuthorization {
+
+            enum CScheme {
+                asUnknown = -1,
+                asBasic,
+                asBearer
+            } Schema;
+
+            CString Username;
+            CString Password;
+
+            enum CGrantType {
+                agtUnknown = -1,
+                agtCode,
+                agtImplicit,
+                agtOwner,
+                agtClient
+            } GrantType;
+
+            CString Grant;
+
+            enum CTokenType {
+                attUnknown = -1,
+                attAccess,
+                attRefresh
+            } TokenType;
+
+            CString Token;
+
+            CCleanToken *CleanToken;
+
+            CAuthorization(): Schema(asUnknown), GrantType(agtUnknown), TokenType(attUnknown) {
+                CleanToken = nullptr;
+            }
+
+            ~CAuthorization() {
+                delete CleanToken;
+            }
+
+            explicit CAuthorization(const CString& String): CAuthorization() {
+                Parse(String);
+            }
+
+            void Parse(const CString& String) {
+                if (String.IsEmpty())
+                    throw CAuthorizationError("Data has not be empty.");
+
+                if (String.SubString(0, 5) == "Basic") {
+
+                    Schema = asBasic;
+
+                    const CString LPassphrase(base64_decode(String.SubString(6)));
+
+                    const size_t LPos = LPassphrase.Find(':');
+                    if (LPos == CString::npos)
+                        throw CAuthorizationError("Incorrect passphrase.");
+
+                    GrantType = agtOwner;
+
+                    Username = LPassphrase.SubString(0, LPos);
+                    Password = LPassphrase.SubString(LPos + 1);
+
+                    if (Username.IsEmpty() || Password.IsEmpty())
+                        throw CAuthorizationError("Username and password has not be empty.");
+
+                } else if (String.SubString(0, 6) == "Bearer") {
+
+                    Schema = asBearer;
+                    Token = String.SubString(7);
+
+                    if (Token.IsEmpty())
+                        throw CAuthorizationError("Token has not be empty.");
+
+                } else {
+                    throw CAuthorizationError("Unknown schema.");
+                }
+            }
+
+            CAuthorization &operator << (const CString& String) {
+                Parse(String);
+                return *this;
+            }
+
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -262,13 +389,13 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct http_form_data {
+        struct CFormDataItem {
 
             CString Name;
             CString File;
             CString Data;
 
-            http_form_data& operator= (const http_form_data& Value) {
+            CFormDataItem& operator= (const CFormDataItem& Value) {
                 if (this != &Value) {
                     Name = Value.Name;
                     File = Value.File;
@@ -277,10 +404,10 @@ namespace Delphi {
                 return *this;
             };
 
-            inline bool operator!= (const http_form_data& Value) { return Name != Value.Name; };
-            inline bool operator== (const http_form_data& Value) { return Name == Value.Name; };
+            inline bool operator!= (const CFormDataItem& Value) { return Name != Value.Name; };
+            inline bool operator== (const CFormDataItem& Value) { return Name == Value.Name; };
 
-        } CFormDataItem, *PFormDataItem;
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -361,7 +488,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct http_request {
+        struct CRequest {
 
             CString Method;
 
@@ -383,7 +510,7 @@ namespace Delphi {
             size_t ContentLength = 0;
 
             /// The content type of the reply.
-            enum content_type
+            enum CContentType
             {
                 html = 0,
                 json,
@@ -430,13 +557,13 @@ namespace Delphi {
             void BuildCookies();
 
             /// Get a prepare request.
-            static http_request *Prepare(http_request *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
+            static CRequest *Prepare(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
                     LPCTSTR AContentType = nullptr);
 
             /// Add Authorization header to headers
-            static http_request *Authorization(http_request *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
+            static CRequest *Authorization(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
 
-            http_request &operator=(const http_request &Value) {
+            CRequest &operator=(const CRequest &Value) {
                 if (this != &Value) {
                     Method = Value.Method;
                     URI = Value.URI;
@@ -456,7 +583,7 @@ namespace Delphi {
                 return *this;
             };
 
-        } CRequest, *PRequest;
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -464,7 +591,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct web_socket_frame {
+        struct CWebSocketFrame {
 
             unsigned char FIN = WS_FIN;
             unsigned char Opcode = 0xFF;
@@ -491,7 +618,7 @@ namespace Delphi {
             }
 
             //unsigned long long PayloadLength = 0;
-        } CWebSocketFrame, *PWebSocketFrame;
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -569,7 +696,7 @@ namespace Delphi {
 
         namespace Request {
 
-            typedef enum parser_state {
+            enum CParserState {
                 method_start,
                 method,
                 uri_start,
@@ -600,12 +727,12 @@ namespace Delphi {
                 form_data_start,
                 form_data,
                 form_mime
-            } CParserState;
+            };
 
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct http_context {
+        struct CHTTPContext {
             LPCTSTR Begin;
             LPCTSTR End;
             size_t Size;
@@ -615,7 +742,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            http_context(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
+            CHTTPContext(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
                 Begin = ABegin;
                 End = ABegin + ASize;
                 Size = ASize;
@@ -625,7 +752,7 @@ namespace Delphi {
                 MimeIndex = 0;
             };
 
-        } CHTTPContext, *PRequestContext;
+        };
         //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming HTTP requests.
@@ -673,13 +800,13 @@ namespace Delphi {
         class CHTTPServerConnection;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef struct http_reply
+        struct CReply
         {
             int VMajor;
             int VMinor;
 
             /// The status of the reply.
-            enum status_type
+            enum CStatusType
             {
                 switching_protocols = 101,
                 ok = 200,
@@ -708,7 +835,7 @@ namespace Delphi {
             CString StatusText;
 
             /// The content type of the reply.
-            enum content_type
+            enum CContentType
             {
                 html = 0,
                 json,
@@ -764,14 +891,14 @@ namespace Delphi {
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Strict"));
 
             /// Get a prepare reply.
-            static http_reply *GetReply(http_reply *AReply, status_type AStatus, LPCTSTR AContentType = nullptr);
+            static CReply *GetReply(CReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr);
 
             /// Get a stock reply.
-            static http_reply *GetStockReply(http_reply *AReply, status_type AStatus);
+            static CReply *GetStockReply(CReply *AReply, CStatusType AStatus);
 
-            static void AddUnauthorized(http_reply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
+            static void AddUnauthorized(CReply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
 
-        } CReply, *PReply;
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -781,7 +908,7 @@ namespace Delphi {
 
         namespace Reply {
 
-            typedef enum parser_state {
+            enum CParserState {
                 http_version_h,
                 http_version_t_1,
                 http_version_t_2,
@@ -806,11 +933,11 @@ namespace Delphi {
                 expecting_newline_2,
                 expecting_newline_3,
                 content
-            } CParserState;
+            };
             //----------------------------------------------------------------------------------------------------------
         }
 
-        typedef struct reply_parser_context {
+        struct CReplyContext {
             LPCTSTR Begin;
             LPCTSTR End;
             size_t Size;
@@ -820,7 +947,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            reply_parser_context(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h) {
+            CReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h) {
                 Begin = ABegin;
                 End = ABegin + ASize;
                 Size = ASize;
@@ -830,7 +957,7 @@ namespace Delphi {
                 MimeIndex = 0;
             };
 
-        } CReplyContext, *PReplyContext;
+        };
         //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming requests.
@@ -938,8 +1065,8 @@ namespace Delphi {
             CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; }
             void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; }
 
-            void SendStockReply(CReply::status_type AStatus, bool ASendNow = false);
-            void SendReply(CReply::status_type AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
+            void SendStockReply(CReply::CStatusType AStatus, bool ASendNow = false);
+            void SendReply(CReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
             void SendReply(bool ASendNow = false);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
@@ -1028,11 +1155,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef TPairs<CJSON> CSites;
+        //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPServer: public CAsyncServer {
         private:
 
+            CAuthParams m_AuthParams;
+
             CSites m_Sites;
+
+            void InitializeBindings() override;
 
         protected:
 
@@ -1052,12 +1184,15 @@ namespace Delphi {
 
         public:
 
-            explicit CHTTPServer(unsigned short AListen);
+            explicit CHTTPServer(const CString &IP, unsigned short Port);
 
             ~CHTTPServer() override = default;
 
             static CString URLEncode(const CString& In);
             static bool URLDecode(const CString& In, CString& Out);
+
+            CAuthParams& AuthParams() { return m_AuthParams; };
+            const CAuthParams& AuthParams() const { return m_AuthParams; };
 
             CSites& Sites() { return m_Sites; };
             const CSites& Sites() const { return m_Sites; };
