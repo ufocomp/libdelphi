@@ -59,7 +59,6 @@ namespace Delphi {
         private:
 
             mutable CStringList issuers;
-            mutable CStringPairs keys;
 
             mutable CString algorithm;
             mutable CString audience;
