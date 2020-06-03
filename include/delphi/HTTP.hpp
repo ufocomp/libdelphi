@@ -277,13 +277,21 @@ namespace Delphi {
             const CString Header;
             const CString Payload;
 
-            int64_t DeltaExp;
-
             const bool Valid;
 
-            explicit CCleanToken(const CString& Header, const CString& Payload, bool Valid, int64_t DeltaExp = 3600):
-                    Header(Header), Payload(Payload), Valid(Valid), DeltaExp(DeltaExp) {
+            explicit CCleanToken(const CString& Header, const CString& Payload, bool Valid):
+                    Header(Header), Payload(Payload), Valid(Valid) {
 
+            }
+
+            template<typename T>
+            CString Sign(const T& algorithm) const {
+                if (!Valid)
+                    throw CAuthorizationError("Clean Token has not valid.");
+                const auto& header = base64urlEncoding(Header);
+                const auto& payload = base64urlEncoding(Payload);
+                CString token = header + "." + payload;
+                return token + "." + base64urlEncoding(algorithm.sign(token));
             }
 
         };
@@ -318,14 +326,8 @@ namespace Delphi {
 
             CString Token;
 
-            CCleanToken *CleanToken;
-
             CAuthorization(): Schema(asUnknown), GrantType(agtUnknown), TokenType(attUnknown) {
-                CleanToken = nullptr;
-            }
 
-            ~CAuthorization() {
-                delete CleanToken;
             }
 
             explicit CAuthorization(const CString& String): CAuthorization() {
