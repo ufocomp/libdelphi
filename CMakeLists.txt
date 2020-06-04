@@ -13,6 +13,8 @@ set(BUILD_SHARED_LIB    OFF CACHE BOOL "Build a shared library")
 set(WITH_POSTGRESQL     OFF CACHE BOOL "Build with PostgreSQL")
 set(WITH_SQLITE         OFF CACHE BOOL "Build with Sqlite")
 
+set(WITH_CURL           ON  CACHE BOOL "Build with cURL")
+
 set(EXTRA_WARNING_MODE  OFF CACHE BOOL "Add extra warnings in debug mode")
 # ----------------------------------------------------------------------------------------------------------------------
 

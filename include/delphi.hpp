@@ -6,7 +6,7 @@ Library name:
 
 Module Name:
 
-  libdelphi.h
+  libdelphi.hpp
 
 Notices:
 
@@ -95,6 +95,23 @@ typedef int SOCKET;
 #define tistream std::istream
 #define tostream std::ostream
 #endif
+//----------------------------------------------------------------------------------------------------------------------
+
+#ifndef LF
+#define LF '\n'
+#endif
+//----------------------------------------------------------------------------------------------------------------------
+
+#define linefeed(p)          *(p)++ = LF;
+#define LINEFEED_SIZE        1
+#define LINEFEED             "\x0a"
+//----------------------------------------------------------------------------------------------------------------------
+
+#define path_separator(c)    ((c) == '/')
+//----------------------------------------------------------------------------------------------------------------------
+
+typedef intptr_t        int_t;
+typedef uintptr_t       uint_t;
 //----------------------------------------------------------------------------------------------------------------------
 
 #ifdef _UNICODE
@@ -276,6 +293,22 @@ inline void chMB(LPCSTR szMsg);
 #    include "delphi/HTTP.hpp"
 #  endif
 
+#ifdef WITH_CURL
+#  ifndef DELPHI_CURL_HPP
+#    include "delphi/CURL.hpp"
+#  endif
+#endif
+
+#ifdef WITH_POSTGRESQL
+#  ifndef DELPHI_POSTGRES_HPP
+#    include "delphi/Postgres.hpp"
+#  endif
+#endif
+
+#  ifndef DELPHI_LOG_HPP
+#    include "delphi/Log.hpp"
+#  endif
+
 #  ifndef DELPHI_SIGANL_HPP
 #    include "delphi/Signal.hpp"
 #  endif
@@ -287,12 +320,6 @@ inline void chMB(LPCSTR szMsg);
 #  ifndef DELPHI_APPLICATION_HPP
 #    include "delphi/Application.hpp"
 #  endif
-
-#ifdef WITH_POSTGRESQL
-#  ifndef DELPHI_POSTGRES_HPP
-#    include "delphi/Postgres.hpp"
-#  endif
-#endif
 
 #ifdef WITH_SQLITE
 #  ifndef DELPHI_SQLLITE_HPP
