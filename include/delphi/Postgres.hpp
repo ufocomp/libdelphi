@@ -302,6 +302,8 @@ namespace Delphi {
 
             bool Flush();
 
+            PGnotify *Notify();
+
             void Disconnect() override;
 
             bool Connected() { return GetConnected(); }
@@ -670,8 +672,6 @@ namespace Delphi {
 
         private:
 
-            CPQConnInfo m_ConnInfo;
-
             CPQPollQueryManager *m_pPollQueryManager;
 
             CPollManager *m_pPollManager;
@@ -679,11 +679,6 @@ namespace Delphi {
             CQueue *m_pQueue;
 
             CEPollTimer *m_pTimer;
-
-            int m_TimerInterval;
-
-            size_t m_SizeMin;
-            size_t m_SizeMax;
 
             bool m_Active;
 
@@ -700,6 +695,13 @@ namespace Delphi {
             void OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
 
         protected:
+
+            CPQConnInfo m_ConnInfo;
+
+            int m_TimerInterval;
+
+            size_t m_SizeMin;
+            size_t m_SizeMax;
 
             void Start();
 

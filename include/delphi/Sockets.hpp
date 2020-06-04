@@ -859,19 +859,26 @@ namespace Delphi {
         class LIB_DELPHI CSocketServer: public CSocketComponent {
         private:
 
-            CString& GetDefaultIP();
-            const CString& GetDefaultIP() const;
-
-            unsigned short GetDefaultPort();
-            virtual void SetDefaultPort(unsigned short Value);
-
-        protected:
+            CSocketHandles *m_pBindings;
 
             CString m_ServerName;
 
             CString m_AllowedMethods;
 
-            CSocketHandles *m_pBindings;
+            bool m_FreeBindings;
+
+            void FreeBindings();
+
+        protected:
+
+            CString& GetDefaultIP();
+            const CString& GetDefaultIP() const;
+
+            unsigned short GetDefaultPort() const;
+            virtual void SetDefaultPort(unsigned short Value);
+
+            CSocketHandles *GetBindings() const;
+            void SetBindings(CSocketHandles *Value);
 
         public:
 
@@ -891,7 +898,9 @@ namespace Delphi {
             CString& AllowedMethods() { return m_AllowedMethods; };
             const CString& AllowedMethods() const { return m_AllowedMethods; };
 
-            CSocketHandles *Bindings() { return m_pBindings; }
+            CSocketHandles *Bindings() const { return GetBindings(); }
+            void Bindings(CSocketHandles *Value) { SetBindings(Value); }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1056,7 +1065,7 @@ namespace Delphi {
 
             ~CServerIOHandler() override = default;
 
-            static CIOHandler *Accept(CSocket ASocket, int AFlags);
+            static CIOHandlerSocket *Accept(CSocket ASocket, int AFlags);
 
         }; // CServerIOHandler
 
@@ -1981,7 +1990,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CActiveLevel {alShutDown, alBinding, alActive};
+        enum CActiveLevel { alShutDown, alBinding, alActive };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CAsyncServer: public CEPollServer {
@@ -1990,12 +1999,15 @@ namespace Delphi {
         private:
 
             CServerIOHandler *m_pIOHandler;
-
-            CActiveLevel m_ActiveLevel;
+            bool m_FreeIOHandler;
 
             CCommandHandlers *m_pCommandHandlers;
 
+            void FreeIOHandler();
+
         protected:
+
+            CActiveLevel m_ActiveLevel;
 
             void SetActiveLevel(CActiveLevel AValue);
 
@@ -2012,13 +2024,13 @@ namespace Delphi {
 
             ~CAsyncServer() override;
 
-            CActiveLevel ActiveLevel() { return m_ActiveLevel; }
+            CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
             void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
 
-            CServerIOHandler *IOHandler() { return m_pIOHandler; }
+            CServerIOHandler *IOHandler() const { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
 
-            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
+            CCommandHandlers *CommandHandlers() const { return m_pCommandHandlers; }
             void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
         };

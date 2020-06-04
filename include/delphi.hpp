@@ -41,6 +41,9 @@ Author:
 #include <sys/types.h>
 #include <sys/time.h>
 #include <syscall.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/resource.h>
 //----------------------------------------------------------------------------------------------------------------------
 
 #ifdef _GLIBCXX_FUNCTIONAL
@@ -275,6 +278,10 @@ inline void chMB(LPCSTR szMsg);
 
 #  ifndef DELPHI_SIGANL_HPP
 #    include "delphi/Signal.hpp"
+#  endif
+
+#  ifndef DELPHI_PROCESS_HPP
+#    include "delphi/Process.hpp"
 #  endif
 
 #  ifndef DELPHI_APPLICATION_HPP

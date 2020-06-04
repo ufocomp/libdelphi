@@ -2445,14 +2445,19 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPServer::CHTTPServer(const CString &IP, unsigned short Port): CAsyncServer() {
+        CHTTPServer::CHTTPServer(): CAsyncServer() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPServer::CHTTPServer(const CString &IP, unsigned short Port): CHTTPServer() {
             DefaultIP() = IP;
             DefaultPort(Port);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::InitializeBindings() {
-            CSocketHandle* LBinding = m_pBindings->Add();
+            CSocketHandle* LBinding = Bindings()->Add();
             for (int i = 0; i < m_Sites.Count(); ++i) {
                 const auto& Site = m_Sites[i];
                 const auto& Port = Site.Value()["listen"];
@@ -2539,14 +2544,17 @@ namespace Delphi {
             CHTTPServerConnection *LConnection = nullptr;
 
             try {
-                LIOHandler = (CIOHandlerSocket *) IOHandler()->Accept(AHandler->Socket(), SOCK_NONBLOCK);
+                LIOHandler = (CIOHandlerSocket *) CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
 
                 if (Assigned(LIOHandler)) {
                     LConnection = new CHTTPServerConnection(this);
-
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    LConnection->OnReply([this](auto && Sender) { DoReply(Sender); });
+#else
                     LConnection->OnDisconnected(std::bind(&CHTTPServer::DoDisconnected, this, _1));
                     LConnection->OnReply(std::bind(&CHTTPServer::DoReply, this, _1));
-
+#endif
                     LConnection->IOHandler(LIOHandler);
 
                     LIOHandler->AfterAccept();
@@ -2626,8 +2634,7 @@ namespace Delphi {
                     int i;
                     for (i = 0; i < CommandHandlers()->Count(); ++i) {
                         if (CommandHandlers()->Commands(i)->Enabled()) {
-                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(),
-                                                                      LRequest->Method.Size(), AConnection))
+                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(), LRequest->Method.Size(), AConnection))
                                 break;
                         }
                     }

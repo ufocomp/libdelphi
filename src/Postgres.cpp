@@ -592,6 +592,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        PGnotify *CPQConnection::Notify() {
+            return PQnotifies(m_pHandle);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnection::Disconnect() {
             if (m_Connected) {
                 DoDisconnected(this);
@@ -845,14 +850,29 @@ namespace Delphi {
         bool CPQQuery::CheckResult() {
             CPQResult *LResult;
             PGresult *Result;
-            m_pConnection->ConsumeInput();
-            if (m_pConnection->Flush() && !m_pConnection->IsBusy()) {
+            PGnotify *Notify;
+            int nNotifies = 0;
 
+            m_pConnection->ConsumeInput();
+
+            if (m_pConnection->IsBusy()) {
+                CString Message;
+                while (nNotifies < 3 && (Notify = m_pConnection->Notify()) != nullptr) {
+                    Message.Format("ASYNC NOTIFY of '%s' received from backend PID %d\n", Notify->relname, Notify->be_pid);
+                    m_pConnection->CallProcessor(Message.c_str());
+                    PQfreemem(Notify);
+                    nNotifies++;
+                    m_pConnection->ConsumeInput();
+                    Message.Clear();
+                }
+            }
+
+            if (m_pConnection->Flush()) {
                 Result = PQgetResult(m_pConnection->Handle());
                 while (Result) {
                     LResult = new CPQResult(this, Result);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LResult->OnStatus([this](auto && AResult) { DoResultStatus(AResult); });
+                    LResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
 #else
                     LResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
 #endif
@@ -864,6 +884,7 @@ namespace Delphi {
 
                 return true;
             }
+
             return false;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -955,8 +976,8 @@ namespace Delphi {
                     }
                 } else {
 
-                    if (m_pServer->Queue()->Count() == 0xFFFF)
-                        throw EPollServerError(_T("Request queue is full!"));
+                    if (m_pServer->Queue()->Count() == 0x0FFF)
+                        throw EPollServerError(_T("Query queue is full."));
 
                     return AddToQueue();
                 }
@@ -1466,7 +1487,8 @@ namespace Delphi {
                         break;
 
                     case qsBusy:
-                        LConnection->Flush();
+                        if (LConnection->CheckResult())
+                            LConnection->QueryStop();
                         break;
 
                     default:

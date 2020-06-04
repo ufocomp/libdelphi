@@ -1160,15 +1160,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPServer: public CAsyncServer {
-        private:
+        protected:
 
             CAuthParams m_AuthParams;
 
             CSites m_Sites;
-
-            void InitializeBindings() override;
-
-        protected:
 
             void DoTimeOut(CPollEventHandler *AHandler) override;
 
@@ -1186,9 +1182,13 @@ namespace Delphi {
 
         public:
 
+            CHTTPServer();
+
             explicit CHTTPServer(const CString &IP, unsigned short Port);
 
             ~CHTTPServer() override = default;
+
+            void InitializeBindings() override;
 
             static CString URLEncode(const CString& In);
             static bool URLDecode(const CString& In, CString& Out);
@@ -1198,6 +1198,20 @@ namespace Delphi {
 
             CSites& Sites() { return m_Sites; };
             const CSites& Sites() const { return m_Sites; };
+
+            CHTTPServer &operator = (const CHTTPServer &Server) {
+                if (&Server != this) {
+                    SetIOHandler(Server.IOHandler());
+                    SetBindings(Server.Bindings());
+
+                    m_AuthParams = Server.m_AuthParams;
+                    m_Sites = Server.m_Sites;
+
+                    m_ActiveLevel = Server.m_ActiveLevel;
+                }
+
+                return *this;
+            }
 
         };
 

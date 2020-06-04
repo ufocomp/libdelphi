@@ -1767,8 +1767,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CIOHandler *CServerIOHandler::Accept(CSocket ASocket, int AFlags) {
-            CIOHandler *Result = nullptr;
+        CIOHandlerSocket *CServerIOHandler::Accept(CSocket ASocket, int AFlags) {
+            CIOHandlerSocket *Result = nullptr;
 
             auto LIOHandler = new CIOHandlerSocket();
             LIOHandler->Open();
@@ -1912,11 +1912,18 @@ namespace Delphi {
             m_ServerName = WWWServerName;
             m_AllowedMethods = WWWAllowedMethods;
             m_pBindings = new CSocketHandles();
+            m_FreeBindings = true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CSocketServer::~CSocketServer() {
-            FreeAndNil(m_pBindings);
+            FreeBindings();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketServer::FreeBindings() {
+            if (m_FreeBindings)
+                FreeAndNil(m_pBindings);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1930,7 +1937,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        unsigned short CSocketServer::GetDefaultPort() {
+        unsigned short CSocketServer::GetDefaultPort() const {
             return m_pBindings->DefaultPort();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1938,7 +1945,20 @@ namespace Delphi {
         void CSocketServer::SetDefaultPort(unsigned short Value) {
             m_pBindings->DefaultPort(Value);
         }
+        //--------------------------------------------------------------------------------------------------------------
 
+        CSocketHandles *CSocketServer::GetBindings() const {
+            return m_pBindings;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketServer::SetBindings(CSocketHandles *Value) {
+            if (m_pBindings != Value) {
+                FreeBindings();
+                m_pBindings = Value;
+                m_FreeBindings = false;
+            }
+        }
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CSocketClient ---------------------------------------------------------------------------------------------
@@ -1969,11 +1989,11 @@ namespace Delphi {
             CSocketHandle *pSocket = nullptr;
 
             if (AValue) {
-                if (m_pBindings->Count() == 0)
-                    m_pBindings->Add();
+                if (Bindings()->Count() == 0)
+                    Bindings()->Add();
 
-                for (int i = 0; i < m_pBindings->Count(); ++i) {
-                    pSocket = m_pBindings->Handles(i);
+                for (int i = 0; i < Bindings()->Count(); ++i) {
+                    pSocket = Bindings()->Handles(i);
 
                     pSocket->AllocateSocket(SOCK_DGRAM, IPPROTO_UDP, 0); // O_NONBLOCK
                     pSocket->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
@@ -1982,8 +2002,8 @@ namespace Delphi {
                     pSocket->Bind();
                 }
             } else {
-                for (int i = 0; i < m_pBindings->Count(); ++i)
-                    m_pBindings->Handles(i)->CloseSocket();
+                for (int i = 0; i < Bindings()->Count(); ++i)
+                    Bindings()->Handles(i)->CloseSocket();
             }
 
             m_Active = AValue;
@@ -2550,17 +2570,17 @@ namespace Delphi {
                     m_pIOHandler = new CServerIOHandler();
                     m_pListenerThreads = new CThreadList;
 
-                    if (m_pBindings->Count() == 0)
-                        m_pBindings->Add();
+                    if (Bindings()->Count() == 0)
+                        Bindings()->Add();
 
-                    for (int i = 0; i < m_pBindings->Count(); ++i) {
-                        m_pBindings->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, 0);
-                        m_pBindings->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True,
+                    for (int i = 0; i < Bindings()->Count(); ++i) {
+                        Bindings()->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, 0);
+                        Bindings()->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True,
                                                            sizeof(SO_True));
-                        m_pBindings->Handles(i)->Bind();
-                        m_pBindings->Handles(i)->Listen(SOMAXCONN);
+                        Bindings()->Handles(i)->Bind();
+                        Bindings()->Handles(i)->Listen(SOMAXCONN);
 
-                        LListenerThread = new CListenerThread(this, m_pBindings->Handles(i));
+                        LListenerThread = new CListenerThread(this, Bindings()->Handles(i));
                         m_pListenerThreads->Add(LListenerThread);
                         LListenerThread->Resume();
                     }
@@ -3447,6 +3467,7 @@ namespace Delphi {
 
         CAsyncServer::CAsyncServer(): CEPollServer() {
             m_pIOHandler = nullptr;
+            m_FreeIOHandler = true;
             m_ActiveLevel = alShutDown;
             m_pCommandHandlers = new CCommandHandlers(this);
         }
@@ -3458,10 +3479,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CAsyncServer::SetIOHandler(CServerIOHandler *Value) {
-            if (Assigned(m_pIOHandler))
+        void CAsyncServer::FreeIOHandler() {
+            if (m_FreeIOHandler) {
                 FreeAndNil(m_pIOHandler);
-            m_pIOHandler = Value;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CAsyncServer::SetIOHandler(CServerIOHandler *Value) {
+            if (m_pIOHandler != Value) {
+                FreeIOHandler();
+                m_pIOHandler = Value;
+                m_FreeIOHandler = false;
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3484,20 +3514,20 @@ namespace Delphi {
                     if (m_pIOHandler == nullptr)
                         m_pIOHandler = new CServerIOHandler();
 
-                    if (m_pBindings->Count() == 0)
+                    if (Bindings()->Count() == 0)
                         InitializeBindings();
 
-                    for (int i = 0; i < m_pBindings->Count(); ++i) {
-                        if (AValue >= alBinding && !m_pBindings->Handles(i)->HandleAllocated()) {
-                            m_pBindings->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
-                            m_pBindings->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+                    for (int i = 0; i < Bindings()->Count(); ++i) {
+                        if (AValue >= alBinding && !Bindings()->Handles(i)->HandleAllocated()) {
+                            Bindings()->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
+                            Bindings()->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
-                            m_pBindings->Handles(i)->Bind();
-                            m_pBindings->Handles(i)->Listen(SOMAXCONN);
+                            Bindings()->Handles(i)->Bind();
+                            Bindings()->Handles(i)->Listen(SOMAXCONN);
                         }
 
                         if (AValue == alActive) {
-                            LEventHandler = m_EventHandlers->Add(m_pBindings->Handles(i)->Handle());
+                            LEventHandler = m_EventHandlers->Add(Bindings()->Handles(i)->Handle());
                             LEventHandler->Start(etAccept);
                         }
                     }
@@ -3510,11 +3540,11 @@ namespace Delphi {
                     }
 
                     if (AValue == alShutDown) {
-                        for (int i = 0; i < m_pBindings->Count(); ++i) {
-                            m_pBindings->Handles(i)->CloseSocket();
+                        for (int i = 0; i < Bindings()->Count(); ++i) {
+                            Bindings()->Handles(i)->CloseSocket();
                         }
 
-                        FreeAndNil(m_pIOHandler);
+                        FreeIOHandler();
                     }
                 }
 
