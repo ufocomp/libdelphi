@@ -293,6 +293,10 @@ inline void chMB(LPCSTR szMsg);
 #    include "delphi/HTTP.hpp"
 #  endif
 
+#  ifndef DELPHI_WSPROTOCOL_HPP
+#    include "delphi/WSProtocol.hpp"
+#  endif
+
 #ifdef WITH_CURL
 #  ifndef DELPHI_CURL_HPP
 #    include "delphi/CURL.hpp"
