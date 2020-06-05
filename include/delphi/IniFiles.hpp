@@ -62,11 +62,11 @@ namespace Delphi {
             const TCHAR SectionNameSeparator = '\\';
 
             virtual void InternalReadSections(LPCTSTR lpszSectionName, CStrings *Strings,
-                                              bool SubSectionNamesOnly, bool Recurse);
+                    bool SubSectionNamesOnly, bool Recurse) const;
 
-            virtual int GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) abstract;
+            virtual int GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const abstract;
 
-            void DoIniFileParseError(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszValue, LPCTSTR lpszDefault);
+            void DoIniFileParseError(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszValue, LPCTSTR lpszDefault) const;
 
         public:
 
@@ -74,42 +74,42 @@ namespace Delphi {
 
             ~CCustomIniFile() override = default;
 
-            bool SectionExists(LPCTSTR lpszSectionName);
-            virtual bool ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName);
+            bool SectionExists(LPCTSTR lpszSectionName) const;
+            virtual bool ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const;
 
-            virtual CString ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) abstract;
+            virtual CString ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) const abstract;
 
-            virtual CString ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) abstract;
+            virtual CString ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) const abstract;
 
             virtual void ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                                CString &ReturnedString) abstract;
+                                CString &ReturnedString) const abstract;
 
             virtual DWORD ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                    LPTSTR lpszReturnedString, DWORD nSize) abstract;
+                    LPTSTR lpszReturnedString, DWORD nSize) const abstract;
 
             virtual BOOL WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszString) abstract;
             virtual BOOL WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, const CString &String) abstract;
             virtual BOOL WriteString(const CString &SectionName, const CString &KeyName, const CString &String) abstract;
 
-            virtual INT ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default);
+            virtual INT ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default) const;
             virtual BOOL WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Value);
 
-            virtual bool ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default);
+            virtual bool ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) const;
             virtual BOOL WriteBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Value);
 
-            virtual DOUBLE ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default);
+            virtual DOUBLE ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default) const;
             virtual BOOL WriteFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Value);
 
-            virtual CDateTime ReadDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Default);
+            virtual CDateTime ReadDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Default) const;
             virtual BOOL WriteDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Value);
 
-            virtual void ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) abstract;
+            virtual void ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) const abstract;
 
-            virtual void ReadSections(CStrings *Strings) abstract;
-            virtual void ReadSections(LPCTSTR lpszSectionName, CStrings *Strings);
+            virtual void ReadSections(CStrings *Strings) const abstract;
+            virtual void ReadSections(LPCTSTR lpszSectionName, CStrings *Strings) const;
             virtual void ReadSubSections(LPCTSTR lpszSectionName, CStrings *Strings, bool Recurse);
 
-            virtual void ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) abstract;
+            virtual void ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) const abstract;
 
             virtual BOOL EraseSection(LPCTSTR lpszSectionName) abstract;
             virtual BOOL EraseIniFile() abstract;
@@ -275,7 +275,7 @@ namespace Delphi {
 
             void LoadValues();
 
-            int GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) override;
+            int GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const override;
 
         public:
 
@@ -283,15 +283,15 @@ namespace Delphi {
 
             ~CMemIniFile() override;
 
-            CString ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) override;
+            CString ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) const override;
 
-            CString ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) override;
+            CString ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) const override;
 
             void ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                    CString &ReturnedString) override;
+                    CString &ReturnedString) const override;
 
             DWORD ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                             LPTSTR lpszReturnedString, DWORD nSize) override;
+                             LPTSTR lpszReturnedString, DWORD nSize) const override;
 
             BOOL WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszString) override;
             BOOL WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, const CString &String) override;
@@ -305,11 +305,11 @@ namespace Delphi {
 
             void GetStrings(CStrings *List);
 
-            void ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) override;
+            void ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) const override;
 
-            void ReadSections(CStrings *Strings) override;
+            void ReadSections(CStrings *Strings) const override;
 
-            void ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) override;
+            void ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) const override;
 
             void Rename(LPCTSTR lpszFileName, bool Reload);
 
@@ -326,7 +326,7 @@ namespace Delphi {
             bool AutoSave() { return GetAutoSave(); };
             void AutoSave(bool Value) { SetAutoSave(Value); };
 
-            inline void ReadSections(LPCTSTR lpszSectionName, CStrings *Strings) override {
+            inline void ReadSections(LPCTSTR lpszSectionName, CStrings *Strings) const override {
                 CCustomIniFile::ReadSections(lpszSectionName, Strings);
             }
 

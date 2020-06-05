@@ -43,7 +43,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CCustomIniFile::InternalReadSections(LPCTSTR lpszSectionName, CStrings *Strings, bool SubSectionNamesOnly,
-                                                  bool Recurse) {
+                bool Recurse) const {
             size_t SLen, SectionLen, SectionEndOfs;
             CString SubSectionName;
             CStringList AllSections;
@@ -78,7 +78,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CCustomIniFile::SectionExists(LPCTSTR lpszSectionName) {
+        bool CCustomIniFile::SectionExists(LPCTSTR lpszSectionName) const {
             CStringList S;
             try {
                 ReadSection(lpszSectionName, &S);
@@ -88,7 +88,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CCustomIniFile::ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) {
+        bool CCustomIniFile::ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const {
             CStringList S;
             try {
                 ReadSection(lpszSectionName, &S);
@@ -98,7 +98,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomIniFile::ReadSections(LPCTSTR lpszSectionName, CStrings *Strings) {
+        void CCustomIniFile::ReadSections(LPCTSTR lpszSectionName, CStrings *Strings) const {
             InternalReadSections(lpszSectionName, Strings, false, true);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        INT CCustomIniFile::ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default) {
+        INT CCustomIniFile::ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default) const {
             long int val;
 
             TCHAR szString[_INT_T_LEN + 1] = {0};
@@ -133,7 +133,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CCustomIniFile::ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) {
+        bool CCustomIniFile::ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) const {
 
             LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
 
@@ -157,7 +157,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        DOUBLE CCustomIniFile::ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default) {
+        DOUBLE CCustomIniFile::ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default) const {
             double val;
 
             TCHAR szString[MAX_BUFFER_SIZE / 4 + 1] = {0};
@@ -182,7 +182,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CDateTime CCustomIniFile::ReadDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Default) {
+        CDateTime CCustomIniFile::ReadDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Default) const {
             TCHAR szString[MAX_BUFFER_SIZE / 4 + 1] = {0};
             TCHAR szDefault[MAX_BUFFER_SIZE / 4  + 1] = {0};
 
@@ -204,7 +204,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CCustomIniFile::DoIniFileParseError(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszValue,
-                LPCTSTR lpszDefault) {
+                LPCTSTR lpszDefault) const {
             if (m_OnIniFileParseError) {
                 int Line = GetKeyLine(lpszSectionName, lpszKeyName);
                 m_OnIniFileParseError((Pointer) this, lpszSectionName, lpszKeyName, lpszValue, lpszDefault, Line);
@@ -597,7 +597,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemIniFile::ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) {
+        void CMemIniFile::ReadSection(LPCTSTR lpszSectionName, CStrings *Strings) const {
             int I, J;
             CStrings *SectionStrings;
 
@@ -618,12 +618,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemIniFile::ReadSections(CStrings *Strings) {
+        void CMemIniFile::ReadSections(CStrings *Strings) const {
             Strings->SetStrings(*m_Sections);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemIniFile::ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) {
+        void CMemIniFile::ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) const {
             int I;
 
             Strings->BeginUpdate();
@@ -640,7 +640,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CMemIniFile::ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) {
+        CString CMemIniFile::ReadString(const CString &SectionName, const CString &KeyName, const CString &Default) const {
             int I;
             size_t Length = KeyName.Length();
             CStrings *Strings;
@@ -658,7 +658,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CMemIniFile::ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) {
+        CString CMemIniFile::ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault) const {
             int I;
             size_t Length;
             CString S(lpszDefault);
@@ -680,7 +680,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CMemIniFile::ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                CString &ReturnedString) {
+                CString &ReturnedString) const {
             int I;
             size_t Length;
             CStrings *Strings;
@@ -701,7 +701,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         DWORD CMemIniFile::ReadString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszDefault,
-                                      LPTSTR lpszReturnedString, DWORD nSize) {
+                LPTSTR lpszReturnedString, DWORD nSize) const {
             int I;
             size_t  Length;
             CStrings *Strings;
@@ -813,7 +813,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CMemIniFile::GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) {
+        int CMemIniFile::GetKeyLine(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const {
             int I;
             CKeyLine *KeyLine;
             CStrings *Strings;

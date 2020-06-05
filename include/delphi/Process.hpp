@@ -40,7 +40,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         enum CProcessType {
-            ptMain, ptSingle, ptMaster, ptSignaller, ptNewBinary, ptWorker, ptHelper
+            ptMain, ptSingle, ptMaster, ptSignaller, ptNewBinary, ptWorker, ptHelper, ptOther
         };
 
         //--------------------------------------------------------------------------------------------------------------
