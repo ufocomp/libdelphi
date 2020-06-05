@@ -47,6 +47,10 @@ namespace Delphi {
         class CPQResult;
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef TList<CStringPairs> CPQueryResult;
+        typedef TList<CPQueryResult> CPQueryResults;
+        //--------------------------------------------------------------------------------------------------------------
+
         CString PQQuoteLiteral(const CString &String);
         void PQResultToJson(CPQResult *Result, CString& Json);
 
