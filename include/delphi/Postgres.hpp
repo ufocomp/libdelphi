@@ -348,6 +348,8 @@ namespace Delphi {
 
             void ConnectionStatus(CPollConnectionStatus Value) { m_ConnectionStatus = Value; };
 
+            CPQQuery *WorkQuery() const { return m_WorkQuery; }
+
             bool CheckResult();
         };
 

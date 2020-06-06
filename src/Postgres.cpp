@@ -867,7 +867,7 @@ namespace Delphi {
                 }
             }
 
-            if (m_pConnection->Flush()) {
+            if (m_pConnection->Flush() && !m_pConnection->IsBusy()) {
                 Result = PQgetResult(m_pConnection->Handle());
                 while (Result) {
                     LResult = new CPQResult(this, Result);
@@ -1396,6 +1396,10 @@ namespace Delphi {
                             DoError(LConnection);
                             LEventHandler->Start(etNull);
                             Stop(LEventHandler);
+                        } else if (Status == CONNECTION_OK && LConnection->ConnectionStatus() == qsBusy) {
+                            if (Assigned(LConnection->WorkQuery()))
+                                if (LConnection->CheckResult())
+                                    LConnection->QueryStop();
                         }
                     }
                 }

@@ -837,8 +837,8 @@ namespace Delphi {
 
             size_t Copy (LPTSTR Str, size_t Len, size_t Pos = 0) const;
 
-            void Format(LPCTSTR pszFormat, ...);
-            void Format(LPCTSTR pszFormat, va_list argList);
+            CString &Format(LPCTSTR pszFormat, ...);
+            CString &Format(LPCTSTR pszFormat, va_list argList);
 
             size_t MaxFormatSize() const { return m_MaxFormatSize; }
             void MaxFormatSize(size_t Value) { m_MaxFormatSize = Value; }

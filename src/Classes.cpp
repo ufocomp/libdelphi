@@ -1682,21 +1682,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CString::Format(LPCTSTR pszFormat, ...) {
+        CString &CString::Format(LPCTSTR pszFormat, ...) {
             va_list args;
             va_start(args, pszFormat);
             Format(pszFormat, args);
             va_end(args);
+            return *this;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CString::Format(LPCTSTR pszFormat, va_list argList) {
+        CString &CString::Format(LPCTSTR pszFormat, va_list argList) {
             CString LStr;
             size_t cchDest;
             LStr.SetLength(m_MaxFormatSize);
             cchDest = LStr.GetSize();
             chVERIFY(SUCCEEDED(StringPCchVPrintf(LStr.Data(), &cchDest, pszFormat, argList)));
             AddStr(LStr.Data(), cchDest / sizeof(TCHAR));
+            return *this;
         }
         //--------------------------------------------------------------------------------------------------------------
 
