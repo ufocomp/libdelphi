@@ -237,6 +237,7 @@ namespace Delphi {
             void Assign(const TPairs &Value) {
                 Clear();
                 Concat(Value);
+                m_Default = Value.m_Default;
             }
 
             ClassPair &Default() { return m_Default; }
