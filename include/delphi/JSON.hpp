@@ -827,7 +827,7 @@ namespace Delphi {
 
             bool IsEmpty() const { return m_Data.IsEmpty(); }
 
-            bool HasOwnProperty(const CString &String) const override { return m_Data == String; }
+            bool HasOwnProperty(const CString &String) const override;
 
             void StringData(const CString &Value);
             void StringData(reference AValue);

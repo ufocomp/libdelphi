@@ -192,7 +192,6 @@ namespace Delphi {
                     return Object().HasOwnProperty(String);
                 if (m_Value->IsArray())
                     return Array().HasOwnProperty(String);
-                return dynamic_cast<CJSONValue *> (m_Value)->HasOwnProperty(String);
             }
             return false;
         }
@@ -1215,6 +1214,17 @@ namespace Delphi {
             }
 
             return S;
+        }
+
+        bool CJSONValue::HasOwnProperty(const CString &String) const {
+            if (Assigned(m_Value)) {
+                if (m_Value->IsObject())
+                    return Object().HasOwnProperty(String);
+                if (m_Value->IsArray())
+                    return Array().HasOwnProperty(String);
+                return dynamic_cast<CJSONValue *> (m_Value)->Data() == String;
+            }
+            return m_Data == String;
         }
 
         //--------------------------------------------------------------------------------------------------------------
