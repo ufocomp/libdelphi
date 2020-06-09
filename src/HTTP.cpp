@@ -2699,7 +2699,11 @@ namespace Delphi {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 
                 if (LIOHandler->Binding()->CheckConnection()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+#else
                     LConnection->OnDisconnected(std::bind(&CHTTPClient::DoDisconnected, this, _1));
+#endif
                     AHandler->Start(etIO);
                     DoConnected(LConnection);
                     DoRequest(LConnection);
@@ -2838,7 +2842,11 @@ namespace Delphi {
                 auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
 
                 if (LIOHandler->Binding()->CheckConnection()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+#else
                     LConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
+#endif
                     AHandler->Start(etIO);
                     DoConnected(LConnection);
                     DoRequest(LConnection);
