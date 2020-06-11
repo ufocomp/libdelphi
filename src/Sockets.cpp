@@ -2910,11 +2910,20 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollEventHandler::~CPollEventHandler() {
-            CPollConnection *Temp;
             Stop();
+            FreemBinding();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPollEventHandler::FreemBinding() {
+            CPollConnection *Temp;
             if (Assigned(m_pBinding)) {
                 Temp = m_pBinding;
-                m_pBinding->Disconnect();
+                try {
+                    m_pBinding->Disconnect();
+                } catch (...) {
+
+                }
                 m_pBinding = nullptr;
                 if (m_FreeBinding)
                     delete Temp;

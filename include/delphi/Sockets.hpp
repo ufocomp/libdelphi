@@ -1709,6 +1709,8 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
 
+            void FreemBinding();
+
         protected:
 
             void SetEventType(CPollEventType Value);

@@ -857,7 +857,7 @@ namespace Delphi {
 
             if (m_pConnection->IsBusy()) {
                 CString Message;
-                while (nNotifies < 3 && (Notify = m_pConnection->Notify()) != nullptr) {
+                while ((Notify = m_pConnection->Notify()) != nullptr) {
                     Message.Format("ASYNC NOTIFY of '%s' received from backend PID %d\n", Notify->relname, Notify->be_pid);
                     m_pConnection->CallProcessor(Message.c_str());
                     PQfreemem(Notify);
@@ -992,15 +992,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CPQPollQuery::AddToQueue() {
-            if (m_PollConnection != nullptr) {
-                return m_pServer->Queue()->AddToQueue(m_PollConnection, this);
-            }
-            return -1;
+            if (m_PollConnection == nullptr)
+                return m_pServer->Queue()->AddToQueue(m_pServer, this);
+            return m_pServer->Queue()->AddToQueue(m_PollConnection, this);;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQPollQuery::RemoveFromQueue() {
-            if (m_PollConnection != nullptr) {
+            if (m_PollConnection == nullptr) {
+                m_pServer->Queue()->RemoveFromQueue(m_pServer, this);
+            } else {
                 m_pServer->Queue()->RemoveFromQueue(m_PollConnection, this);
             }
         }
@@ -1397,9 +1398,12 @@ namespace Delphi {
                             LEventHandler->Start(etNull);
                             Stop(LEventHandler);
                         } else if (Status == CONNECTION_OK && LConnection->ConnectionStatus() == qsBusy) {
-                            if (Assigned(LConnection->WorkQuery()))
-                                if (LConnection->CheckResult())
+                            if (Assigned(LConnection->WorkQuery())) {
+                                if (LConnection->CheckResult()) {
                                     LConnection->QueryStop();
+                                    CheckQueue();
+                                }
+                            }
                         }
                     }
                 }
