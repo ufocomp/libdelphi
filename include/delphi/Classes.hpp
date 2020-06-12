@@ -841,7 +841,7 @@ namespace Delphi {
             CString &Format(LPCTSTR pszFormat, va_list argList);
 
             size_t MaxFormatSize() const { return m_MaxFormatSize; }
-            void MaxFormatSize(size_t Value) { m_MaxFormatSize = Value; }
+            CString &MaxFormatSize(size_t Value);
 
             size_t Find(const CString& S, size_t Pos = 0) const;
             size_t Find(LPCTSTR Str, size_t Pos = 0) const;
