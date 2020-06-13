@@ -52,7 +52,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CString PQQuoteLiteral(const CString &String);
-        void PQResultToJson(CPQResult *Result, CString& Json);
+        void PQResultToJson(CPQResult *Result, CString& Json, bool IsArray = false);
 
         //--------------------------------------------------------------------------------------------------------------
 
