@@ -106,6 +106,8 @@ namespace Delphi {
 
         CStack::CStack() {
             m_LastError = 0;
+            m_SSLError = SSL_ERROR_NONE;
+            SecureZeroMemory(m_szBuffer, sizeof(m_szBuffer));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -128,13 +130,103 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        bool CStack::CheckForSSLError(ssize_t AResult) {
+            unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE };
+            return CheckForSSLError(AResult, Ignore, 1);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CStack::CheckForSSLError(ssize_t AResult, unsigned long const AIgnore[], int ACount) {
+            if (AResult <= 0) {
+                m_SSLError = GetSSLError();
+                ERR_error_string(m_SSLError, m_szBuffer);
+                for (int i = 0; i < ACount; ++i)
+                    if (m_SSLError == AIgnore[i])
+                        return true;
+                RaiseSSLError();
+            }
+            return false;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CSocket CStack::CreateSocketHandle(int ASocketType, int AProtocol, int AFlag) {
             return Socket(AF_INET, ASocketType, AProtocol, AFlag);
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CStack::SSLInit() {
+            SSL_library_init();
+            SSLeay_add_ssl_algorithms();
+            SSL_load_error_strings();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        SSL *CStack::SSLNew(CSSLMethod AMethod) {
+            const SSL_METHOD *method = AMethod == sslClient ? TLS_client_method() : TLS_server_method();
+            SSL_CTX *ctx = ::SSL_CTX_new(method);
+            return ::SSL_new(ctx);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CStack::SSLFree(SSL *ssl) {
+            if (ssl != nullptr) {
+                ::SSL_free(ssl);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSocket CStack::SSLGetSocket(SSL *ssl) {
+            if (ssl != nullptr) {
+                return ::SSL_get_fd(ssl);
+            }
+            return INVALID_SOCKET;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CStack::SSLAllocate(SSL *ssl, CSocket ASocket) {
+            if (ssl != nullptr) {
+                ::SSL_set_fd(ssl, ASocket);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CStack::SSLClear(SSL *ssl) {
+            return ::SSL_clear(ssl);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CStack::SSLShutdown(SSL *ssl) {
+            return ::SSL_shutdown(ssl);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CStack::SSLConnect(SSL *ssl) {
+            return ::SSL_connect(ssl);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SSLRecv(SSL *ssl, void *ABuffer, size_t ABufferLength) {
+            return ::SSL_read(ssl, ABuffer, ABufferLength);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SSLSend(SSL *ssl, void *ABuffer, size_t ABufferLength) {
+            return ::SSL_write(ssl, ABuffer, ABufferLength);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        unsigned long CStack::GetSSLError() {
+            return ::ERR_get_error();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CStack::RaiseSocketError(int AErr) {
             throw ESocketError(AErr);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CStack::RaiseSSLError() {
+            throw EExternalException(m_szBuffer);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -217,6 +309,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        ssize_t CStack::RecvPacket(SSL *ssl, void *ABuffer, size_t ABufferSize) {
+            return SSLRecv(ssl, ABuffer, ABufferSize);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         ssize_t CStack::Recv(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags) {
             return ::recv(ASocket, (char *) ABuffer, ABufferLength, AFlags);
         }
@@ -240,6 +337,11 @@ namespace Delphi {
             *VPort = NToHS(from.sin_port);
 
             return BytesRecv;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SendPacket(SSL *ssl, void *ABuffer, size_t ABufferSize) {
+            return SSLSend(ssl, ABuffer, ABufferSize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -485,6 +587,7 @@ namespace Delphi {
             try {
                 if (GInstanceCount == 0) {
                     GStack = CStack::CreateSocket();
+                    GStack->SSLInit();
                 }
 
                 GInstanceCount++;
@@ -587,22 +690,22 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CManagedBuffer::CManagedBuffer(): CSimpleBuffer() {
-            m_ReadedSize = 0;
-            m_PackReadedSize = InBufCacheSizeDefault;
+            m_ReadSize = 0;
+            m_PackReadSize = InBufCacheSizeDefault;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CManagedBuffer::SetPackReadedSize(size_t Value) {
+        void CManagedBuffer::SetPackReadSize(size_t Value) {
             if (Value > 0)
-                m_PackReadedSize = Value;
+                m_PackReadSize = Value;
             else
-                m_PackReadedSize = InBufCacheSizeDefault;
+                m_PackReadSize = InBufCacheSizeDefault;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CManagedBuffer::Clear() {
             inherited::Clear();
-            m_ReadedSize = 0;
+            m_ReadSize = 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -618,15 +721,15 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         Pointer CManagedBuffer::Memory() {
-            return Pointer(size_t(inherited::Memory()) + m_ReadedSize);
+            return Pointer(size_t(inherited::Memory()) + m_ReadSize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CManagedBuffer::PackBuffer() {
-            if (m_ReadedSize > 0) {
+            if (m_ReadSize > 0) {
                 ::MoveMemory(inherited::Memory(), Memory(), Size());
                 SetSize(Size());
-                m_ReadedSize = 0;
+                m_ReadSize = 0;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -637,9 +740,9 @@ namespace Delphi {
             } else if (AByteCount == Size()) {
                 Clear();
             } else {
-                m_ReadedSize += AByteCount;
+                m_ReadSize += AByteCount;
 
-                if (m_ReadedSize >= PackReadedSize())
+                if (m_ReadSize >= PackReadSize())
                     PackBuffer();
             }
         }
@@ -648,10 +751,10 @@ namespace Delphi {
         size_t CManagedBuffer::Seek(size_t Offset, unsigned short Origin) {
             switch (Origin) {
                 case soFromBeginning:
-                    return inherited::Seek(Offset + m_ReadedSize, soFromBeginning) - m_ReadedSize;
+                    return inherited::Seek(Offset + m_ReadSize, soFromBeginning) - m_ReadSize;
 
                 default: // soFromCurrent, soFromEnd:
-                    return inherited::Seek(Offset, Origin) - m_ReadedSize;
+                    return inherited::Seek(Offset, Origin) - m_ReadSize;
             }
         }
 
@@ -661,7 +764,15 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketHandle::CSocketHandle(CCollection *ACollection): CSocketComponent(), CCollectionItem(ACollection) {
+        CSocketHandle::CSocketHandle(CCollection *ACollection, CSSLMethod ASSLMethod): CSocketComponent(), CCollectionItem(ACollection) {
+            m_HandleAllocated = false;
+            m_Nonblocking = false;
+
+            m_Handle = INVALID_SOCKET;
+
+            m_pSSL = nullptr;
+            m_SSLMethod = ASSLMethod;
+
             Reset();
 
             m_SocketType = SOCK_STREAM;
@@ -672,7 +783,47 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSocketHandle::~CSocketHandle() {
+            if (m_SSLMethod != sslNotUsed) {
+                CStack::SSLFree(m_pSSL);
+            }
             CloseSocket();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CSocketHandle::GetSocketError() const {
+            return GStack->GetSocketError(Handle());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen) const {
+            GStack->CheckForSocketError(GStack->GetSockOpt(Handle(), ALevel, AOptName, AOptVal, &AOptLen), egSystem);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSocketHandle::GetHostName(char *AName, size_t ASize) {
+            return GStack->GetHostName(AName, ASize);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::GetHostByName(const char *AName, char *VHost, size_t ASize) {
+            GStack->GetHostByName(AName, VHost, ASize);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::GetIPByName(const char *AName, char *VIP, size_t ASize) {
+            GStack->GetIPByName(AName, VIP, ASize);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSocketHandle::GetHostIP(char *AIP, size_t ASize) {
+            char name[NI_MAXHOST] = {};
+
+            if (GStack->GetHostName(name, chARRAY(name))) {
+                GStack->GetIPByName(name, AIP, ASize);
+                return true;
+            }
+
+            return false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -724,46 +875,91 @@ namespace Delphi {
             m_SocketType = ASocketType;
             m_HandleAllocated = true;
             m_Nonblocking = (AFlag == O_NONBLOCK);
+
+            if (m_SSLMethod != sslNotUsed) {
+                if (m_pSSL == nullptr)
+                    m_pSSL = CStack::SSLNew(m_SSLMethod);
+                CStack::SSLAllocate(m_pSSL, m_Handle);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSocketHandle::CloseSocket(bool AResetLocal) {
             if (HandleAllocated()) {
+                if (m_SSLMethod != sslNotUsed) {
+                    GStack->CheckForSSLError(CStack::SSLShutdown(m_pSSL));
+                }
                 // Must be first, closing socket will trigger some errors, and they
                 // may then check (in other threads) Connected, which checks this.
                 GStack->Shutdown(m_Handle, SHUT_RDWR);
                 // SO_LINGER is false - socket may take a little while to actually close after this
                 GStack->CloseSocket(m_Handle);
+
                 // Reset all data
                 Reset(AResetLocal);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CSocketHandle::GetHostName(char *AName, size_t ASize) {
-            return GStack->GetHostName(AName, ASize);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSocketHandle::GetHostByName(const char *AName, char *VHost, size_t ASize) {
-            GStack->GetHostByName(AName, VHost, ASize);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSocketHandle::GetIPByName(const char *AName, char *VIP, size_t ASize) {
-            GStack->GetIPByName(AName, VIP, ASize);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        bool CSocketHandle::GetHostIP(char *AIP, size_t ASize) {
-            char name[NI_MAXHOST] = {};
-
-            if (GStack->GetHostName(name, chARRAY(name))) {
-                GStack->GetIPByName(name, AIP, ASize);
-                return true;
+        void CSocketHandle::Reset(bool AResetLocal) {
+            if (m_SSLMethod != sslNotUsed) {
+                if (m_pSSL == nullptr)
+                    m_pSSL = CStack::SSLNew(m_SSLMethod);
+                GStack->CheckForSSLError(CStack::SSLClear(m_pSSL));
             }
 
+            m_HandleAllocated = false;
+            m_Nonblocking = false;
+            m_Handle = INVALID_SOCKET;
+
+            if (AResetLocal) {
+                SetIP("");
+                Port(0);
+            }
+
+            m_FromLen = sizeof(SOCKADDR_IN);
+            ::SecureZeroMemory(&m_From, m_FromLen);
+
+            SetPeer("", 0);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::Bind() {
+            if ((Port() == 0) && (m_ClientPortMin != 0) && (m_ClientPortMax != 0)) {
+                if (m_ClientPortMin > m_ClientPortMax)
+                    throw ESocketError(_T("Invalid Port Range."));
+                else if (!BindPortReserved())
+                    throw ESocketError(_T("Can not bind in port range."));
+            } else {
+                if (!TryBind())
+                    throw ESocketError(_T("Could not bind socket. Address and port are already in use."));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSocketHandle::TryBind() {
+            bool fSuccess;
+            int Ignore[] = {EADDRINUSE};
+            fSuccess = !GStack->CheckForSocketError(GStack->Bind(m_Handle, AF_INET, m_IP, m_Port), Ignore,
+                                                    chARRAY(Ignore), egSystem);
+            if (fSuccess)
+                UpdateBindingLocal();
+            return fSuccess;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSocketHandle::BindPortReserved() {
+            for (unsigned short i = m_ClientPortMin; i <= m_ClientPortMax; ++i) {
+                m_Port = i;
+                if (TryBind())
+                    return true;
+            }
             return false;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::Listen(int anQueueCount) const {
+            GStack->CheckForSocketError(GStack->Listen(Handle(), anQueueCount), egSystem);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -778,6 +974,10 @@ namespace Delphi {
             if (!GStack->CheckForSocketError(SocketError, Ignore, chARRAY(Ignore), egSystem)) {
                 UpdateBindingLocal();
                 UpdateBindingPeer();
+            }
+
+            if (m_SSLMethod != sslNotUsed) {
+                GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
             }
 
             return SocketError;
@@ -808,88 +1008,26 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSocketHandle::GetSocketError() const {
-            return GStack->GetSocketError(Handle());
+        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ABufferSize) const {
+            if (m_SSLMethod == sslNotUsed)
+                return GStack->Recv(Handle(), ABuffer, ABufferSize, 0);
+            return GStack->RecvPacket(m_pSSL, ABuffer, ABufferSize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::GetSockOpt(int ALevel, int AOptName, void *AOptVal, socklen_t AOptLen) const {
-            GStack->CheckForSocketError(GStack->GetSockOpt(Handle(), ALevel, AOptName, AOptVal, &AOptLen), egSystem);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSocketHandle::Listen(int anQueueCount) const {
-            GStack->CheckForSocketError(GStack->Listen(Handle(), anQueueCount), egSystem);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ALength) const {
-            return GStack->Recv(Handle(), ABuffer, ALength, 0);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        ssize_t CSocketHandle::RecvFrom(void *ABuffer, size_t ALength) {
+        ssize_t CSocketHandle::RecvFrom(void *ABuffer, size_t ABufferSize) {
             m_FromLen = sizeof(SOCKADDR_IN);
             ::SecureZeroMemory(&m_From, m_FromLen);
 
-            return GStack->RecvFrom(Handle(), ABuffer, ALength, 0, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort,
+            return GStack->RecvFrom(Handle(), ABuffer, ABufferSize, 0, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort,
                                     (sockaddr * ) & m_From, &m_FromLen);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::Bind() {
-            if ((Port() == 0) && (m_ClientPortMin != 0) && (m_ClientPortMax != 0)) {
-                if (m_ClientPortMin > m_ClientPortMax)
-                    throw ESocketError(_T("Invalid Port Range."));
-                else if (!BindPortReserved())
-                    throw ESocketError(_T("Can not bind in port range."));
-            } else {
-                if (!TryBind())
-                    throw ESocketError(_T("Could not bind socket. Address and port are already in use."));
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSocketHandle::Reset(bool AResetLocal) {
-            m_HandleAllocated = false;
-            m_Nonblocking = false;
-            m_Handle = INVALID_SOCKET;
-
-            if (AResetLocal) {
-                SetIP("");
-                Port(0);
-            }
-
-            m_FromLen = sizeof(SOCKADDR_IN);
-            ::SecureZeroMemory(&m_From, m_FromLen);
-
-            SetPeer("", 0);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        bool CSocketHandle::TryBind() {
-            bool fSuccess;
-            int Ignore[] = {EADDRINUSE};
-            fSuccess = !GStack->CheckForSocketError(GStack->Bind(m_Handle, AF_INET, m_IP, m_Port), Ignore,
-                                                    chARRAY(Ignore), egSystem);
-            if (fSuccess)
-                UpdateBindingLocal();
-            return fSuccess;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        bool CSocketHandle::BindPortReserved() {
-            for (unsigned short i = m_ClientPortMin; i <= m_ClientPortMax; ++i) {
-                m_Port = i;
-                if (TryBind())
-                    return true;
-            }
-            return false;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize) {
-            return SendTo(IP(), Port(), ABuffer, ABufferSize);
+            if (m_SSLMethod == sslNotUsed)
+                return SendTo(IP(), Port(), ABuffer, ABufferSize);
+            return GStack->SendPacket(m_pSSL, ABuffer, ABufferSize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -977,6 +1115,7 @@ namespace Delphi {
 
         CSocketHandles::CSocketHandles(): CCollection(this) {
             m_DefaultPort = 0;
+            m_SSLMethod = sslNotUsed;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -991,7 +1130,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSocketHandle *CSocketHandles::Add() {
-            auto Result = new CSocketHandle(this);
+            auto Result = new CSocketHandle(this, m_SSLMethod);
             inherited::Added((CCollectionItem *) Result);
             if (!DefaultIP().IsEmpty())
                 Result->IP(DefaultIP().c_str());
@@ -1037,9 +1176,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CIOHandlerSocket::Open() {
+        void CIOHandlerSocket::Open(CSSLMethod SSLMethod) {
             if (m_pBinding == nullptr)
-                m_pBinding = new CSocketHandle(nullptr);
+                m_pBinding = new CSocketHandle(nullptr, SSLMethod);
             else
                 m_pBinding->Reset(true);
         }
@@ -1048,6 +1187,21 @@ namespace Delphi {
         void CIOHandlerSocket::Close() {
             if (m_pBinding != nullptr)
                 m_pBinding->CloseSocket();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CIOHandlerSocket::UsedSSL() const {
+            bool bResult = (m_pBinding != nullptr);
+            if (bResult)
+                bResult = m_pBinding->UsedSSL();
+            return bResult;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSSLMethod CIOHandlerSocket::SSLMethod() const {
+            if (m_pBinding != nullptr)
+                return m_pBinding->SSLMethod();
+            return sslNotUsed;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1270,10 +1424,20 @@ namespace Delphi {
             // Check if other side disconnected
             CheckForDisconnect();
             // Check to see if the error signifies disconnection
-            int Ignore[] = {ESHUTDOWN, ECONNABORTED, ECONNRESET};
-            if (GStack->CheckForSocketError(AByteCount, Ignore, chARRAY(Ignore), egSystem)) {
-                DisconnectSocket();
-                GStack->RaiseSocketError(GStack->LastError());
+            if (m_pIOHandler->UsedSSL()) {
+                unsigned long Ignore[] = { SSL_ERROR_WANT_WRITE, SSL_ERROR_SYSCALL };
+                if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
+                    if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
+                        DisconnectSocket();
+                        GStack->RaiseSocketError(GStack->SSLError());
+                    }
+                }
+            } else {
+                int Ignore[] = { ESHUTDOWN, ECONNABORTED, ECONNRESET };
+                if (GStack->CheckForSocketError(AByteCount, Ignore, chARRAY(Ignore), egSystem)) {
+                    DisconnectSocket();
+                    GStack->RaiseSocketError(GStack->LastError());
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1301,8 +1465,14 @@ namespace Delphi {
 
                             LPos = 0;
                             do {
-                                LByteCount = IOHandler()->Send(Pointer((size_t) LBuffer->Memory() + LPos),
-                                                                   LBuffer->Size() - LPos);
+                                LByteCount = m_pIOHandler->Send(Pointer((size_t) LBuffer->Memory() + LPos), LBuffer->Size() - LPos);
+                                if (m_pIOHandler->UsedSSL()) {
+                                    if (LByteCount <= 0) {
+                                        unsigned long LastError = GStack->GetSSLError();
+                                        if (LastError == SSL_ERROR_WANT_WRITE)
+                                            break;
+                                    }
+                                }
                                 CheckWriteResult(LByteCount);
                                 DoWork(wmWrite, LByteCount);
                                 LPos += LByteCount;
@@ -1333,11 +1503,18 @@ namespace Delphi {
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
                 if (Connected()) {
-                    LByteCount = IOHandler()->Send(ABuffer, AByteCount);
+                    LByteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 
-                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                    if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
-                        return 0;
+                    if (m_pIOHandler->UsedSSL()) {
+                        unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE };
+                        if (GStack->CheckForSSLError(LByteCount, Ignore, chARRAY(Ignore))) {
+                            return 0;
+                        }
+                    } else {
+                        int Ignore[] = { EAGAIN, EWOULDBLOCK };
+                        if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                            return 0;
+                    }
 
                     CheckWriteResult(LByteCount);
                 } else
@@ -1632,13 +1809,26 @@ namespace Delphi {
             m_ClosedGracefully = (AByteCount == 0);
 
             if (!ClosedGracefully()) {
-                int Ignore[] = {ESHUTDOWN, ECONNABORTED, ECONNRESET};
-                if (GStack->CheckForSocketError(AByteCount, Ignore, chARRAY(Ignore), egSystem)) {
-                    AByteCount = 0;
-                    if (IOHandler() != nullptr)
-                        DisconnectSocket();
-                    if (InputBuffer()->Size() == 0)
-                        GStack->RaiseSocketError(GStack->LastError());
+                if (m_pIOHandler != nullptr && m_pIOHandler->UsedSSL()) {
+                    unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL };
+                    if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
+                        AByteCount = 0;
+                        if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
+                            if (m_pIOHandler != nullptr)
+                                DisconnectSocket();
+                            if (InputBuffer()->Size() == 0)
+                                GStack->RaiseSocketError(GStack->SSLError());
+                        }
+                    }
+                } else {
+                    int Ignore[] = { ESHUTDOWN, ECONNABORTED, ECONNRESET };
+                    if (GStack->CheckForSocketError(AByteCount, Ignore, chARRAY(Ignore), egSystem)) {
+                        AByteCount = 0;
+                        if (m_pIOHandler != nullptr)
+                            DisconnectSocket();
+                        if (InputBuffer()->Size() == 0)
+                            GStack->RaiseSocketError(GStack->LastError());
+                    }
                 }
 
                 if (AByteCount > 0) {
@@ -1660,22 +1850,37 @@ namespace Delphi {
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
             if (Connected()) {
                 do {
-                    if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) //APR: disconnect from other thread
-                    {
+                    if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
+
                         m_pRecvBuffer->Size(RecvBufferSize());
-                        LByteCount = IOHandler()->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                        LByteCount = m_pIOHandler->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
 
-                        if (LByteCount == SOCKET_ERROR) {
-                            Result = LByteCount;
-
-                            int LastError = GStack->GetLastError();
-                            if (LastError == ETIMEDOUT) {
-                                if (ARaiseExceptionOnTimeout)
-                                    throw ESocketError(_T("Read Timeout"));
-                                return 0;
+                        if (m_pIOHandler->UsedSSL()) {
+                            if (LByteCount <= 0) {
+                                Result = LByteCount;
+                                unsigned long LastError = GStack->GetSSLError();
+                                if (LastError == SSL_CTRL_SESS_TIMEOUTS) {
+                                    if (ARaiseExceptionOnTimeout)
+                                        throw ESocketError(_T("Read Timeout"));
+                                    return 0;
+                                } else if (LastError == SSL_ERROR_NONE) {
+                                    continue;
+                                } else {
+                                    break;
+                                }
                             }
+                        } else {
+                            if (LByteCount == SOCKET_ERROR) {
+                                Result = LByteCount;
+                                int LastError = GStack->GetLastError();
+                                if (LastError == ETIMEDOUT) {
+                                    if (ARaiseExceptionOnTimeout)
+                                        throw ESocketError(_T("Read Timeout"));
+                                    return 0;
+                                }
 
-                            break;
+                                break;
+                            }
                         }
                     } else {
                         LByteCount = 0;
@@ -1702,20 +1907,22 @@ namespace Delphi {
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
-            if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) //APR: disconnect from other thread
-            {
+            if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
                 m_pRecvBuffer->Size(RecvBufferSize());
                 do {
                     LByteRecv = IOHandler()->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
-
-                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                    if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
-                        return 0;
-
+                    if (m_pIOHandler->UsedSSL()) {
+                        unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ };
+                        if (GStack->CheckForSSLError(LByteRecv, Ignore, chARRAY(Ignore)))
+                            return LByteCount;
+                    } else {
+                        int Ignore[] = { EAGAIN, EWOULDBLOCK };
+                        if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
+                            return LByteCount;
+                    }
                     LByteCount += CheckReadStack(LByteRecv);
-                } while (LByteRecv == RecvBufferSize());
+                } while (LByteRecv > 0);
             } else {
-                LByteCount = 0;
                 if (ARaiseExceptionIfDisconnected)
                     throw ESocketError(_T("Not Connected."));
             }
@@ -1771,7 +1978,7 @@ namespace Delphi {
             CIOHandlerSocket *Result = nullptr;
 
             auto LIOHandler = new CIOHandlerSocket();
-            LIOHandler->Open();
+            LIOHandler->Open(sslNotUsed);
 
             if (LIOHandler->Binding()->Accept(ASocket, AFlags))
                 return LIOHandler;
@@ -1789,10 +1996,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CClientIOHandler::CClientIOHandler(): CIOHandlerSocket() {
+        CClientIOHandler::CClientIOHandler(CSSLMethod AMethod): CIOHandlerSocket() {
             m_MaxTries = 5;
             m_Attempts = 0;
-            CClientIOHandler::Open();
+            CClientIOHandler::Open(AMethod);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1813,7 +2020,7 @@ namespace Delphi {
                 }
             }
 
-            return (ErrorCode == 0) || (m_pBinding->LastError() == EISCONN);
+            return (ErrorCode == 0) || (CSocketHandle::LastError() == EISCONN);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -3610,12 +3817,14 @@ namespace Delphi {
         CAsyncClient::CAsyncClient(): CEPollClient() {
             m_Active = false;
             m_AutoConnect = true;
+            m_UsedSSL = false;
             m_pCommandHandlers = new CCommandHandlers(this);
         }
 
         CAsyncClient::CAsyncClient(LPCTSTR AHost, unsigned short APort): CAsyncClient() {
             m_Host = AHost;
             m_Port = APort;
+            m_UsedSSL = APort == 443;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3650,7 +3859,7 @@ namespace Delphi {
         void CAsyncClient::ConnectStart() {
             auto LIOHandler = new CIOHandlerSocket();
 
-            LIOHandler->Open();
+            LIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
 
             LIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
             LIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));

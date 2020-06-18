@@ -144,8 +144,8 @@ namespace Delphi {
         LIB_DELPHI LPWSTR FloatToStrW(double Value, LPWSTR Str, size_t Size, LPCWSTR Format = L"%f");
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI bool ValA(LPCSTR S, long int *val);
-        LIB_DELPHI bool ValW(LPCWSTR S, long int *val);
+        LIB_DELPHI bool ValA(LPCSTR S, long int *val, int Base = 10);
+        LIB_DELPHI bool ValW(LPCWSTR S, long int *val, int Base = 10);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool ValA(LPCSTR S, float *val);
@@ -160,12 +160,12 @@ namespace Delphi {
         LIB_DELPHI bool ValW(LPCWSTR S, long double *val);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntA(LPCSTR S);
-        LIB_DELPHI long int StrToIntW(LPCWSTR S);
+        LIB_DELPHI long int StrToIntA(LPCSTR S, int Base = 10);
+        LIB_DELPHI long int StrToIntW(LPCWSTR S, int Base = 10);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntDefA(LPCSTR S, long int Default);
-        LIB_DELPHI long int StrToIntDefW(LPCWSTR S, long int Default);
+        LIB_DELPHI long int StrToIntDefA(LPCSTR S, long int Default, int Base = 10);
+        LIB_DELPHI long int StrToIntDefW(LPCWSTR S, long int Default, int Base = 10);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI float StrToFloatA(LPCSTR S);

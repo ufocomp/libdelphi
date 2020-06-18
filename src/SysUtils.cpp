@@ -671,11 +671,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI bool ValA(LPCSTR S, long int *val) {
+        LIB_DELPHI bool ValA(LPCSTR S, long int *val, int Base) {
             LPSTR temp;
             bool Result = true;
             errno = 0;
-            *val = strtol(S, &temp, 0);
+            *val = strtol(S, &temp, Base);
             if (temp == S || *temp != '\0' ||
                 ((*val == LONG_MIN || *val == LONG_MAX) && errno == ERANGE))
                 Result = false;
@@ -683,11 +683,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI bool ValW(LPCWSTR S, long int *val) {
+        LIB_DELPHI bool ValW(LPCWSTR S, long int *val, int Base) {
             wchar_t *temp;
             bool Result = true;
             errno = 0;
-            *val = wcstol(S, &temp, 0);
+            *val = wcstol(S, &temp, Base);
             if (temp == S || *temp != '\0' ||
                 ((*val == LONG_MIN || *val == LONG_MAX) && errno == ERANGE))
                 Result = false;
@@ -767,33 +767,33 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntA(LPCSTR S) {
+        LIB_DELPHI long int StrToIntA(LPCSTR S, int Base) {
             long int val;
-            if (!ValA(S, &val))
+            if (!ValA(S, &val, Base))
                 ErrorStrToIntA(val, S);
             return val;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntW(LPCWSTR S) {
+        LIB_DELPHI long int StrToIntW(LPCWSTR S, int Base) {
             long int val;
-            if (!ValW(S, &val))
+            if (!ValW(S, &val, Base))
                 ErrorStrToIntW(val, S);
             return val;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntDefA(LPCSTR S, long int Default) {
+        LIB_DELPHI long int StrToIntDefA(LPCSTR S, long int Default, int Base) {
             long int val;
-            if (!ValA(S, &val))
+            if (!ValA(S, &val, Base))
                 return Default;
             return val;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI long int StrToIntDefW(LPCWSTR S, long int Default) {
+        LIB_DELPHI long int StrToIntDefW(LPCWSTR S, long int Default, int Base) {
             long int val;
-            if (!ValW(S, &val))
+            if (!ValW(S, &val, Base))
                 return Default;
             return val;
         }

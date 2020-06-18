@@ -376,6 +376,9 @@ namespace Delphi {
 
             TCHAR szSize[_INT_T_LEN + 1] = {0};
 
+            ARequest->VMajor = 1;
+            ARequest->VMinor = 1;
+
             ARequest->Method = AMethod;
             ARequest->URI = AURI;
 
@@ -1945,9 +1948,15 @@ namespace Delphi {
                         Context.ContentLength = Context.End - Context.Begin;
 
                         if (AReply->Headers.Count() > 0) {
-                            const CString &contentLength = AReply->Headers.Values(_T("Content-Length"));
+                            const auto& contentLength = AReply->Headers.Values(_T("Content-Length"));
+                            const auto& transferEncoding = AReply->Headers.Values(_T("Transfer-Encoding"));
+
                             if (!contentLength.IsEmpty()) {
                                 AReply->ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
+                            } else if (transferEncoding == "chunked") {
+                                AReply->ContentLength = 0;
+                                Context.State = Reply::content_checking_length;
+                                return -1;
                             } else {
                                 AReply->ContentLength = Context.ContentLength;
                             }
@@ -1970,6 +1979,42 @@ namespace Delphi {
                         return -1;
                     }
                     return true;
+
+                case Reply::content_checking_length:
+                    if (AInput == '\n') {
+                        if (Context.ChunkedLength == 0)
+                            return true;
+                        Context.Chunked.Clear();
+                        Context.ChunkedLength = 0;
+                        return -1;
+                    } else if (AInput == '\r') {
+                        if (!Context.Chunked.IsEmpty()) {
+                            Context.ChunkedLength = StrToInt(Context.Chunked.c_str(), 16);
+                            AReply->ContentLength += Context.ChunkedLength;
+                        }
+                        Context.State = Reply::content_checking_newline;
+                        return -1;
+                    } else if (IsChar(AInput)) {
+                        Context.Chunked.Append(AInput);
+                        return -1;
+                    }
+                    return false;
+
+                case Reply::content_checking_newline:
+                    if (AInput == '\n') {
+                        Context.State = Reply::content_checking_data;
+                        return -1;
+                    }
+                    return false;
+
+                case Reply::content_checking_data:
+                    if (AInput == '\r') {
+                        Context.State = Reply::content_checking_length;
+                        return -1;
+                    }
+
+                    AReply->Content.Append(AInput);
+                    return -1;
 
                 default:
                     return false;
@@ -2674,9 +2719,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPClient::CHTTPClient(LPCTSTR AHost, unsigned short APort): CHTTPClient() {
-            m_Host = AHost;
-            m_Port = APort;
+        CHTTPClient::CHTTPClient(LPCTSTR AHost, unsigned short APort): CAsyncClient(AHost, APort) {
+
         }
         //--------------------------------------------------------------------------------------------------------------
 

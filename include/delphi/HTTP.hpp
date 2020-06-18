@@ -934,7 +934,10 @@ namespace Delphi {
                 header_value_options,
                 expecting_newline_2,
                 expecting_newline_3,
-                content
+                content,
+                content_checking_length,
+                content_checking_newline,
+                content_checking_data,
             };
             //----------------------------------------------------------------------------------------------------------
         }
@@ -946,6 +949,8 @@ namespace Delphi {
             int Result;
             Reply::CParserState State;
             size_t ContentLength;
+            size_t ChunkedLength;
+            CString Chunked;
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
@@ -956,6 +961,7 @@ namespace Delphi {
                 Result = -1;
                 State = AState;
                 ContentLength = 0;
+                ChunkedLength = 0;
                 MimeIndex = 0;
             };
 
