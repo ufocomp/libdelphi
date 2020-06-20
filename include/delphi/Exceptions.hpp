@@ -396,7 +396,12 @@ namespace Delphi {
 
             ETCPServerError() : inherited() {};
 
-            explicit ETCPServerError(LPCTSTR lpMsg) : Exception(lpMsg) {};
+            explicit ETCPServerError(LPCTSTR lpFormat, ...) : inherited() {
+                va_list argList;
+                va_start(argList, lpFormat);
+                FormatMessage(lpFormat, argList);
+                va_end(argList);
+            };
 
             ~ETCPServerError() override = default;
         };
@@ -409,7 +414,12 @@ namespace Delphi {
 
             EHTTPServerError() : inherited() {};
 
-            explicit EHTTPServerError(LPCTSTR lpMsg) : Exception(lpMsg) {};
+            explicit EHTTPServerError(LPCTSTR lpFormat, ...) : inherited() {
+                va_list argList;
+                va_start(argList, lpFormat);
+                FormatMessage(lpFormat, argList);
+                va_end(argList);
+            };
 
             ~EHTTPServerError() override = default;
         };
@@ -436,9 +446,7 @@ namespace Delphi {
             EDBError() : inherited() {};
 
             explicit EDBError(LPCTSTR lpFormat, ...) : inherited() {
-
                 va_list argList;
-
                 va_start(argList, lpFormat);
                 FormatMessage(lpFormat, argList);
                 va_end(argList);
@@ -456,9 +464,7 @@ namespace Delphi {
             EDBConnectionError() : inherited() {};
 
             explicit EDBConnectionError(LPCTSTR lpFormat, ...) : inherited() {
-
                 va_list argList;
-
                 va_start(argList, lpFormat);
                 FormatMessage(lpFormat, argList);
                 va_end(argList);
@@ -476,9 +482,7 @@ namespace Delphi {
             EJSONParseSyntaxError() : inherited() {};
 
             explicit EJSONParseSyntaxError(LPCTSTR lpFormat, ...) : inherited() {
-
                 va_list argList;
-
                 va_start(argList, lpFormat);
                 FormatMessage(lpFormat, argList);
                 va_end(argList);

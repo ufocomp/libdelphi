@@ -448,17 +448,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CRequest::BuildLocation() {
-            struct servent *sptr;
-            const auto &Host = Headers.Values(_T("Host"));
+            const auto& Host = Headers.Values(_T("Host"));
             CString decodeURI;
             if (!CHTTPServer::URLDecode(URI, decodeURI))
                 return false;
             Location = Host + decodeURI;
-            if ((sptr = getservbyport(Location.port, "tcp")) != nullptr) {
-                Location.protocol = sptr->s_name;
-            } else {
-                Location.protocol = HTTP_PREFIX;
-            }
             return true;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2519,14 +2513,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CHTTPServer::URLEncode(const CString &In) {
+        CString CHTTPServer::URLEncode(const CString &In, char Space) {
             const static TCHAR HexCodes[] = "0123456789ABCDEF";
             TCHAR ch;
             CString Out;
             for (int i = 0; i < In.Size(); i++) {
                 ch = In.at(i);
                 if (ch == ' ') {
-                    Out += '+';
+                    Out += Space;
                 } else if (isalnum(ch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
                     Out += ch;
                 } else {
@@ -2539,7 +2533,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CHTTPServer::URLDecode(const CString &In, CString &Out) {
+        bool CHTTPServer::URLDecode(const CString &In, CString &Out, char Space) {
             TCHAR ch;
             Out.Clear();
             for (size_t i = 0; i < In.size(); ++i) {
@@ -2552,7 +2546,7 @@ namespace Delphi {
                     } else {
                         return false;
                     }
-                } else if (ch == '+') {
+                } else if (ch == Space) {
                     Out += ' ';
                 } else {
                     Out += ch;
@@ -2844,7 +2838,7 @@ namespace Delphi {
 
         void CHTTPClient::DoRequest(CHTTPClientConnection *AConnection) {
             if (m_OnRequest != nullptr) {
-                m_OnRequest(AConnection->Request());
+                m_OnRequest(this, AConnection->Request());
                 AConnection->SendRequest(true);
             }
         }

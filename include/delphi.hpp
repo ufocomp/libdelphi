@@ -232,7 +232,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.1.3")
+#define DELPHI_LIB_VERSION      _T("2.1.4")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -309,9 +309,11 @@ inline void chMB(LPCSTR szMsg);
 #  endif
 #endif
 
-#  ifndef DELPHI_LOG_HPP
-#    include "delphi/Log.hpp"
+#ifdef WITH_SQLITE
+#  ifndef DELPHI_SQLLITE_HPP
+#    include "delphi/SQLite.hpp"
 #  endif
+#endif
 
 #  ifndef DELPHI_SIGANL_HPP
 #    include "delphi/Signal.hpp"
@@ -324,12 +326,6 @@ inline void chMB(LPCSTR szMsg);
 #  ifndef DELPHI_APPLICATION_HPP
 #    include "delphi/Application.hpp"
 #  endif
-
-#ifdef WITH_SQLITE
-#  ifndef DELPHI_SQLLITE_HPP
-#    include "delphi/SQLite.hpp"
-#  endif
-#endif
 
 using namespace Delphi;
 //----------------------------------------------------------------------------------------------------------------------

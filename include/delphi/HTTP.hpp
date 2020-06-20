@@ -83,6 +83,15 @@ namespace Delphi {
 
             CString portStr;
 
+            void ProtocolInit() {
+                struct servent *sptr;
+                if ((sptr = getservbyport(port, "tcp")) != nullptr) {
+                    protocol = sptr->s_name;
+                } else {
+                    protocol = HTTP_PREFIX;
+                }
+            }
+
         public:
 
             CString protocol;
@@ -181,6 +190,9 @@ namespace Delphi {
 
                 if (!portStr.IsEmpty())
                     port = StrToIntDef(portStr.c_str(), 0);
+
+                if (protocol.IsEmpty())
+                    ProtocolInit();
             };
 
             CString Host() const {
@@ -890,7 +902,7 @@ namespace Delphi {
 
             /// Set cookie.
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
-                    bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Strict"));
+                    bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
 
             /// Get a prepare reply.
             static CReply *GetReply(CReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr);
@@ -1196,8 +1208,8 @@ namespace Delphi {
 
             void InitializeBindings() override;
 
-            static CString URLEncode(const CString& In);
-            static bool URLDecode(const CString& In, CString& Out);
+            static CString URLEncode(const CString& In, char Space = '+');
+            static bool URLDecode(const CString& In, CString& Out, char Space = '+');
 
             CAuthParams& AuthParams() { return m_AuthParams; };
             const CAuthParams& AuthParams() const { return m_AuthParams; };
@@ -1226,8 +1238,9 @@ namespace Delphi {
         //-- CHTTPClient -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
+        class CHTTPClient;
 
-        typedef std::function<void (CRequest *ARequest)> COnHTTPClientRequestEvent;
+        typedef std::function<void (CHTTPClient *Sender, CRequest *Request)> COnHTTPClientRequestEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPClient: public CAsyncClient {

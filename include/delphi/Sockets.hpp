@@ -2055,6 +2055,8 @@ namespace Delphi {
 
             CCommandHandlers *m_pCommandHandlers;
 
+            CStringList m_Data;
+
             void FreeIOHandler();
 
         protected:
@@ -2085,6 +2087,9 @@ namespace Delphi {
             CCommandHandlers *CommandHandlers() const { return m_pCommandHandlers; }
             void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
+            CStringList& Data() { return m_Data; }
+            const CStringList& Data() const { return m_Data; }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2108,6 +2113,8 @@ namespace Delphi {
 
             bool m_UsedSSL;
 
+            CStringList m_Data;
+
             void SetActive(bool AValue);
 
             virtual void Initialize() {};
@@ -2126,21 +2133,25 @@ namespace Delphi {
 
             ~CAsyncClient() override;
 
-            bool UsedSSL() const { return m_UsedSSL; }
-            void UsedSSL(bool Value) { m_UsedSSL = Value; }
-
-            bool AutoConnect() const { return m_AutoConnect; }
-            void AutoConnect(bool Value) { m_AutoConnect = Value; }
-
-            bool Active() const { return m_Active; }
-            void Active(bool Value) { SetActive(Value); }
-
             void ConnectStart();
 
             void Disconnect() { SetActive(false); };
 
+            bool Active() const { return m_Active; }
+            void Active(bool Value) { SetActive(Value); }
+
+            bool AutoConnect() const { return m_AutoConnect; }
+            void AutoConnect(bool Value) { m_AutoConnect = Value; }
+
+            bool UsedSSL() const { return m_UsedSSL; }
+            void UsedSSL(bool Value) { m_UsedSSL = Value; }
+
             CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
             void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
+
+            CStringList& Data() { return m_Data; }
+            const CStringList& Data() const { return m_Data; }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
