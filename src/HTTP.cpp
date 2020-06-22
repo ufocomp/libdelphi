@@ -2556,6 +2556,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CString CHTTPServer::URLDecode(const CString &In, char Space) {
+            CString decodeURL;
+            if (URLDecode(In, decodeURL, Space))
+                return decodeURL;
+            return CString();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
             auto LConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {

@@ -1209,6 +1209,7 @@ namespace Delphi {
             void InitializeBindings() override;
 
             static CString URLEncode(const CString& In, char Space = '+');
+            static CString URLDecode(const CString& In, char Space = '+');
             static bool URLDecode(const CString& In, CString& Out, char Space = '+');
 
             CAuthParams& AuthParams() { return m_AuthParams; };
