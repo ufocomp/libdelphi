@@ -61,7 +61,7 @@ namespace Delphi {
             mutable CStringList issuers;
 
             mutable CString algorithm;
-            mutable CString audience;
+            mutable CString client_id;
             mutable CString issuer;
             mutable CString secret;
             mutable CString auth_uri;
@@ -106,10 +106,10 @@ namespace Delphi {
                 return algorithm;
             }
 
-            const CString& Audience() const {
-                if (audience.IsEmpty())
-                    audience = Params["audience"].AsString();
-                return audience;
+            const CString& ClientId() const {
+                if (client_id.IsEmpty())
+                    client_id = Params["client_id"].AsString();
+                return client_id;
             }
 
             const CString& Issuer() const {
@@ -189,10 +189,10 @@ namespace Delphi {
 
         namespace Helper {
 
-            inline void GetAudiences(const CAuthParams &AuthParams, CStringList &Audiences) {
+            inline void GetClients(const CAuthParams &AuthParams, CStringList &Clients) {
                 CAuthParams::ConstEnumerator em(AuthParams);
                 while (em.MoveNext()) {
-                    Audiences.Add(em.Current().Value().Audience());
+                    Clients.Add(em.Current().Value().ClientId());
                 }
             }
 
@@ -203,10 +203,10 @@ namespace Delphi {
                 }
             }
 
-            inline int IndexOfAudience(const CAuthParams &AuthParams, const CString &Audience) {
+            inline int IndexOfClientId(const CAuthParams &AuthParams, const CString &ClientId) {
                 CAuthParams::ConstEnumerator em(AuthParams);
                 while (em.MoveNext()) {
-                    if (em.Current().Value().Audience() == Audience)
+                    if (em.Current().Value().ClientId() == ClientId)
                         return em.Index();
                 }
                 return -1;

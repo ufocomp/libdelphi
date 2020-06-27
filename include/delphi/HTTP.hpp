@@ -320,15 +320,12 @@ namespace Delphi {
             CString Username;
             CString Password;
 
-            enum CGrantType {
-                agtUnknown = -1,
-                agtCode,
-                agtImplicit,
-                agtOwner,
-                agtClient
-            } GrantType;
-
-            CString Grant;
+            enum CAuthorizationType {
+                atUnknown = -1,
+                atOwner,
+                atSession,
+                atClient
+            } Type;
 
             enum CTokenType {
                 attUnknown = -1,
@@ -338,7 +335,7 @@ namespace Delphi {
 
             CString Token;
 
-            CAuthorization(): Schema(asUnknown), GrantType(agtUnknown), TokenType(attUnknown) {
+            CAuthorization(): Schema(asUnknown), Type(atUnknown), TokenType(attUnknown) {
 
             }
 
@@ -360,7 +357,7 @@ namespace Delphi {
                     if (LPos == CString::npos)
                         throw CAuthorizationError("Incorrect passphrase.");
 
-                    GrantType = agtOwner;
+                    Type = atOwner;
 
                     Username = LPassphrase.SubString(0, LPos);
                     Password = LPassphrase.SubString(LPos + 1);

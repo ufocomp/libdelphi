@@ -717,6 +717,10 @@ namespace Delphi {
                     if (AInput == ' ') {
                         Context.State = Request::http_version_h;
                         return -1;
+                    } else if (AInput == '&') {
+                        ARequest->URI.Append(AInput);
+                        Context.State = Request::uri_param_start;
+                        return -1;
                     } else if (IsCtl(AInput)) {
                         return 0;
                     } else {
