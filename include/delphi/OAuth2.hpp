@@ -66,7 +66,7 @@ namespace Delphi {
             mutable CString secret;
             mutable CString auth_uri;
             mutable CString token_uri;
-            mutable CStringList redirect_uri;
+            mutable CStringList redirect_uris;
             mutable CString auth_provider_x509_cert_url;
 
         public:
@@ -149,15 +149,15 @@ namespace Delphi {
             }
 
             const CStringList& RedirectURI() const {
-                if (redirect_uri.Count() == 0) {
-                    const auto& RedirectURI = Params["redirect_uri"];
+                if (redirect_uris.Count() == 0) {
+                    const auto& RedirectURI = Params["redirect_uris"];
                     if (RedirectURI.IsArray()) {
                         for (int i = 0; i < RedirectURI.Count(); ++i) {
-                            redirect_uri.Add(RedirectURI[i].AsString());
+                            redirect_uris.Add(RedirectURI[i].AsString());
                         }
                     }
                 }
-                return redirect_uri;
+                return redirect_uris;
             }
 
             const CString& CertURI() const {
