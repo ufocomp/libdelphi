@@ -448,11 +448,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CRequest::BuildLocation() {
+            CString Protocol;
             const auto& Host = Headers.Values(_T("Host"));
+            if (Host.Find(':') == CString::npos) {
+                Protocol = Headers.Values(_T("X-Forwarded-Proto"));
+                if (!Protocol.IsEmpty())
+                    Protocol << "://";
+            }
             CString decodeURI;
             if (!CHTTPServer::URLDecode(URI, decodeURI))
                 return false;
-            Location = Host + decodeURI;
+            Location = Protocol + Host + decodeURI;
             return true;
         }
         //--------------------------------------------------------------------------------------------------------------
