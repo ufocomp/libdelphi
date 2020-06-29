@@ -1938,24 +1938,30 @@ namespace Delphi {
             size_t L, LineBreakLen;
             LPCTSTR LB = LineBreak();
 
+            bool IsLineFeed = SameText(LB, sLineBreak);
+
             L = 0;
             LineBreakLen = strlen(LB);
 
-            for (I = 0; I < GetCount(); ++I) {
+            const auto Count = GetCount();
+
+            for (I = 0; I < Count; ++I) {
                 const CString &S = Get(I);
                 if (!S.IsEmpty())
                     L += S.Size();
-                L += LineBreakLen;
+                if (IsLineFeed || I < Count - 1)
+                    L += LineBreakLen;
             }
 
             Result.SetLength(L);
             Result.Position(0);
 
-            for (I = 0; I < GetCount(); ++I) {
+            for (I = 0; I < Count; ++I) {
                 const CString &S = Get(I);
                 if (!S.IsEmpty())
                     Result.WriteBuffer(S.Data(), S.Size());
-                Result.WriteBuffer(LB, LineBreakLen);
+                if (IsLineFeed || I < Count - 1)
+                    Result.WriteBuffer(LB, LineBreakLen);
             }
 
             return Result;
