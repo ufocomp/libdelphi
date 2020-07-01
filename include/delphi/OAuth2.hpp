@@ -61,14 +61,14 @@ namespace Delphi {
             mutable CStringList issuers;
             mutable CStringList clients;
 
-            mutable CString algorithm;
-            mutable CString client_id;
-            mutable CString issuer;
-            mutable CString client_secret;
-            mutable CString auth_uri;
-            mutable CString token_uri;
-            mutable CStringList redirect_uris;
-            mutable CString auth_provider_x509_cert_url;
+            mutable CStringPairs algorithm;
+            mutable CStringPairs client_id;
+            mutable CStringPairs issuer;
+            mutable CStringPairs client_secret;
+            mutable CStringPairs auth_uri;
+            mutable CStringPairs token_uri;
+            mutable TPairs<CStringList> redirect_uris;
+            mutable CStringPairs auth_provider_x509_cert_url;
 
             void CheckApplication(const CString &Application) const {
                 if (Application.IsEmpty())
@@ -141,71 +141,72 @@ namespace Delphi {
             }
 
             const CString& Issuer(const CString &Application) const {
-                if (issuer.IsEmpty()) {
-                    issuer = GetIssuers(Application).First();
+                CheckApplication(Application);
+                if (issuer[Application].IsEmpty()) {
+                    issuer.AddPair(Application, GetIssuers(Application).First());
                 }
-                return issuer;
+                return issuer[Application].Value();
             }
 
             const CString& Algorithm(const CString &Application) const {
-                if (algorithm.IsEmpty()) {
-                    CheckApplication(Application);
-                    algorithm = Params[Application]["algorithm"].AsString();
+                CheckApplication(Application);
+                if (algorithm[Application].IsEmpty()) {
+                    algorithm.AddPair(Application, Params[Application]["algorithm"].AsString());
                 }
-                return algorithm;
+                return algorithm[Application].Value();
             }
 
             const CString& ClientId(const CString &Application) const {
-                if (client_id.IsEmpty()) {
-                    CheckApplication(Application);
-                    client_id = Params[Application]["client_id"].AsString();
+                CheckApplication(Application);
+                if (client_id[Application].IsEmpty()) {
+                    client_id.AddPair(Application, Params[Application]["client_id"].AsString());
                 }
-                return client_id;
+                return client_id[Application].Value();
             }
 
             const CString& Secret(const CString &Application) const {
-                if (client_secret.IsEmpty()) {
-                    CheckApplication(Application);
-                    client_secret = Params[Application]["client_secret"].AsString();
+                CheckApplication(Application);
+                if (client_secret[Application].IsEmpty()) {
+                    client_secret.AddPair(Application, Params[Application]["client_secret"].AsString());
                 }
-                return client_secret;
+                return client_secret[Application].Value();
             }
 
             const CString& AuthURI(const CString &Application) const {
-                if (auth_uri.IsEmpty()) {
-                    CheckApplication(Application);
-                    auth_uri = Params[Application]["auth_uri"].AsString();
+                CheckApplication(Application);
+                if (auth_uri[Application].IsEmpty()) {
+                    auth_uri.AddPair(Application, Params[Application]["auth_uri"].AsString());
                 }
-                return auth_uri;
+                return auth_uri[Application].Value();
             }
 
             const CString& TokenURI(const CString &Application) const {
-                if (token_uri.IsEmpty()) {
-                    CheckApplication(Application);
-                    token_uri = Params[Application]["token_uri"].AsString();
+                CheckApplication(Application);
+                if (token_uri[Application].IsEmpty()) {
+                    token_uri.AddPair(Application, Params[Application]["token_uri"].AsString());
                 }
-                return token_uri;
+                return token_uri[Application].Value();
             }
 
             const CStringList& RedirectURI(const CString &Application) const {
-                if (redirect_uris.Count() == 0) {
-                    CheckApplication(Application);
+                CheckApplication(Application);
+                if (redirect_uris[Application].Value().Count() == 0) {
                     const auto& RedirectURI = Params[Application]["redirect_uris"];
                     if (RedirectURI.IsArray()) {
                         for (int i = 0; i < RedirectURI.Count(); ++i) {
-                            redirect_uris.Add(RedirectURI[i].AsString());
+                            redirect_uris[Application].Value().Add(RedirectURI[i].AsString());
                         }
                     }
                 }
-                return redirect_uris;
+                return redirect_uris[Application].Value();
             }
 
             const CString& CertURI(const CString &Application) const {
-                if (auth_provider_x509_cert_url.IsEmpty()) {
-                    CheckApplication(Application);
-                    auth_provider_x509_cert_url = Params[Application]["auth_provider_x509_cert_url"].AsString();
+                CheckApplication(Application);
+                if (auth_provider_x509_cert_url[Application].IsEmpty()) {
+                    auth_provider_x509_cert_url.AddPair(Application, Params[Application]["auth_provider_x509_cert_url"].AsString());
                 }
-                return auth_provider_x509_cert_url;
+                return auth_provider_x509_cert_url[Application].Value();
             }
 
             CString PublicKey(const CString &KeyId) const {
