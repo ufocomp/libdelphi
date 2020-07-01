@@ -38,7 +38,7 @@ namespace Delphi {
             COAuth2Error() : inherited() {};
 
             explicit COAuth2Error(LPCTSTR AFormat, ...) : inherited() {
-                CString Format("OAuth2 error: ");
+                CString Format("OAuth 2.0: ");
                 Format << AFormat;
                 va_list argList;
                 va_start(argList, AFormat);
@@ -51,27 +51,36 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CAuthParam ------------------------------------------------------------------------------------------------
+        //-- CProvider -------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        struct CAuthParam {
+        struct CProvider {
         private:
 
             mutable CStringList issuers;
+            mutable CStringList clients;
 
             mutable CString algorithm;
             mutable CString client_id;
             mutable CString issuer;
-            mutable CString secret;
+            mutable CString client_secret;
             mutable CString auth_uri;
             mutable CString token_uri;
             mutable CStringList redirect_uris;
             mutable CString auth_provider_x509_cert_url;
 
+            void CheckApplication(const CString &Application) const {
+                if (Application.IsEmpty())
+                    throw COAuth2Error(_T("Application value cannot be empty."));
+
+                if (!Params.HasOwnProperty(Application))
+                    throw COAuth2Error(_T("Not found application \"%s\" in parameters value."), Application.c_str());
+            }
+
         public:
 
-            CString Provider;
+            CString Name;
 
             CJSON Params;
             CJSON Keys;
@@ -86,13 +95,13 @@ namespace Delphi {
                 ksSaved
             } Status;
 
-            CAuthParam(): Status(ksUnknown) {
+            CProvider(): Status(ksUnknown) {
                 StatusTime = Now();
             }
 
-            CAuthParam(const CAuthParam &Other): CAuthParam() {
+            CProvider(const CProvider &Other): CProvider() {
                 if (this != &Other) {
-                    this->Provider = Other.Provider;
+                    this->Name = Other.Name;
                     this->Params = Other.Params;
                     this->Keys = Other.Keys;
                     this->StatusTime = Other.StatusTime;
@@ -100,57 +109,88 @@ namespace Delphi {
                 }
             }
 
-            const CString& Algorithm() const {
-                if (algorithm.IsEmpty())
-                    algorithm = Params["algorithm"].AsString();
-                return algorithm;
+            const CJSONObject &Applications() const {
+                return Params.Object();
             }
 
-            const CString& ClientId() const {
-                if (client_id.IsEmpty())
-                    client_id = Params["client_id"].AsString();
-                return client_id;
+            const CStringList &GetClients() const {
+                if (clients.Count() == 0) {
+                    const auto &apps = Applications();
+                    for (int i = 0; i < apps.Count(); i++) {
+                        const auto& String = apps.Members(i).String();;
+                        clients.AddPair(ClientId(String), String);
+                    }
+                }
+                return clients;
             }
 
-            const CString& Issuer() const {
-                if (issuer.IsEmpty())
-                    issuer = Params["issuers"][0].AsString();
-                return issuer;
-            }
-
-            const CStringList& GetIssuers() const {
+            const CStringList& GetIssuers(const CString &Application) const {
                 if (issuers.Count() == 0) {
-                    const auto& Issuers = Params["issuers"];
+                    const auto& Issuers = Applications()[Application]["issuers"];
                     if (Issuers.IsArray()) {
                         for (int i = 0; i < Issuers.Count(); ++i) {
-                            issuers.AddPair(Issuers[i].AsString(), Provider);
+                            issuers.AddPair(Issuers[i].AsString(), Name);
                         }
+                    }
+                    if (issuers.Count() == 0 && Name == "google") {
+                        issuers.AddPair("accounts.google.com", Name);
+                        issuers.AddPair("https://accounts.google.com", Name);
                     }
                 }
                 return issuers;
             }
 
-            const CString& Secret() const {
-                if (secret.IsEmpty())
-                    secret = Params["secret"].AsString();
-                return secret;
+            const CString& Issuer(const CString &Application) const {
+                if (issuer.IsEmpty()) {
+                    issuer = GetIssuers(Application).First();
+                }
+                return issuer;
             }
 
-            const CString& AuthURI() const {
-                if (auth_uri.IsEmpty())
-                    auth_uri = Params["auth_uri"].AsString();
+            const CString& Algorithm(const CString &Application) const {
+                if (algorithm.IsEmpty()) {
+                    CheckApplication(Application);
+                    algorithm = Params[Application]["algorithm"].AsString();
+                }
+                return algorithm;
+            }
+
+            const CString& ClientId(const CString &Application) const {
+                if (client_id.IsEmpty()) {
+                    CheckApplication(Application);
+                    client_id = Params[Application]["client_id"].AsString();
+                }
+                return client_id;
+            }
+
+            const CString& Secret(const CString &Application) const {
+                if (client_secret.IsEmpty()) {
+                    CheckApplication(Application);
+                    client_secret = Params[Application]["client_secret"].AsString();
+                }
+                return client_secret;
+            }
+
+            const CString& AuthURI(const CString &Application) const {
+                if (auth_uri.IsEmpty()) {
+                    CheckApplication(Application);
+                    auth_uri = Params[Application]["auth_uri"].AsString();
+                }
                 return auth_uri;
             }
 
-            const CString& TokenURI() const {
-                if (token_uri.IsEmpty())
-                    token_uri = Params["token_uri"].AsString();
+            const CString& TokenURI(const CString &Application) const {
+                if (token_uri.IsEmpty()) {
+                    CheckApplication(Application);
+                    token_uri = Params[Application]["token_uri"].AsString();
+                }
                 return token_uri;
             }
 
-            const CStringList& RedirectURI() const {
+            const CStringList& RedirectURI(const CString &Application) const {
                 if (redirect_uris.Count() == 0) {
-                    const auto& RedirectURI = Params["redirect_uris"];
+                    CheckApplication(Application);
+                    const auto& RedirectURI = Params[Application]["redirect_uris"];
                     if (RedirectURI.IsArray()) {
                         for (int i = 0; i < RedirectURI.Count(); ++i) {
                             redirect_uris.Add(RedirectURI[i].AsString());
@@ -160,9 +200,11 @@ namespace Delphi {
                 return redirect_uris;
             }
 
-            const CString& CertURI() const {
-                if (auth_provider_x509_cert_url.IsEmpty())
-                    auth_provider_x509_cert_url = Params["auth_provider_x509_cert_url"].AsString();
+            const CString& CertURI(const CString &Application) const {
+                if (auth_provider_x509_cert_url.IsEmpty()) {
+                    CheckApplication(Application);
+                    auth_provider_x509_cert_url = Params[Application]["auth_provider_x509_cert_url"].AsString();
+                }
                 return auth_provider_x509_cert_url;
             }
 
@@ -175,11 +217,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CAuthParams -----------------------------------------------------------------------------------------------
+        //-- CProviders ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef TPairs<CAuthParam> CAuthParams;
+        typedef TPairs<CProvider> CProviders;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -189,43 +231,45 @@ namespace Delphi {
 
         namespace Helper {
 
-            inline void GetClients(const CAuthParams &AuthParams, CStringList &Clients) {
-                CAuthParams::ConstEnumerator em(AuthParams);
+            inline void GetIssuers(const CProviders &Providers, const CString &Application, CStringList &Issuers) {
+                CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
-                    Clients.Add(em.Current().Value().ClientId());
+                    Issuers << em.Current().Value().GetIssuers(Application);
                 }
             }
 
-            inline void GetIssuers(const CAuthParams &AuthParams, CStringList &Issuers) {
-                CAuthParams::ConstEnumerator em(AuthParams);
+            inline void GetClients(const CProviders &Providers, CStringList &Clients) {
+                CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
-                    Issuers << em.Current().Value().GetIssuers();
+                    Clients << em.Current().Value().GetClients();
                 }
             }
 
-            inline int IndexOfClientId(const CAuthParams &AuthParams, const CString &ClientId) {
-                CAuthParams::ConstEnumerator em(AuthParams);
+            inline const CProvider &ProviderByClientId(const CProviders &Providers, const CString &ClientId, CString &Application) {
+                CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
-                    if (em.Current().Value().ClientId() == ClientId)
-                        return em.Index();
+                    Application = em.Current().Value().GetClients()[ClientId];
+                    if (!Application.IsEmpty()) {
+                        return em.Current().Value();
+                    }
                 }
-                return -1;
+                throw COAuth2Error(_T("Not found provider by Client ID."));
             }
 
-            inline CString GetPublicKey(const CAuthParams &AuthParams, const CString &KeyId) {
+            inline CString GetPublicKey(const CProviders &Providers, const CString &KeyId) {
                 CString Result;
 
-                auto Value = [&AuthParams, &KeyId, &Result](int Index) {
-                    Result = AuthParams[Index].Value().PublicKey(KeyId);
+                auto Value = [&Providers, &KeyId, &Result](int Index) {
+                    Result = Providers[Index].Value().PublicKey(KeyId);
                     return Result.IsEmpty();
                 };
 
                 int Index = 0;
-                while (Index < AuthParams.Count() && Value(Index)) {
+                while (Index < Providers.Count() && Value(Index)) {
                     Index++;
                 }
 
-                if (Index == AuthParams.Count())
+                if (Index == Providers.Count())
                     throw COAuth2Error(_T("Not found public key by id \"%s\" in listed."), KeyId.c_str());
 
                 return Result;

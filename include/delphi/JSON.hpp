@@ -1088,6 +1088,15 @@ namespace Delphi {
                 RE.Value().Data() = S;
                 return In;
             };
+
+            CJSONValue &operator[](const CString &Value) { return m_Value[Value]; }
+
+            const CJSONValue &operator[](const CString &Value) const { return m_Value[Value]; }
+
+            CJSONValue &operator[](reference Value) { return m_Value[Value]; }
+
+            const CJSONValue &operator[](reference Value) const { return m_Value[Value]; }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------

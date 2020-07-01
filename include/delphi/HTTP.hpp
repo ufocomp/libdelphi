@@ -1177,7 +1177,7 @@ namespace Delphi {
         class CHTTPServer: public CAsyncServer {
         protected:
 
-            CAuthParams m_AuthParams;
+            CProviders m_Providers;
 
             CSites m_Sites;
 
@@ -1209,8 +1209,8 @@ namespace Delphi {
             static CString URLDecode(const CString& In, char Space = '+');
             static bool URLDecode(const CString& In, CString& Out, char Space = '+');
 
-            CAuthParams& AuthParams() { return m_AuthParams; };
-            const CAuthParams& AuthParams() const { return m_AuthParams; };
+            CProviders& Providers() { return m_Providers; };
+            const CProviders& Providers() const { return m_Providers; };
 
             CSites& Sites() { return m_Sites; };
             const CSites& Sites() const { return m_Sites; };
@@ -1220,7 +1220,7 @@ namespace Delphi {
                     SetIOHandler(Server.IOHandler());
                     SetBindings(Server.Bindings());
 
-                    m_AuthParams = Server.m_AuthParams;
+                    m_Providers = Server.m_Providers;
                     m_Sites = Server.m_Sites;
 
                     m_ActiveLevel = Server.m_ActiveLevel;
