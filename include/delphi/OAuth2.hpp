@@ -59,6 +59,7 @@ namespace Delphi {
         private:
 
             mutable CStringList issuers;
+            mutable CStringList scopes;
             mutable CStringList clients;
 
             mutable CStringPairs algorithm;
@@ -122,6 +123,22 @@ namespace Delphi {
                     }
                 }
                 return clients;
+            }
+
+            const CStringList& GetScopes(const CString &Application) const {
+                if (scopes.Count() == 0) {
+                    const auto& Issuers = Applications()[Application]["scopes"];
+                    if (Issuers.IsArray()) {
+                        for (int i = 0; i < Issuers.Count(); ++i) {
+                            scopes.AddPair(Issuers[i].AsString(), Name);
+                        }
+                    }
+                    if (scopes.Count() == 0 && Name == "google") {
+                        scopes.Add("api");
+                        scopes.Add("openid");
+                    }
+                }
+                return scopes;
             }
 
             const CStringList& GetIssuers(const CString &Application) const {
@@ -246,15 +263,15 @@ namespace Delphi {
                 }
             }
 
-            inline const CProvider &ProviderByClientId(const CProviders &Providers, const CString &ClientId, CString &Application) {
+            inline int ProviderByClientId(const CProviders &Providers, const CString &ClientId, CString &Application) {
                 CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
                     Application = em.Current().Value().GetClients()[ClientId];
                     if (!Application.IsEmpty()) {
-                        return em.Current().Value();
+                        return em.Index();
                     }
                 }
-                throw COAuth2Error(_T("Not found provider by Client ID."));
+                return -1;
             }
 
             inline CString GetPublicKey(const CProviders &Providers, const CString &KeyId) {

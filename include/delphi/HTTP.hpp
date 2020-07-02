@@ -1205,9 +1205,9 @@ namespace Delphi {
 
             void InitializeBindings() override;
 
-            static CString URLEncode(const CString& In, char Space = '+');
-            static CString URLDecode(const CString& In, char Space = '+');
-            static bool URLDecode(const CString& In, CString& Out, char Space = '+');
+            static CString URLEncode(const CString& In);
+            static CString URLDecode(const CString& In);
+            static bool URLDecode(const CString& In, CString& Out);
 
             CProviders& Providers() { return m_Providers; };
             const CProviders& Providers() const { return m_Providers; };

@@ -2523,15 +2523,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CHTTPServer::URLEncode(const CString &In, char Space) {
+        CString CHTTPServer::URLEncode(const CString &In) {
             const static TCHAR HexCodes[] = "0123456789ABCDEF";
             TCHAR ch;
             CString Out;
             for (int i = 0; i < In.Size(); i++) {
                 ch = In.at(i);
-                if (ch == ' ') {
-                    Out += Space;
-                } else if (isalnum(ch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
+                if (isalnum(ch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
                     Out += ch;
                 } else {
                     Out += "%";
@@ -2543,7 +2541,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CHTTPServer::URLDecode(const CString &In, CString &Out, char Space) {
+        bool CHTTPServer::URLDecode(const CString &In, CString &Out) {
             TCHAR ch;
             Out.Clear();
             for (size_t i = 0; i < In.size(); ++i) {
@@ -2556,8 +2554,6 @@ namespace Delphi {
                     } else {
                         return false;
                     }
-                } else if (ch == Space) {
-                    Out += ' ';
                 } else {
                     Out += ch;
                 }
@@ -2566,9 +2562,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CHTTPServer::URLDecode(const CString &In, char Space) {
+        CString CHTTPServer::URLDecode(const CString &In) {
             CString decodeURL;
-            if (URLDecode(In, decodeURL, Space))
+            if (URLDecode(In, decodeURL))
                 return decodeURL;
             return CString();
         }
