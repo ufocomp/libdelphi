@@ -339,8 +339,23 @@ namespace Delphi {
 
             }
 
+            CAuthorization(const CAuthorization &Value): CAuthorization() {
+                if (this != &Value) {
+                    Assign(Value);
+                }
+            }
+
             explicit CAuthorization(const CString& String): CAuthorization() {
                 Parse(String);
+            }
+
+            void Assign(const CAuthorization &Value) {
+                Schema = Value.Schema;
+                Username = Value.Username;
+                Password = Value.Password;
+                Type = Value.Type;
+                TokenType = Value.TokenType;
+                Token = Value.Token;
             }
 
             void Parse(const CString& String) {
@@ -376,6 +391,11 @@ namespace Delphi {
                 } else {
                     throw CAuthorizationError("Unknown schema.");
                 }
+            }
+
+            CAuthorization &operator = (const CAuthorization& Authorization) {
+                Assign(Authorization);
+                return *this;
             }
 
             CAuthorization &operator << (const CString& String) {
