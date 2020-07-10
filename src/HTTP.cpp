@@ -544,7 +544,7 @@ namespace Delphi {
             m_Payload->Position(m_Size);
             for (size_t i = Position; i < Stream->Size(); i++) {
                 Stream->Read(&Input, 1);
-                Input = Input ^ m_Frame.MaskingKey[(i - Position) % 4];
+                Input = Input ^ m_Frame.MaskingKey[(m_Payload->Position()) % 4];
                 m_Payload->Write(&Input, 1);
                 m_Size++;
             }
@@ -606,14 +606,14 @@ namespace Delphi {
 
             size_t PayloadSize = 0;
 
-            unsigned char octet[2] = {0, 0};
-            Stream->Read(octet, sizeof(octet));
+            unsigned char frame[2] = {0, 0};
+            Stream->Read(frame, sizeof(frame));
 
-            m_Frame.FIN = octet[0] & WS_FIN;
-            m_Frame.Opcode = octet[0] & 0x0Fu;
+            m_Frame.FIN = frame[0] & WS_FIN;
+            m_Frame.Opcode = frame[0] & 0x0Fu;
 
-            m_Frame.Mask = octet[1] & WS_MASK;
-            m_Frame.Length = octet[1] & 0x7Fu;
+            m_Frame.Mask = frame[1] & WS_MASK;
+            m_Frame.Length = frame[1] & 0x7Fu;
 
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
                 unsigned short Length16 = 0;
@@ -632,6 +632,7 @@ namespace Delphi {
             }
 
             m_Payload->SetSize(PayloadSize);
+            SecureZeroMemory(m_Payload->Memory(), PayloadSize);
             PayloadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2093,6 +2094,9 @@ namespace Delphi {
             m_Reply = nullptr;
             m_WSRequest = nullptr;
             m_WSReply = nullptr;
+
+            m_OnWaitRequest = nullptr;
+            m_OnRequest = nullptr;
             m_OnReply = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2177,8 +2181,9 @@ namespace Delphi {
                 case WS_OPCODE_TEXT:
                 case WS_OPCODE_BINARY:
 
-                    if (LWSRequest->Frame().FIN == 0 || (LWSRequest->Size() < LWSRequest->Payload()->Size())) {
+                    if (LWSRequest->Size() < LWSRequest->Payload()->Size()) {
                         m_ConnectionStatus = csWaitRequest;
+                        DoWaitRequest();
                     } else {
                         m_ConnectionStatus = csRequestOk;
                         DoRequest();
@@ -2355,6 +2360,13 @@ namespace Delphi {
                 WriteAsync();
                 m_ConnectionStatus = csReplySent;
                 Clear();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::DoWaitRequest() {
+            if (m_OnWaitRequest != nullptr) {
+                m_OnWaitRequest(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------

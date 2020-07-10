@@ -124,7 +124,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CJSON::~CJSON() {
-            delete m_Value;
+            if (this != m_Value)
+                delete m_Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -161,7 +162,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CJSON::Assign(const CJSON& Source) {
+        void CJSON::Assign(const CJSON &Source) {
             Clear();
             m_ValueType = Source.ValueType();
 
@@ -171,6 +172,14 @@ namespace Delphi {
 
                 if (Source.Value()->IsArray())
                     CreateArray()->Assign(Source.Array());
+            } else {
+                if (m_ValueType == jvtObject) {
+                    auto Object = (CJSONObject *) &Source;
+                    CreateObject()->Assign(*Object);
+                } else if (m_ValueType == jvtArray) {
+                    auto Array = (CJSONArray *) &Source;
+                    CreateArray()->Assign(*Array);
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -315,6 +324,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CJSON::StrToJson(LPCTSTR ABuffer, size_t ASize) {
+
             CJSONParser LParser(this);
             CJSONParserResult R;
 
@@ -324,7 +334,7 @@ namespace Delphi {
                     Clear();
                     R = LParser.Parse((LPTSTR) ABuffer, ABuffer + ASize);
                     if (!R.result) {
-                        throw Exception::EJSONParseSyntaxError(_T("JSON Parser syntax error in position %d, char \"%c\""), R.pos, ABuffer[R.pos]);
+                        throw Exception::EJSONParseSyntaxError(_T("JSON Parser syntax error in position %d, char: %#x"), R.pos, ABuffer[R.pos]);
                     }
                 }
             } catch (...) {

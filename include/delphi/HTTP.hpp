@@ -1059,6 +1059,7 @@ namespace Delphi {
 
             bool m_CloseConnection;
 
+            CNotifyEvent m_OnWaitRequest;
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
@@ -1073,6 +1074,7 @@ namespace Delphi {
             CWebSocket *GetWSRequest();
             CWebSocket *GetWSReply();
 
+            void DoWaitRequest();
             void DoRequest();
             void DoReply();
 
@@ -1112,6 +1114,9 @@ namespace Delphi {
             void SendWebSocketPing(bool ASendNow = false);
             void SendWebSocketPong(bool ASendNow = false);
             void SendWebSocketClose(bool ASendNow = false);
+
+            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
+            void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
 
             const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
