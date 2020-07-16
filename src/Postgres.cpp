@@ -1140,21 +1140,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQConnectPoll::Stop(CPollEventHandler *AHandler) {
-            delete AHandler;
+        void CPQConnectPoll::Stop(int Index) {
+            m_pEventHandlers->Delete(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::StopAll() {
-            CPollEventHandler *LEventHandler;
-            for (int I = m_EventHandlers->Count() - 1; I >= 0; --I) {
-                LEventHandler = m_EventHandlers->Handlers(I);
-                if (LEventHandler->EventType() == etTimer) {
-                    LEventHandler->Stop();
-                    continue;
-                }
-                Stop(LEventHandler);
-            }
+            m_pEventHandlers->Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1172,8 +1164,8 @@ namespace Delphi {
 
         void CPQConnectPoll::SetTimerInterval(int Value) {
             if (m_TimerInterval != Value) {
-                m_TimerInterval = Value;
                 UpdateTimer();
+                m_TimerInterval = Value;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1181,7 +1173,7 @@ namespace Delphi {
         void CPQConnectPoll::UpdateTimer() {
             if (m_pTimer == nullptr) {
                 m_pTimer = CEPollTimer::CreateTimer(CLOCK_MONOTONIC, TFD_NONBLOCK);
-                m_pTimer->AllocateTimer(m_EventHandlers, m_TimerInterval, m_TimerInterval);
+                m_pTimer->AllocateTimer(m_pEventHandlers, m_TimerInterval, m_TimerInterval);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
                 m_pTimer->OnTimer([this](auto && AHandler) { DoTimer(AHandler); });
 #else
@@ -1197,7 +1189,7 @@ namespace Delphi {
             CPollEventHandler *LEventHandler = nullptr;
 
             try {
-                LEventHandler = m_EventHandlers->Add(AConnection->Socket());
+                LEventHandler = m_pEventHandlers->Add(AConnection->Socket());
 
                 if (ExternalPollStack()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -1225,7 +1217,7 @@ namespace Delphi {
 
         void CPQConnectPoll::OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket) {
             if (AOldSocket != SOCKET_ERROR) {
-                auto LEventHandler = m_EventHandlers->FindHandlerBySocket(AOldSocket);
+                auto LEventHandler = m_pEventHandlers->FindHandlerBySocket(AOldSocket);
                 if (Assigned(LEventHandler)) {
                     DoError(AConnection);
                     LEventHandler->Start(etNull);
@@ -1344,8 +1336,8 @@ namespace Delphi {
             CPollEventHandler *LHandler;
             CPQPollConnection *LResult = nullptr;
 
-            for (int I = 0; I < m_EventHandlers->Count(); ++I) {
-                LHandler = m_EventHandlers->Handlers(I);
+            for (int I = 0; I < m_pEventHandlers->Count(); ++I) {
+                LHandler = m_pEventHandlers->Handlers(I);
                 if (LHandler->EventType() != etIO)
                     continue;
 
@@ -1388,8 +1380,8 @@ namespace Delphi {
             auto LTimer = dynamic_cast<CEPollTimer *> (AHandler->Binding());
             LTimer->Read(&exp, sizeof(uint64_t));
 
-            for (int i = 0; i < m_EventHandlers->Count(); ++i) {
-                LEventHandler = m_EventHandlers->Handlers(i);
+            for (int i = 0; i < m_pEventHandlers->Count(); ++i) {
+                LEventHandler = m_pEventHandlers->Handlers(i);
                 if (LEventHandler->EventType() == etIO) {
                     LConnection = GetConnection(LEventHandler);
                     if (Assigned(LConnection)) {
@@ -1397,7 +1389,7 @@ namespace Delphi {
                         if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->AntiFreeze() >= (CDateTime) 10 / 86400))) {
                             DoError(LConnection);
                             LEventHandler->Start(etNull);
-                            Stop(LEventHandler);
+                            Stop(i);
                         } else if (Status == CONNECTION_OK && LConnection->ConnectionStatus() == qsBusy) {
                             if (Assigned(LConnection->WorkQuery())) {
                                 if (LConnection->CheckResult()) {

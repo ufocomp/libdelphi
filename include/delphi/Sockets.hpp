@@ -1706,7 +1706,7 @@ namespace Delphi {
             int TimeOut() const { return m_TimeOut; };
             void TimeOut(int Value) { m_TimeOut = Value; };
 
-            int Wait(const sigset_t *ASigmask = nullptr);
+            int Wait(const sigset_t *ASigMask = nullptr);
 
             CPollEvent *EventList() { return m_pEventList; };
 
@@ -1750,7 +1750,7 @@ namespace Delphi {
             CPollConnection *m_pBinding;
             bool m_FreeBinding;
 
-            CPollEventHandlers *m_EventHandlers;
+            CPollEventHandlers *m_pEventHandlers;
 
             COnPollEventHandlerEvent m_OnTimerEvent;
             COnPollEventHandlerEvent m_OnTimeOutEvent;
@@ -1759,7 +1759,7 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
 
-            void FreemBinding();
+            void FreeBinding();
 
         protected:
 
@@ -1929,17 +1929,20 @@ namespace Delphi {
 
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
+            bool m_FreeEventHandlers;
             bool m_FreePollStack;
 
             void FreePollStack();
 
-            void CreatePollEventHandlers();
+            void CreateEventHandlers();
+            void FreeEventHandlers();
 
         protected:
 
-            CPollEventHandlers *m_EventHandlers;
+            CPollEventHandlers *m_pEventHandlers;
 
             void SetPollStack(CPollStack *Value);
+            void SetEventHandlers(CPollEventHandlers *Value);
 
             int GetTimeOut();
 
@@ -1963,7 +1966,7 @@ namespace Delphi {
 
             ~CEPoll();
 
-            CPollStack *PollStack() { return m_pPollStack; };
+            CPollStack *PollStack() const { return m_pPollStack; };
             void PollStack(CPollStack *Value) { SetPollStack(Value); };
 
             bool ExternalPollStack() const { return !m_FreePollStack; };
@@ -1975,8 +1978,8 @@ namespace Delphi {
 
             static void CheckHandler(CPollEventHandler *AHandler);
 
-            CPollEventHandlers *EventHandlers() { return m_EventHandlers; }
-            void EventHandlers(CPollEventHandlers *Value) { m_EventHandlers = Value; }
+            CPollEventHandlers *EventHandlers() const { return m_pEventHandlers; }
+            void EventHandlers(CPollEventHandlers *Value) { SetEventHandlers(Value); }
 
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }

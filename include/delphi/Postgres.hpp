@@ -711,7 +711,7 @@ namespace Delphi {
 
             void Start();
 
-            static void Stop(CPollEventHandler *AHandler);
+            void Stop(int Index);
 
             void StopAll();
 

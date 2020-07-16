@@ -2624,7 +2624,7 @@ namespace Delphi {
 
                     LIOHandler->AfterAccept();
 
-                    LEventHandler = m_EventHandlers->Add(LIOHandler->Binding()->Handle());
+                    LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
                     LEventHandler->Binding(LConnection);
                     LEventHandler->Start(etIO);
 

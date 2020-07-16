@@ -3071,7 +3071,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CPollStack::Wait(const sigset_t *ASigmask) {
+        int CPollStack::Wait(const sigset_t *ASigMask) {
             int Result;
 
             if (m_Handle == INVALID_SOCKET)
@@ -3080,10 +3080,10 @@ namespace Delphi {
             if (!Assigned(m_pEventList))
                 m_pEventList = new CPollEvent[m_EventSize];
 
-            if (ASigmask == nullptr)
-                Result = epoll_wait(m_Handle, m_pEventList, (int) m_EventSize, m_TimeOut);
+            if (ASigMask == nullptr)
+                Result = epoll_wait(m_Handle, m_pEventList, m_EventSize, m_TimeOut);
             else
-                Result = epoll_pwait(m_Handle, m_pEventList, (int) m_EventSize, m_TimeOut, ASigmask);
+                Result = epoll_pwait(m_Handle, m_pEventList, m_EventSize, m_TimeOut, ASigMask);
 
             return Result;
         }
@@ -3108,7 +3108,7 @@ namespace Delphi {
             m_EventType = etNull;
             m_pBinding = nullptr;
             m_FreeBinding = false;
-            m_EventHandlers = AEventHandlers;
+            m_pEventHandlers = AEventHandlers;
             m_OnTimeOutEvent = nullptr;
             m_OnConnectEvent = nullptr;
             m_OnReadEvent = nullptr;
@@ -3118,11 +3118,11 @@ namespace Delphi {
 
         CPollEventHandler::~CPollEventHandler() {
             Stop();
-            FreemBinding();
+            FreeBinding();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::FreemBinding() {
+        void CPollEventHandler::FreeBinding() {
             CPollConnection *Temp;
             if (Assigned(m_pBinding)) {
                 Temp = m_pBinding;
@@ -3147,23 +3147,23 @@ namespace Delphi {
                     case etTimer:
                     case etAccept:
                         m_Events = EPOLLIN;
-                        m_EventHandlers->PollAdd(this);
+                        m_pEventHandlers->PollAdd(this);
                         break;
                     case etConnect:
                         m_Events = EPOLLOUT;
-                        m_EventHandlers->PollAdd(this);
+                        m_pEventHandlers->PollAdd(this);
                         break;
                     case etIO:
                         m_Events = EPOLLIN | EPOLLOUT | EPOLLET;
                         if (m_EventType == etNull)
-                            m_EventHandlers->PollAdd(this);
+                            m_pEventHandlers->PollAdd(this);
                         else
-                            m_EventHandlers->PollMod(this);
+                            m_pEventHandlers->PollMod(this);
                         break;
                     case etDelete:
                         m_Events = 0;
                         if (m_EventType != etNull)
-                            m_EventHandlers->PollDel(this);
+                            m_pEventHandlers->PollDel(this);
                         break;
                 }
                 m_EventType = Value;
@@ -3400,34 +3400,54 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CEPoll::CEPoll() {
-            m_EventHandlers = nullptr;
+            m_pEventHandlers = nullptr;
             m_pPollStack = new CPollStack();
+            m_FreeEventHandlers = true;
             m_FreePollStack = true;
             m_OnEventHandlerException = nullptr;
 
-            CreatePollEventHandlers();
+            CreateEventHandlers();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CEPoll::~CEPoll() {
-            FreeAndNil(m_EventHandlers);
             FreePollStack();
+            FreeEventHandlers();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPoll::CreatePollEventHandlers() {
-            m_EventHandlers = new CPollEventHandlers(m_pPollStack);
+        void CEPoll::CreateEventHandlers() {
+            m_pEventHandlers = new CPollEventHandlers(m_pPollStack);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            m_EventHandlers->OnException([this](auto && AHandler, auto && AException) { DoEventHandlersException(AHandler, AException); });
+            m_pEventHandlers->OnException([this](auto && AHandler, auto && AException) { DoEventHandlersException(AHandler, AException); });
 #else
-            m_EventHandlers->OnException(std::bind(&CEPoll::DoEventHandlersException, this, _1, _2));
+            m_pEventHandlers->OnException(std::bind(&CEPoll::DoEventHandlersException, this, _1, _2));
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CEPoll::FreeEventHandlers() {
+            if (m_FreeEventHandlers) {
+                delete m_pEventHandlers;
+            }
+            m_pEventHandlers = nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CEPoll::FreePollStack() {
-            if (m_FreePollStack)
-                FreeAndNil(m_pPollStack);
+            if (m_FreePollStack) {
+                delete m_pPollStack;
+            }
+            m_pPollStack = nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::SetEventHandlers(CPollEventHandlers *Value) {
+            if (m_pEventHandlers != Value) {
+                FreeEventHandlers();
+                m_pEventHandlers = Value;
+                m_FreeEventHandlers = false;
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3435,7 +3455,7 @@ namespace Delphi {
             if (m_pPollStack != Value) {
                 FreePollStack();
                 m_pPollStack = Value;
-                m_EventHandlers->PollStack(Value);
+                m_pEventHandlers->PollStack(Value);
                 m_FreePollStack = false;
             }
         }
@@ -3478,8 +3498,8 @@ namespace Delphi {
 
                 if (m_pPollStack->TimeOut() != INFINITE) {
 
-                    for (int I = 0; I < m_EventHandlers->Count(); ++I) {
-                        LHandler = m_EventHandlers->Handlers(I);
+                    for (int I = 0; I < m_pEventHandlers->Count(); ++I) {
+                        LHandler = m_pEventHandlers->Handlers(I);
                         if (LHandler->EventType() == etIO) {
                             if (LHandler->OnTimeOutEvent() != nullptr) {
                                 LHandler->DoTimeOutEvent();
@@ -3690,7 +3710,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CAsyncServer::~CAsyncServer() {
-            SetActiveLevel(alShutDown);
             FreeAndNil(m_pCommandHandlers);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3734,16 +3753,17 @@ namespace Delphi {
                         InitializeBindings();
 
                     for (int i = 0; i < Bindings()->Count(); ++i) {
-                        if (AValue >= alBinding && !Bindings()->Handles(i)->HandleAllocated()) {
-                            Bindings()->Handles(i)->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
-                            Bindings()->Handles(i)->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+                        auto SocketHandle = Bindings()->Handles(i);
+                        if (AValue >= alBinding && !SocketHandle->HandleAllocated()) {
+                            SocketHandle->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
+                            SocketHandle->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
-                            Bindings()->Handles(i)->Bind();
-                            Bindings()->Handles(i)->Listen(SOMAXCONN);
+                            SocketHandle->Bind();
+                            SocketHandle->Listen(SOMAXCONN);
                         }
 
                         if (AValue == alActive) {
-                            LEventHandler = m_EventHandlers->Add(Bindings()->Handles(i)->Handle());
+                            LEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
                             LEventHandler->Start(etAccept);
                         }
                     }
@@ -3751,7 +3771,7 @@ namespace Delphi {
                 } else {
 
                     if (AValue <= alBinding) {
-                        m_EventHandlers->Clear();
+                        m_pEventHandlers->Clear();
                         CloseAllConnection();
                     }
 
@@ -3759,7 +3779,6 @@ namespace Delphi {
                         for (int i = 0; i < Bindings()->Count(); ++i) {
                             Bindings()->Handles(i)->CloseSocket();
                         }
-
                         FreeIOHandler();
                     }
                 }
@@ -3847,7 +3866,7 @@ namespace Delphi {
                         ConnectStart();
 
                 } else {
-                    m_EventHandlers->Clear();
+                    m_pEventHandlers->Clear();
                     CloseAllConnection();
                 }
 
@@ -3864,7 +3883,7 @@ namespace Delphi {
             LIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
             LIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
-            auto LEventHandler = m_EventHandlers->Add(LIOHandler->Binding()->Handle());
+            auto LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
 
             if (ExternalPollStack()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -3971,7 +3990,7 @@ namespace Delphi {
 
                     LIOHandler->AfterAccept();
 
-                    LEventHandler = m_EventHandlers->Add(LIOHandler->Binding()->Handle());
+                    LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
                     LEventHandler->Binding(LConnection);
                     LEventHandler->Start(etIO);
 
