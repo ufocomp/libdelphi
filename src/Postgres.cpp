@@ -1164,8 +1164,8 @@ namespace Delphi {
 
         void CPQConnectPoll::SetTimerInterval(int Value) {
             if (m_TimerInterval != Value) {
-                UpdateTimer();
                 m_TimerInterval = Value;
+                UpdateTimer();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
