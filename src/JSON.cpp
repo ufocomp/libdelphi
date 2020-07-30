@@ -1944,7 +1944,6 @@ namespace Delphi {
                         m_State = value_string;
                         return -1;
                     } if (IsCharacter(AInput)) {
-                        CurrentValue().Data().Append(AInput);
                         m_State = value_string_end;
                         return -1;
                     } else if (IsWS(AInput)) {
