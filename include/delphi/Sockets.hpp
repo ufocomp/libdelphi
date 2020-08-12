@@ -33,8 +33,10 @@ Author:
 //#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#ifdef WITH_SSL
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#endif
 //----------------------------------------------------------------------------------------------------------------------
 
 #ifndef INT_LF
@@ -130,17 +132,19 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+#ifdef WITH_SSL
         enum CSSLMethod { sslNotUsed = -1, sslClient = 0, sslServer };
         //--------------------------------------------------------------------------------------------------------------
-
+#endif
         class LIB_DELPHI CStack {
         private:
 
             TCHAR m_szBuffer[1024] = {0};
 
             int m_LastError;
+#ifdef WITH_SSL
             unsigned long m_SSLError;
-
+#endif
         public:
 
             CStack();
@@ -152,7 +156,7 @@ namespace Delphi {
             inline static void DeleteSocket() { delete GStack; };
 
             CSocket CreateSocketHandle(int ASocketType, int AProtocol = IPPROTO_IP, int AFlag = 0);
-
+#ifdef WITH_SSL
             static void SSLInit();
             static SSL *SSLNew(CSSLMethod AMethod = sslClient);
             static void SSLFree(SSL *ssl);
@@ -171,12 +175,19 @@ namespace Delphi {
             bool CheckForSSLError(ssize_t AResult);
             bool CheckForSSLError(ssize_t AResult, unsigned long const AIgnore[], int ACount);
 
-            virtual bool CheckForSocketError(ssize_t AResult, CErrorGroup AErrGroup);
+            static ssize_t RecvPacket(SSL *ssl, void *ABuffer, size_t ABufferSize);
+            static ssize_t SendPacket(SSL * ssl, void *ABuffer, size_t ABufferSize);
 
-            virtual bool CheckForSocketError(ssize_t AResult, int const AIgnore[], int ACount, CErrorGroup AErrGroup);
+            void RaiseSSLError();
+
+            int SSLError() const { return m_SSLError; }
+#endif
+            int LastError() const { return m_LastError; }
 
             static void RaiseSocketError(int AErr);
-            void RaiseSSLError();
+
+            virtual bool CheckForSocketError(ssize_t AResult, CErrorGroup AErrGroup);
+            virtual bool CheckForSocketError(ssize_t AResult, int const AIgnore[], int ACount, CErrorGroup AErrGroup);
 
             virtual CSocket Accept(CSocket ASocket, char *VIP, size_t ASize, unsigned short *VPort, unsigned int AFlags);
 
@@ -196,7 +207,6 @@ namespace Delphi {
 
             virtual uint32_t NToHL(uint32_t ANetLong);
 
-            static ssize_t RecvPacket(SSL *ssl, void *ABuffer, size_t ABufferSize);
             virtual ssize_t Recv(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags);
 
             virtual ssize_t RecvFrom(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags, char *VIP,
@@ -204,7 +214,6 @@ namespace Delphi {
 
             virtual CSocket Select(CList *ARead, CList *AWrite, CList *AErrors, int ATimeout);
 
-            static ssize_t SendPacket(SSL * ssl, void *ABuffer, size_t ABufferSize);
             virtual ssize_t Send(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags);
 
             virtual ssize_t SendTo(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags, LPCSTR AIP,
@@ -240,8 +249,6 @@ namespace Delphi {
 
             virtual void SetNonBloking(CSocket ASocket);
 
-            int LastError() const { return m_LastError; }
-            int SSLError() const { return m_SSLError; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -359,15 +366,15 @@ namespace Delphi {
         private:
 
             CSocket m_Handle;
-
+#ifdef WITH_SSL
             SSL *m_pSSL;
 
+            CSSLMethod m_SSLMethod;
+#endif
             int m_SocketType;
 
             bool m_HandleAllocated;
             bool m_Nonblocking;
-
-            CSSLMethod m_SSLMethod;
 
             char m_IP[NI_MAXIP];
             char m_PeerIP[NI_MAXIP];
@@ -396,9 +403,11 @@ namespace Delphi {
             static int GetLastError();
 
         public:
-
+#ifdef WITH_SSL
             explicit CSocketHandle(CCollection *ACollection, CSSLMethod ASSLMethod = sslNotUsed);
-
+#else
+            explicit CSocketHandle(CCollection *ACollection);
+#endif
             ~CSocketHandle() override;
 
             bool Accept(CSocket ASocket, int AFlag);
@@ -458,10 +467,10 @@ namespace Delphi {
             bool Nonblocking() const { return m_Nonblocking; }
 
             CSocket Handle() const { return m_Handle; }
-
+#ifdef WITH_SSL
             bool UsedSSL() const { return m_SSLMethod != sslNotUsed; }
             CSSLMethod SSLMethod() const { return m_SSLMethod; }
-
+#endif
             char *IP() { return m_IP; }
             void IP(LPCSTR Value) { SetIP(Value); }
 
@@ -496,9 +505,9 @@ namespace Delphi {
             CString m_DefaultIP;
 
             unsigned short m_DefaultPort;
-
+#ifdef WITH_SSL
             CSSLMethod m_SSLMethod;
-
+#endif
             CSocketHandle *GetItem(int Index) override;
             void SetItem(int Index, CSocketHandle *Value);
 
@@ -520,10 +529,10 @@ namespace Delphi {
 
             unsigned short DefaultPort() const { return m_DefaultPort; }
             void DefaultPort(unsigned short Value) { m_DefaultPort = Value; }
-
+#ifdef WITH_SSL
             CSSLMethod SSLMethod() const { return m_SSLMethod; }
             void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
-
+#endif
             CSocketHandle *operator[] (int Index) override { return Handles(Index); };
         };
 
@@ -546,14 +555,16 @@ namespace Delphi {
             virtual ~CIOHandler() { CIOHandler::Close(); };
 
             virtual void AfterAccept() {};
-
+#ifdef WITH_SSL
             virtual void Open(CSSLMethod SSLMethod) abstract;
 
-            virtual void Close() {};
+            virtual CSSLMethod SSLMethod() const abstract;
 
             virtual bool UsedSSL() const abstract;
-
-            virtual CSSLMethod SSLMethod() const abstract;
+#else
+            virtual void Open() abstract;
+#endif
+            virtual void Close() {};
 
             virtual bool Connected() abstract;
 
@@ -581,14 +592,16 @@ namespace Delphi {
             CIOHandlerSocket();
 
             ~CIOHandlerSocket() override;
-
+#ifdef WITH_SSL
             void Open(CSSLMethod SSLMethod) override;
-
-            void Close() override;
 
             bool UsedSSL() const override;
 
             CSSLMethod SSLMethod() const override;
+#else
+            void Open() override;
+#endif
+            void Close() override;
 
             bool Connected() override;
 
@@ -1134,9 +1147,11 @@ namespace Delphi {
             int m_Attempts;
 
         public:
-
+#ifdef WITH_SSL
             CClientIOHandler(CSSLMethod AMethod = sslNotUsed);
-
+#else
+            CClientIOHandler();
+#endif
             ~CClientIOHandler() override;
 
             bool Connect(LPCSTR AHost, unsigned short APort);
@@ -2113,9 +2128,9 @@ namespace Delphi {
             bool m_AutoConnect;
 
             bool m_Active;
-
+#ifdef WITH_SSL
             bool m_UsedSSL;
-
+#endif
             CStringList m_Data;
 
             void SetActive(bool AValue);
@@ -2145,10 +2160,10 @@ namespace Delphi {
 
             bool AutoConnect() const { return m_AutoConnect; }
             void AutoConnect(bool Value) { m_AutoConnect = Value; }
-
+#ifdef WITH_SSL
             bool UsedSSL() const { return m_UsedSSL; }
             void UsedSSL(bool Value) { m_UsedSSL = Value; }
-
+#endif
             CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
             void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
