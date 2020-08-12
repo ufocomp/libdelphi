@@ -71,20 +71,27 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void PQResultToJson(CPQResult *Result, CString &Json, bool IsArray) {
+        void PQResultToJson(CPQResult *Result, CString &Json, bool DataArray, const CString &ObjectName) {
+
             LPCSTR Value = nullptr;
             Oid Type;
 
-            IsArray = IsArray || Result->nTuples() > 1;
+            const auto ResultObject = !ObjectName.IsEmpty();
+
+            DataArray = ResultObject || DataArray || Result->nTuples() > 1;
+
+            const auto EmptyData = DataArray ? _T("[]") : _T("{}");
 
             if (Result->nTuples() == 0) {
-                Json = IsArray ? _T("[]") : _T("{}");
+                Json = ResultObject ? CString().Format("{\"%s\": %s}", ObjectName.c_str(), EmptyData) : EmptyData;
                 return;
             }
 
-            if (IsArray) {
-                Json = "[";
-            }
+            if (ResultObject)
+                Json.Format("{\"%s\": ", ObjectName.c_str());
+
+            if (DataArray)
+                Json += _T("[");
 
             for (int Row = 0; Row < Result->nTuples(); ++Row) {
                 if (Row > 0) {
@@ -128,8 +135,12 @@ namespace Delphi {
                 Json += "}";
             }
 
-            if (IsArray) {
+            if (DataArray) {
                 Json += "]";
+            }
+
+            if (ResultObject) {
+                Json += "}";
             }
         }
 
