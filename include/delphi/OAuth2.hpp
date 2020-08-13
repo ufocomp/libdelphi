@@ -292,6 +292,13 @@ namespace Delphi {
 
                 return Result;
             }
+
+            inline CString GetSecret(const CProvider &Provider, const CString &Application) {
+                const auto &Secret = Provider.Secret(Application);
+                if (Secret.IsEmpty())
+                    throw COAuth2Error("Not found Secret for \"%s:%s\"", Provider.Name.c_str(), Application.c_str());
+                return Secret;
+            };
         }
     }
 }

@@ -2013,11 +2013,12 @@ namespace Delphi {
                     return false;
 
                 case Reply::content_checking_data:
-                    if (AInput == '\r') {
+                    if (AInput == '\r' && Context.ChunkedLength == 0) {
                         Context.State = Reply::content_checking_length;
                         return -1;
                     }
 
+                    Context.ChunkedLength--;
                     AReply->Content.Append(AInput);
                     return -1;
 

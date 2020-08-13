@@ -1295,7 +1295,7 @@ namespace Delphi {
 
             ~CHTTPClient() override = default;
 
-            const COnHTTPClientRequestEvent &OnRequest() { return m_OnRequest; }
+            const COnHTTPClientRequestEvent &OnRequest() const { return m_OnRequest; }
             void OnRequest(COnHTTPClientRequestEvent && Value) { m_OnRequest = Value; }
 
         };
