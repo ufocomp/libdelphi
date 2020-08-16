@@ -528,9 +528,8 @@ namespace Delphi {
             struct hostent *host = nullptr;
             struct in_addr addr = {};
 
-            if (isalpha((int) AName[0])) {
-                host = ::gethostbyname(AName);
-            } else {
+            host = ::gethostbyname(AName);
+            if (host == nullptr) {
                 addr.s_addr = inet_addr(AName);
                 if (addr.s_addr != INADDR_NONE)
                     host = ::gethostbyaddr((char *) &addr, 4, AF_INET);
