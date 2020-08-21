@@ -177,6 +177,8 @@ namespace Delphi {
             CString m_IP;
             CString m_Agent;
 
+            int m_UpdateCount;
+
             void AddToConnection(CHTTPServerConnection *AConnection);
             void DeleteFromConnection(CHTTPServerConnection *AConnection);
 
@@ -187,6 +189,11 @@ namespace Delphi {
             ~CSession() override;
 
             void SwitchConnection(CHTTPServerConnection *AConnection);
+
+            void BeginUpdate() { m_UpdateCount++; }
+            void EndUpdate() { m_UpdateCount--; }
+
+            int UpdateCount() const { return m_UpdateCount; }
 
             CHTTPServerConnection *Connection() { return m_pConnection; };
 
@@ -232,9 +239,7 @@ namespace Delphi {
 
         public:
 
-            CSessionManager(): CCollection(this) {
-
-            }
+            CSessionManager();
 
             CSession *Add(CHTTPServerConnection *AConnection);
 

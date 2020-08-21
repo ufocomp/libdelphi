@@ -24,6 +24,8 @@ Author:
 #include "delphi.hpp"
 #include "delphi/JSON.hpp"
 
+#define JSON_INVALID_VALUE_TYPE "Invalid JSON value type."
+
 extern "C++" {
 
 namespace Delphi {
@@ -63,29 +65,31 @@ namespace Delphi {
             CString Result;
             size_t Index = 0;
 
-            TCHAR ch = String.at(Index);
-            while (ch != 0) {
-                if (ch == '\\') {
-                    ch = String.at(++Index);
-                    switch (ch) {
-                        case 'r':
-                            Result.Append('\r');
-                            break;
-                        case 'n':
-                            Result.Append('\n');
-                            break;
-                        case 't':
-                            Result.Append('\t');
-                            break;
-                        default:
-                            Result.Append(ch);
-                            break;
+            if (!String.IsEmpty()) {
+                TCHAR ch = String.at(Index);
+                while (ch != 0) {
+                    if (ch == '\\') {
+                        ch = String.at(++Index);
+                        switch (ch) {
+                            case 'r':
+                                Result.Append('\r');
+                                break;
+                            case 'n':
+                                Result.Append('\n');
+                                break;
+                            case 't':
+                                Result.Append('\t');
+                                break;
+                            default:
+                                Result.Append(ch);
+                                break;
+                        }
+                    } else {
+                        Result.Append(ch);
                     }
-                } else {
-                    Result.Append(ch);
-                }
 
-                ch = String.at(++Index);
+                    ch = String.at(++Index);
+                }
             }
 
             return Result;
@@ -407,31 +411,43 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSON::operator[](int Index) {
+            if (m_ValueType != jvtArray)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
             return Array()[Index];
         }
         //--------------------------------------------------------------------------------------------------------------
 
         const CJSONValue &CJSON::operator[](int Index) const {
+            if (m_ValueType != jvtArray)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
             return Array()[Index];
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CJSONValue &CJSON::operator[](CJSON::reference String) {
-            return Object().Values(String);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CJSONValue &CJSON::operator[](const CString &String) const {
-            return Object().Values(String);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CJSONValue &CJSON::operator[](const CString &String) {
+            if (m_ValueType != jvtObject)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
             return Object().Values(String);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         const CJSONValue &CJSON::operator[](CJSON::reference String) const {
+            if (m_ValueType != jvtObject)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
+            return Object().Values(String);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        const CJSONValue &CJSON::operator[](const CString &String) const {
+            if (m_ValueType != jvtObject)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
+            return Object().Values(String);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CJSONValue &CJSON::operator[](const CString &String) {
+            if (m_ValueType != jvtObject)
+                throw ExceptionFrm(JSON_INVALID_VALUE_TYPE);
             return Object().Values(String);
         }
 

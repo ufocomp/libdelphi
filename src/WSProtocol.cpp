@@ -73,7 +73,8 @@ namespace Delphi {
             if (String.Size() > 0) {
                 CJSON Json(String);
 
-                const auto type = Json["t"].AsInteger();
+                const auto &Type = Json["t"].AsString();
+                const auto type = Type.IsEmpty() ? -1 : StrToIntDef(Type.c_str(), -1);
 
                 switch (type) {
                     case 0:
@@ -113,6 +114,7 @@ namespace Delphi {
 
         void CWSProtocol::Response(const CWSMessage &Message, CString &String) {
 
+            const auto& UniqueId = Message.UniqueId.IsEmpty() ? GetUID(42) : Message.UniqueId;
             const auto& Payload = Message.Payload.ToString();
             const size_t Size = Message.Size() + Payload.Size();
 
@@ -121,21 +123,21 @@ namespace Delphi {
             switch (Message.MessageTypeId) {
                 case mtOpen:
                     String.Format(R"({"t":0,"u":"%s","p":%s})",
-                                  Message.UniqueId.c_str(),
+                                  UniqueId.c_str(),
                                   Payload.IsEmpty() ? "{}" : Payload.c_str()
                     );
                     break;
 
                 case mtClose:
                     String.Format(R"({"t":1,"u":"%s","p":%s})",
-                                  Message.UniqueId.c_str(),
+                                  UniqueId.c_str(),
                                   Payload.IsEmpty() ? "{}" : Payload.c_str()
                     );
                     break;
 
                 case mtCall:
                     String.Format(R"({"t":2,"u":"%s","a":"%s","p":%s})",
-                                  Message.UniqueId.c_str(),
+                                  UniqueId.c_str(),
                                   Message.Action.c_str(),
                                   Payload.IsEmpty() ? "{}" : Payload.c_str()
                     );
@@ -143,14 +145,14 @@ namespace Delphi {
 
                 case mtCallResult:
                     String.Format(R"({"t":3,"u":"%s","p":%s})",
-                                  Message.UniqueId.c_str(),
+                                  UniqueId.c_str(),
                                   Payload.IsEmpty() ? "{}" : Payload.c_str()
                     );
                     break;
 
                 case mtCallError:
                     String.Format(R"({"t":4,"u":"%s","c":%d,"m":"%s"})",
-                                  Message.UniqueId.c_str(),
+                                  UniqueId.c_str(),
                                   Message.ErrorCode,
                                   Message.ErrorMessage.c_str()
                     );
@@ -272,6 +274,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSession::CSession(CHTTPServerConnection *AConnection, CSessionManager *AManager) : CCollectionItem(AManager) {
+            m_UpdateCount = 0;
             m_pConnection = AConnection;
             m_pMessages = new CMessageManager(this);
             AddToConnection(AConnection);
@@ -309,10 +312,12 @@ namespace Delphi {
 
         void CSession::SwitchConnection(CHTTPServerConnection *AConnection) {
             if (m_pConnection != AConnection) {
-                DeleteFromConnection(m_pConnection);
+                BeginUpdate();
                 m_pConnection->Disconnect();
+                DeleteFromConnection(m_pConnection);
                 m_pConnection = AConnection;
                 AddToConnection(m_pConnection);
+                EndUpdate();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -337,6 +342,11 @@ namespace Delphi {
 
         //-- CSessionManager -------------------------------------------------------------------------------------------
 
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSessionManager::CSessionManager() : CCollection(this) {
+
+        }
         //--------------------------------------------------------------------------------------------------------------
 
         CSession *CSessionManager::Get(int Index) {
@@ -388,7 +398,6 @@ namespace Delphi {
 
             return nullptr;
         }
-        
     }
 }
 }
