@@ -382,7 +382,7 @@ namespace Delphi {
             CSession *Session;
             for (int I = 0; I < Count(); ++I) {
                 Session = Get(I);
-                if (Session->Connection() == Value)
+                if (Session != nullptr && Session->Connection() == Value)
                     return Session;
             }
 
