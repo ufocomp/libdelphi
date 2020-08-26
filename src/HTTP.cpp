@@ -1171,7 +1171,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream *AStream) {
-            if (ARequest->Size() == 0) {
+            if (ARequest->Size() == ARequest->Payload()->Size()) {
+                if (ARequest->Size() != 0)
+                    ARequest->Clear();
                 ARequest->LoadFromStream(AStream);
             } else {
                 ARequest->PayloadFromStream(AStream);
