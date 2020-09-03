@@ -1341,7 +1341,7 @@ namespace Delphi {
 
             CHTTPClientItem* Add(LPCTSTR AHost, unsigned short APort);
 
-            void Shrink();
+            void CleanUp();
 
             CHTTPClientItem *Items(int Index) const override { return (CHTTPClientItem *) inherited::Items(Index); };
 

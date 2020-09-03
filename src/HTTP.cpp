@@ -2898,7 +2898,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPClientManager::Shrink() {
+        void CHTTPClientManager::CleanUp() {
             for (int i = Count() - 1; i >= 0; i--) {
                auto Item = GetItem(i);
                if (Item->Active() && Item->ConnectionCount() == 0)
