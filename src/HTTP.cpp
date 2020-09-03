@@ -2984,8 +2984,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPClientItem *CHTTPProxyManager::GetItem(int Index) const {
-            return (CHTTPClientItem *) inherited::GetItem(Index);
+        CHTTPProxy *CHTTPProxyManager::GetItem(int Index) const {
+            return (CHTTPProxy *) inherited::GetItem(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 

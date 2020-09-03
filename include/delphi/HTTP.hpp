@@ -1327,7 +1327,7 @@ namespace Delphi {
         class CHTTPClientManager: public CCollection {
             typedef CCollection inherited;
 
-        private:
+        protected:
 
             CHTTPClientItem *GetItem(int Index) const override;
 
@@ -1339,13 +1339,14 @@ namespace Delphi {
 
             ~CHTTPClientManager() override = default;
 
-            CHTTPClientItem* Add(LPCTSTR AHost, unsigned short APort);
+            CHTTPClientItem *Add(LPCTSTR AHost, unsigned short APort);
 
             void CleanUp();
 
-            CHTTPClientItem *Items(int Index) const override { return (CHTTPClientItem *) inherited::Items(Index); };
+            CHTTPClientItem *Items(int Index) const override { return GetItem(Index); };
 
             CHTTPClientItem *operator[] (int Index) const override { return Items(Index); };
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1392,11 +1393,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPProxyManager: public CHTTPClientManager {
-            typedef CCollection inherited;
+            typedef CHTTPClientManager inherited;
 
-        private:
+        protected:
 
-            CHTTPClientItem *GetItem(int Index) const override;
+            CHTTPProxy *GetItem(int Index) const override;
 
         public:
 
@@ -1406,8 +1407,11 @@ namespace Delphi {
 
             ~CHTTPProxyManager() override = default;
 
-            CHTTPProxy* Add(CHTTPServerConnection *AConnection);
+            CHTTPProxy *Add(CHTTPServerConnection *AConnection);
 
+            CHTTPProxy *Items(int Index) const override { return GetItem(Index); };
+
+            CHTTPProxy *operator[] (int Index) const override { return Items(Index); };
         };
 
     }
