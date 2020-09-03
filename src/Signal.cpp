@@ -75,7 +75,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSignal *CSignals::Get(int Index) {
+        CSignal *CSignals::Get(int Index) const {
             if ((Index < 0) || (Index >= Count()))
                 throw ExceptionFrm(SListIndexError, Index);
 

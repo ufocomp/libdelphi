@@ -508,7 +508,7 @@ namespace Delphi {
 #ifdef WITH_SSL
             CSSLMethod m_SSLMethod;
 #endif
-            CSocketHandle *GetItem(int Index) override;
+            CSocketHandle *GetItem(int Index) const override;
             void SetItem(int Index, CSocketHandle *Value);
 
         public:
@@ -521,7 +521,7 @@ namespace Delphi {
 
             CSocketHandle *BindingByHandle(CSocket AHandle);
 
-            CSocketHandle *Handles(int Index) { return GetItem(Index); }
+            CSocketHandle *Handles(int Index) const { return GetItem(Index); }
             void Handles(int Index, CSocketHandle *Value) { SetItem(Index, Value); }
 
             CString& DefaultIP() { return m_DefaultIP; }
@@ -533,7 +533,7 @@ namespace Delphi {
             CSSLMethod SSLMethod() const { return m_SSLMethod; }
             void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
 #endif
-            CSocketHandle *operator[] (int Index) override { return Handles(Index); };
+            CSocketHandle *operator[] (int Index) const override { return Handles(Index); };
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -650,6 +650,8 @@ namespace Delphi {
 
         protected:
 
+            bool m_AutoFree;
+
             void ClosePoll();
 
             void SetEventHandler(CPollEventHandler *AValue);
@@ -665,6 +667,9 @@ namespace Delphi {
             void EventHandler(CPollEventHandler *Value) { SetEventHandler(Value); }
 
             virtual void Disconnect() abstract;
+
+            bool AutoFree() const { return m_AutoFree; }
+            void AutoFree(bool Value) { m_AutoFree = Value; }
 
         }; // CPollConnection
 
@@ -981,6 +986,8 @@ namespace Delphi {
 
             unsigned short m_Port;
 
+            int m_ConnectionCount;
+
         public:
 
             CSocketClient();
@@ -995,6 +1002,11 @@ namespace Delphi {
 
             unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
+
+            int ConnectionCount() const { return m_ConnectionCount; }
+
+            void IncConnection() { m_ConnectionCount++; }
+            void DecConnection() { m_ConnectionCount--; }
 
         };
 
@@ -1534,7 +1546,7 @@ namespace Delphi {
 
         protected:
 
-            CCommandHandler *GetItem(int AIndex) override;
+            CCommandHandler *GetItem(int AIndex) const override;
 
             void SetItem(int AIndex, const CCommandHandler *AValue);
 
@@ -1560,10 +1572,10 @@ namespace Delphi {
             bool DisconnectDefault() const { return m_DisconnectDefault; }
             void DisconnectDefault(bool Value) { m_DisconnectDefault = Value; }
 
-            CCommandHandler *Commands(int Index) { return GetItem(Index); }
+            CCommandHandler *Commands(int Index) const { return GetItem(Index); }
             void Commands(int Index, CCommandHandler *Value) { SetItem(Index, Value); }
 
-            CCommandHandler *operator[] (int Index) override { return Commands(Index); };
+            CCommandHandler *operator[] (int Index) const override { return Commands(Index); };
 
         }; // CCommandHandlers
 
@@ -1746,6 +1758,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CEPoll;
+        class LIB_DELPHI CEPollClient;
         class LIB_DELPHI CPollEventHandlers;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1763,7 +1776,6 @@ namespace Delphi {
             CPollEventType m_EventType;
 
             CPollConnection *m_pBinding;
-            bool m_FreeBinding;
 
             CPollEventHandlers *m_pEventHandlers;
 
@@ -1774,13 +1786,13 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
 
-            void FreeBinding();
+            void ClearBinding();
 
         protected:
 
             void SetEventType(CPollEventType Value);
 
-            void SetBinding(CPollConnection *Value, bool AFree);
+            void SetBinding(CPollConnection *Value);
 
             void DoTimerEvent();
             void DoTimeOutEvent();
@@ -1800,7 +1812,7 @@ namespace Delphi {
             uint32_t Events() const { return m_Events; }
 
             CPollConnection *Binding() { return m_pBinding; }
-            void Binding(CPollConnection *Value, bool AFree = false) { SetBinding(Value, AFree); }
+            void Binding(CPollConnection *Value) { SetBinding(Value); }
 
             void Start(CPollEventType AEventType = etIO);
             void Stop();
@@ -1850,7 +1862,7 @@ namespace Delphi {
 
         protected:
 
-            CPollEventHandler *GetItem(int AIndex) override;
+            CPollEventHandler *GetItem(int AIndex) const override;
             void SetItem(int AIndex, CPollEventHandler *AValue);
 
             void PollAdd(CPollEventHandler *AHandler);
@@ -1870,10 +1882,10 @@ namespace Delphi {
 
             CPollEventHandler *FindHandlerBySocket(CSocket ASocket);
 
-            CPollEventHandler *Handlers(int Index) { return GetItem(Index); }
+            CPollEventHandler *Handlers(int Index) const { return GetItem(Index); }
             void Handlers(int Index, CPollEventHandler *Value) { SetItem(Index, Value); }
 
-            CPollEventHandler *operator[] (int Index) override { return Handlers(Index); };
+            CPollEventHandler *operator[] (int Index) const override { return Handlers(Index); };
 
             const COnPollEventHandlerExceptionEvent& OnException() { return m_OnException; }
             void OnException(COnPollEventHandlerExceptionEvent && Value) { m_OnException = Value; }
@@ -2126,7 +2138,6 @@ namespace Delphi {
         protected:
 
             bool m_AutoConnect;
-
             bool m_Active;
 #ifdef WITH_SSL
             bool m_UsedSSL;
@@ -2181,7 +2192,7 @@ namespace Delphi {
         class CTCPAsyncServer: public CAsyncServer {
         protected:
 
-            CTCPServerConnection *GetConnection(int AIndex);
+            CTCPServerConnection *GetConnection(int AIndex) const;
             void SetConnection(int AIndex, CTCPServerConnection *AValue);
 
             void DoAccept(CPollEventHandler *AHandler) override;
@@ -2192,10 +2203,10 @@ namespace Delphi {
 
             ~CTCPAsyncServer() override = default;
 
-            CTCPServerConnection *Connections(int Index) { return GetConnection(Index); }
+            CTCPServerConnection *Connections(int Index) const { return GetConnection(Index); }
             void Connections(int Index, CTCPServerConnection *Value) { SetConnection(Index, Value); }
 
-            CTCPServerConnection *operator[] (int Index) override { return Connections(Index); };
+            CTCPServerConnection *operator[] (int Index) const override { return Connections(Index); };
 
         };
 

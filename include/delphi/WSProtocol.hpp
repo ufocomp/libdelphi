@@ -130,7 +130,7 @@ namespace Delphi {
 
             CSession *m_pSession;
 
-            CMessageHandler *Get(int Index);
+            CMessageHandler *Get(int Index) const;
             void Set(int Index, CMessageHandler *Value);
 
         public:
@@ -146,10 +146,10 @@ namespace Delphi {
 
             CMessageHandler *FindMessageById(const CString &Value);
 
-            CMessageHandler *Handlers(int Index) { return Get(Index); }
+            CMessageHandler *Handlers(int Index) const { return Get(Index); }
             void Handlers(int Index, CMessageHandler *Value) { Set(Index, Value); }
 
-            CMessageHandler *operator[] (int Index) override { return Handlers(Index); };
+            CMessageHandler *operator[] (int Index) const override { return Handlers(Index); };
 
         };
 
@@ -234,7 +234,7 @@ namespace Delphi {
 
         private:
 
-            CSession *Get(int Index);
+            CSession *Get(int Index) const;
             void Set(int Index, CSession *Value);
 
         public:
@@ -250,10 +250,10 @@ namespace Delphi {
             CSession *FindByIdentity(const CString &Value);
             CSession *FindByConnection(CHTTPServerConnection *Value);
 
-            CSession *Sessions(int Index) { return Get(Index); }
+            CSession *Sessions(int Index) const { return Get(Index); }
             void Sessions(int Index, CSession *Value) { Set(Index, Value); }
 
-            CSession *operator[] (int Index) override { return Sessions(Index); };
+            CSession *operator[] (int Index) const override { return Sessions(Index); };
 
         };
 

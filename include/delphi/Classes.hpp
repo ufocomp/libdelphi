@@ -227,7 +227,7 @@ namespace Delphi {
 
         protected:
 
-            Pointer Get(int Index);
+            Pointer Get(int Index) const;
             void Put(int Index, Pointer Item);
 
             virtual void Grow();
@@ -282,10 +282,10 @@ namespace Delphi {
 
             PPointerList GetList() { return m_pList; }
 
-            Pointer Items(int Index) { return Get(Index); }
+            Pointer Items(int Index) const { return Get(Index); }
             void Items(int Index, Pointer Value) { Put(Index, Value); }
 
-            Pointer operator[](int Index) { return Get(Index); }
+            Pointer operator[](int Index) const { return Get(Index); }
 
         }; // CList
 
@@ -362,7 +362,7 @@ namespace Delphi {
             int GetAttrCount();
             void Changed();
 
-            virtual CCollectionItem *GetItem(int Index);
+            virtual CCollectionItem *GetItem(int Index) const;
             virtual void SetItem(int Index, CCollectionItem *Value);
 
             virtual void SetItemName(CCollectionItem *Item);
@@ -389,10 +389,10 @@ namespace Delphi {
 
             int Count() const { return GetCount(); };
 
-            virtual CCollectionItem *Items(int Index) { return GetItem(Index); }
+            virtual CCollectionItem *Items(int Index) const { return GetItem(Index); }
             virtual void Items(int Index, CCollectionItem *Value) { SetItem(Index, Value); }
 
-            virtual CCollectionItem *operator[] (int Index) { return Items(Index); };
+            virtual CCollectionItem *operator[] (int Index) const { return Items(Index); };
 
         }; // CCollection
 
@@ -1537,13 +1537,12 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CQueue: public CCollection
-        {
+        class LIB_DELPHI CQueue: public CCollection {
             typedef CCollection inherited;
 
         protected:
 
-            CQueueItem *GetItem(int Index) override;
+            CQueueItem *GetItem(int Index) const override;
             void SetItem(int Index, const CQueueItem *Item);
 
         public:
@@ -1565,10 +1564,10 @@ namespace Delphi {
             Pointer FirstItem(Pointer Queue);
             Pointer LastItem(Pointer Queue);
 
-            CQueueItem *Items(int Index) override { return GetItem(Index); }
+            CQueueItem *Items(int Index) const override { return GetItem(Index); }
             void Items(int Index, CQueueItem *Value) { SetItem(Index, Value); }
 
-            CQueueItem *operator [] (int Index) override { return GetItem(Index); };
+            CQueueItem *operator [] (int Index) const override { return GetItem(Index); };
         };
 
         //--------------------------------------------------------------------------------------------------------------

@@ -1141,7 +1141,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketHandle *CSocketHandles::GetItem(int Index) {
+        CSocketHandle *CSocketHandles::GetItem(int Index) const {
             return (CSocketHandle *) inherited::GetItem(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1272,6 +1272,7 @@ namespace Delphi {
                 CCollectionItem(AManager) {
             m_pEventHandler = nullptr;
             m_pOwner = AOwner;
+            m_AutoFree = false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2013,10 +2014,14 @@ namespace Delphi {
         CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient):
                 CTCPConnection(AClient) {
             m_pClient = AClient;
+            if (Assigned(m_pClient))
+                m_pClient->IncConnection();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CTCPClientConnection::~CTCPClientConnection() {
+            if (Assigned(m_pClient))
+                m_pClient->DecConnection();
             m_pClient = nullptr;
         }
 
@@ -2236,6 +2241,7 @@ namespace Delphi {
 
         CSocketClient::CSocketClient(): CSocketComponent() {
             m_Port = 0;
+            m_ConnectionCount = 0;
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2754,7 +2760,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CCommandHandler *CCommandHandlers::GetItem(int AIndex) {
+        CCommandHandler *CCommandHandlers::GetItem(int AIndex) const {
             return (CCommandHandler *) inherited::GetItem(AIndex);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3169,7 +3175,6 @@ namespace Delphi {
             m_Events = 0;
             m_EventType = etNull;
             m_pBinding = nullptr;
-            m_FreeBinding = false;
             m_pEventHandlers = AEventHandlers;
             m_OnTimeOutEvent = nullptr;
             m_OnConnectEvent = nullptr;
@@ -3180,11 +3185,11 @@ namespace Delphi {
 
         CPollEventHandler::~CPollEventHandler() {
             Stop();
-            FreeBinding();
+            ClearBinding();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::FreeBinding() {
+        void CPollEventHandler::ClearBinding() {
             CPollConnection *Temp;
             if (Assigned(m_pBinding)) {
                 Temp = m_pBinding;
@@ -3194,7 +3199,7 @@ namespace Delphi {
 
                 }
                 m_pBinding = nullptr;
-                if (m_FreeBinding)
+                if (Temp->AutoFree())
                     delete Temp;
             }
         }
@@ -3233,10 +3238,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::SetBinding(CPollConnection *Value, bool AFree) {
+        void CPollEventHandler::SetBinding(CPollConnection *Value) {
             if (m_pBinding != Value) {
                 m_pBinding = Value;
-                m_FreeBinding = AFree;
                 if (Value != nullptr) {
                     Value->EventHandler(this);
                 }
@@ -3295,7 +3299,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CPollEventHandler *CPollEventHandlers::GetItem(int AIndex) {
+        CPollEventHandler *CPollEventHandlers::GetItem(int AIndex) const {
             return (CPollEventHandler *) inherited::GetItem(AIndex);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3364,6 +3368,8 @@ namespace Delphi {
         CEPollTimer::CEPollTimer(int AClockId, int AFlags): CHandleStream(INVALID_HANDLE_VALUE),
             CPollConnection(this) {
 
+            m_AutoFree = true;
+
             m_ClockId = AClockId;
             m_Flags = AFlags;
             m_OnTimer = nullptr;
@@ -3424,7 +3430,7 @@ namespace Delphi {
 #else
             Handler->OnTimerEvent(std::bind(&CEPollTimer::DoTimer, this, _1));
 #endif
-            Handler->Binding(this, true);
+            Handler->Binding(this);
             Handler->Start(etTimer);
 
             return Handler;
@@ -4028,7 +4034,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CTCPServerConnection *CTCPAsyncServer::GetConnection(int AIndex) {
+        CTCPServerConnection *CTCPAsyncServer::GetConnection(int AIndex) const {
             return (CTCPServerConnection *) CCollection::GetItem(AIndex);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4092,7 +4098,8 @@ namespace Delphi {
         void CTCPAsyncClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
             auto LConnection = new CTCPClientConnection(this);
             LConnection->IOHandler(AIOHandler);
-            AHandler->Binding(LConnection, true);
+            LConnection->AutoFree(true);
+            AHandler->Binding(LConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 

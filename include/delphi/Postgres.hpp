@@ -598,9 +598,9 @@ namespace Delphi {
 
             int QueryCount() { return CCollection::Count(); };
 
-            CPQPollQuery *Queries(int Index) { return (CPQPollQuery *) CCollection::Items(Index); };
+            CPQPollQuery *Queries(int Index) const { return (CPQPollQuery *) CCollection::Items(Index); };
 
-            CPQPollQuery *operator[] (int Index) override { return Queries(Index); };
+            CPQPollQuery *operator[] (int Index) const override { return Queries(Index); };
 
         };
 

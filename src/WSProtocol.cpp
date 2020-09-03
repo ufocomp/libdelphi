@@ -222,7 +222,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CMessageHandler *CMessageManager::Get(int Index) {
+        CMessageHandler *CMessageManager::Get(int Index) const {
             return dynamic_cast<CMessageHandler *> (inherited::GetItem(Index));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -349,7 +349,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSession *CSessionManager::Get(int Index) {
+        CSession *CSessionManager::Get(int Index) const {
             return dynamic_cast<CSession *> (inherited::GetItem(Index));
         }
         //--------------------------------------------------------------------------------------------------------------

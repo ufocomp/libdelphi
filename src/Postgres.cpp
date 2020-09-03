@@ -645,6 +645,7 @@ namespace Delphi {
                 CPQConnection(AConnInfo, AManager) {
             m_ConnectionStatus = qsConnect;
             m_WorkQuery = nullptr;
+            m_AutoFree = true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1214,7 +1215,7 @@ namespace Delphi {
 #endif
                 }
 
-                LEventHandler->Binding(AConnection, true);
+                LEventHandler->Binding(AConnection);
                 LEventHandler->Start(etIO);
 
             } catch (Exception::Exception &E) {
@@ -1397,7 +1398,7 @@ namespace Delphi {
                     LConnection = GetConnection(LEventHandler);
                     if (Assigned(LConnection)) {
                         Status = PQstatus(LConnection->Handle());
-                        if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->AntiFreeze() >= (CDateTime) 10 / 86400))) {
+                        if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - LConnection->AntiFreeze() >= (CDateTime) 10 / SecsPerDay))) {
                             DoError(LConnection);
                             LEventHandler->Start(etNull);
                             Stop(i);

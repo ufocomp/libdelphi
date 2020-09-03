@@ -2218,23 +2218,19 @@ namespace Delphi {
             bool Result = false;
             if (Connected()) {
                 CMemoryStream Stream(ReadAsync());
-                try {
-                    Result = Stream.Size() > 0;
-                    if (Result) {
-                        InputBuffer()->Extract(Stream.Memory(), Stream.Size());
-                        switch (m_Protocol) {
-                            case pHTTP:
-                                Tag(clock());
-                                ParseHTTP(&Stream);
-                                break;
-                            case pWebSocket:
-                                Tag(clock());
-                                ParseWebSocket(&Stream);
-                                break;
-                        }
+                Result = Stream.Size() > 0;
+                if (Result) {
+                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    switch (m_Protocol) {
+                        case pHTTP:
+                            Tag(clock());
+                            ParseHTTP(&Stream);
+                            break;
+                        case pWebSocket:
+                            Tag(clock());
+                            ParseWebSocket(&Stream);
+                            break;
                     }
-                } catch (...) {
-                    throw;
                 }
             }
 
@@ -2419,36 +2415,32 @@ namespace Delphi {
             bool Result = false;
             if (Connected()) {
                 CMemoryStream LStream(ReadAsync());
-                try {
-                    Result = LStream.Size() > 0;
-                    if (Result) {
-                        InputBuffer()->Extract(LStream.Memory(), LStream.Size());
+                Result = LStream.Size() > 0;
+                if (Result) {
+                    InputBuffer()->Extract(LStream.Memory(), LStream.Size());
 
-                        CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State);
-                        const int ParseResult = CReplyParser::Parse(GetReply(), Context);
+                    CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State);
+                    const int ParseResult = CReplyParser::Parse(GetReply(), Context);
 
-                        switch (ParseResult) {
-                            case 0:
-                                Tag(clock());
-                                m_ConnectionStatus = csReplyError;
-                                break;
+                    switch (ParseResult) {
+                        case 0:
+                            Tag(clock());
+                            m_ConnectionStatus = csReplyError;
+                            break;
 
-                            case 1:
-                                Tag(clock());
-                                m_ConnectionStatus = csReplyOk;
-                                DoReply();
-                                break;
+                        case 1:
+                            Tag(clock());
+                            m_ConnectionStatus = csReplyOk;
+                            DoReply();
+                            break;
 
-                            default:
-                                m_State = Context.State;
-                                if (RecvBufferSize() < GetReply()->ContentLength)
-                                    RecvBufferSize(GetReply()->ContentLength);
-                                m_ConnectionStatus = csWaitReply;
-                                break;
-                        }
+                        default:
+                            m_State = Context.State;
+                            if (RecvBufferSize() < GetReply()->ContentLength)
+                                RecvBufferSize(GetReply()->ContentLength);
+                            m_ConnectionStatus = csWaitReply;
+                            break;
                     }
-                } catch (...) {
-                    throw;
                 }
             }
 
@@ -2750,7 +2742,8 @@ namespace Delphi {
         void CHTTPClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
             auto LConnection = new CHTTPClientConnection(this);
             LConnection->IOHandler(AIOHandler);
-            AHandler->Binding(LConnection, true);
+            LConnection->AutoFree(true);
+            AHandler->Binding(LConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2771,9 +2764,10 @@ namespace Delphi {
 #else
                     LConnection->OnDisconnected(std::bind(&CHTTPClient::DoDisconnected, this, _1));
 #endif
-                    AHandler->Start(etIO);
                     DoConnected(LConnection);
                     DoRequest(LConnection);
+
+                    AHandler->Start(etIO);
                 }
             } catch (Exception::Exception &E) {
                 DoException(LConnection, &E);
@@ -2874,12 +2868,51 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CHTTPClientItem -------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPClientItem::CHTTPClientItem(CHTTPClientManager *AManager): CCollectionItem(AManager), CHTTPClient() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPClientItem::CHTTPClientItem(CHTTPClientManager *AManager, LPCTSTR AHost, unsigned short APort):
+            CCollectionItem(AManager), CHTTPClient(AHost, APort) {
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPClientManager ----------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPClientItem *CHTTPClientManager::GetItem(int Index) const {
+            return (CHTTPClientItem *) inherited::GetItem(Index);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPClientItem *CHTTPClientManager::Add(LPCTSTR AHost, unsigned short APort) {
+            return new CHTTPClientItem(this, AHost, APort);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPClientManager::Shrink() {
+            for (int i = Count() - 1; i >= 0; i--) {
+               auto Item = GetItem(i);
+               if (Item->Active() && Item->ConnectionCount() == 0)
+                   Delete(i);
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CHTTPProxy ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPProxy::CHTTPProxy(CHTTPServerConnection *AConnection, CHTTPProxyManager *AManager):
-                CCollectionItem(AManager), CHTTPClient() {
+        CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager) {
 
             m_Request = nullptr;
 
@@ -2893,7 +2926,8 @@ namespace Delphi {
         void CHTTPProxy::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
             auto LConnection = new CHTTPClientConnection(this);
             LConnection->IOHandler(AIOHandler);
-            AHandler->Binding(LConnection, true);
+            LConnection->AutoFree(true);
+            AHandler->Binding(LConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2914,9 +2948,10 @@ namespace Delphi {
 #else
                     LConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
 #endif
-                    AHandler->Start(etIO);
                     DoConnected(LConnection);
                     DoRequest(LConnection);
+
+                    AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(LConnection, &E);
@@ -2949,11 +2984,14 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPProxy *CHTTPProxyManager::Add(CHTTPServerConnection *AConnection) {
-            return new CHTTPProxy(AConnection, this);
+        CHTTPClientItem *CHTTPProxyManager::GetItem(int Index) const {
+            return (CHTTPClientItem *) inherited::GetItem(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CHTTPProxy *CHTTPProxyManager::Add(CHTTPServerConnection *AConnection) {
+            return new CHTTPProxy(this, AConnection);
+        }
     }
 }
 }

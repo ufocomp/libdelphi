@@ -111,7 +111,7 @@ namespace Delphi {
 
         private:
 
-            CSignal *Get(int Index);
+            CSignal *Get(int Index) const;
             void Put(int Index, CSignal *Signal);
 
         public:
@@ -132,11 +132,11 @@ namespace Delphi {
 
             int SignalsCount() { return Count(); };
 
-            CSignal *Signals(int Index) { return Get(Index); };
+            CSignal *Signals(int Index) const { return Get(Index); };
 
             void Strings(int Index, CSignal *Value) { return Put(Index, Value); };
 
-            CSignal *operator[] (int Index) override { return Signals(Index); }
+            CSignal *operator[] (int Index) const override { return Signals(Index); }
 
             virtual void SignalHandler(int signo, siginfo_t *siginfo, void *ucontext) abstract;
 

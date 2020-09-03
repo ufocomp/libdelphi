@@ -1302,6 +1302,54 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CHTTPClientItem -------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPClientManager;
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPClientItem: public CCollectionItem, public CHTTPClient {
+        public:
+
+            explicit CHTTPClientItem(CHTTPClientManager *AManager);
+
+            explicit CHTTPClientItem(CHTTPClientManager *AManager, LPCTSTR AHost, unsigned short APort);
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CHTTPClientManager ----------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CHTTPClientManager: public CCollection {
+            typedef CCollection inherited;
+
+        private:
+
+            CHTTPClientItem *GetItem(int Index) const override;
+
+        public:
+
+            CHTTPClientManager(): CCollection(this) {
+
+            };
+
+            ~CHTTPClientManager() override = default;
+
+            CHTTPClientItem* Add(LPCTSTR AHost, unsigned short APort);
+
+            void Shrink();
+
+            CHTTPClientItem *Items(int Index) const override { return (CHTTPClientItem *) inherited::Items(Index); };
+
+            CHTTPClientItem *operator[] (int Index) const override { return Items(Index); };
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CHTTPProxy ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1309,7 +1357,7 @@ namespace Delphi {
         class CHTTPProxyManager;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHTTPProxy: public CCollectionItem, public CHTTPClient {
+        class CHTTPProxy: public CHTTPClientItem {
         private:
 
             CHTTPServerConnection *m_pConnection;
@@ -1327,7 +1375,7 @@ namespace Delphi {
 
         public:
 
-            explicit CHTTPProxy(CHTTPServerConnection *AConnection, CHTTPProxyManager *AManager);
+            explicit CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection);
 
             CHTTPServerConnection *Connection() { return m_pConnection; }
 
@@ -1343,10 +1391,16 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHTTPProxyManager: public CCollection {
+        class CHTTPProxyManager: public CHTTPClientManager {
+            typedef CCollection inherited;
+
+        private:
+
+            CHTTPClientItem *GetItem(int Index) const override;
+
         public:
 
-            explicit CHTTPProxyManager(): CCollection(this) {
+            CHTTPProxyManager(): CHTTPClientManager() {
 
             };
 

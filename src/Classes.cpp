@@ -379,7 +379,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CList::Get(int Index) {
+        Pointer CList::Get(int Index) const {
             if ((Index < 0) || (m_pList == nullptr) || (Index >= m_nCount))
                 throw ExceptionFrm(SListIndexError, Index);
 
@@ -792,7 +792,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CCollectionItem *CCollection::GetItem(int Index) {
+        CCollectionItem *CCollection::GetItem(int Index) const {
             return (CCollectionItem *) m_Items->Items(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2839,7 +2839,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CQueueItem *CQueue::GetItem(int Index) {
+        CQueueItem *CQueue::GetItem(int Index) const {
             return (CQueueItem *) inherited::GetItem(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
