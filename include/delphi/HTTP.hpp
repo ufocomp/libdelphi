@@ -983,14 +983,15 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            CReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h) {
+            CReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h,
+                          size_t AContentLength = 0, size_t AChunkedLength = 0) {
                 Begin = ABegin;
                 End = ABegin + ASize;
                 Size = ASize;
                 Result = -1;
                 State = AState;
-                ContentLength = 0;
-                ChunkedLength = 0;
+                ContentLength = AContentLength;
+                ChunkedLength = AChunkedLength;
                 MimeIndex = 0;
             };
 
@@ -1011,6 +1012,9 @@ namespace Delphi {
 
             /// Check if a byte is a digit.
             static bool IsDigit(int c);
+
+            /// Check if a byte is a hex.
+            static bool IsHex(int c);
 
             /// Handle the next character of input.
             static int Consume(CReply *AReply, CReplyContext& Context);
@@ -1143,6 +1147,9 @@ namespace Delphi {
 
             /// The current state of the parser.
             Reply::CParserState m_State;
+
+            size_t m_ContentLength;
+            size_t m_ChunkedLength;
 
             CHTTPConnectionStatus m_ConnectionStatus;
 

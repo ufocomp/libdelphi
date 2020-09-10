@@ -1734,35 +1734,40 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CReplyParser::Consume(CReply *AReply, CReplyContext& Context) {
-            char AInput = *Context.Begin++;
+
+            size_t ChunkedLength = 0;
+
+            const auto BufferSize = Context.End - Context.Begin;
+            const auto AInput = *Context.Begin++;
+
             switch (Context.State) {
                 case Reply::http_version_h:
                     if (AInput == 'H') {
                         Context.State = Reply::http_version_t_1;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_t_1:
                     if (AInput == 'T') {
                         Context.State = Reply::http_version_t_2;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_t_2:
                     if (AInput == 'T') {
                         Context.State = Reply::http_version_p;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_p:
                     if (AInput == 'P') {
                         Context.State = Reply::http_version_slash;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_slash:
                     if (AInput == '/') {
@@ -1771,7 +1776,7 @@ namespace Delphi {
                         Context.State = Reply::http_version_major_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_major_start:
                     if (IsDigit(AInput)) {
@@ -1779,7 +1784,7 @@ namespace Delphi {
                         Context.State = Reply::http_version_major;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_major:
                     if (AInput == '.') {
@@ -1789,7 +1794,7 @@ namespace Delphi {
                         AReply->VMajor = AReply->VMajor * 10 + AInput - '0';
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_minor_start:
                     if (IsDigit(AInput)) {
@@ -1797,7 +1802,7 @@ namespace Delphi {
                         Context.State = Reply::http_version_minor;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_version_minor:
                     if (AInput == ' ') {
@@ -1807,7 +1812,7 @@ namespace Delphi {
                         AReply->VMinor = AReply->VMinor * 10 + AInput - '0';
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_status_start:
                     if (IsDigit(AInput)) {
@@ -1815,7 +1820,7 @@ namespace Delphi {
                         Context.State = Reply::http_status;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_status:
                     if (AInput == ' ') {
@@ -1827,7 +1832,7 @@ namespace Delphi {
                         Context.State = Reply::http_status;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_status_text_start:
                     if (IsChar(AInput)) {
@@ -1835,7 +1840,7 @@ namespace Delphi {
                         Context.State = Reply::http_status_text;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::http_status_text:
                     if (AInput == '\r') {
@@ -1846,14 +1851,14 @@ namespace Delphi {
                         Context.State = Reply::http_status_text;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::expecting_newline_1:
                     if (AInput == '\n') {
                         Context.State = Reply::header_line_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::header_line_start:
                     if (AInput == '\r') {
@@ -1863,7 +1868,7 @@ namespace Delphi {
                         Context.State = Reply::header_lws;
                         return -1;
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         AReply->Headers.Add(CHeader());
                         AReply->Headers.Last().Name().Append(AInput);
@@ -1878,7 +1883,7 @@ namespace Delphi {
                     } else if (AInput == ' ' || AInput == '\t') {
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         Context.State = Reply::header_value;
                         AReply->Headers.Last().Value().Append(AInput);
@@ -1889,7 +1894,7 @@ namespace Delphi {
                         Context.State = Reply::space_before_header_value;
                         return -1;
                     } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         AReply->Headers.Last().Name().Append(AInput);
                         return -1;
@@ -1899,7 +1904,7 @@ namespace Delphi {
                         Context.State = Reply::header_value;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::header_value:
                     if (AInput == '\r') {
@@ -1910,7 +1915,7 @@ namespace Delphi {
                         AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         AReply->Headers.Last().Value().Append(AInput);
                         return -1;
@@ -1921,7 +1926,7 @@ namespace Delphi {
                         AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         Context.State = Reply::header_value_options;
                         AReply->Headers.Last().Value().Append(AInput);
@@ -1937,7 +1942,7 @@ namespace Delphi {
                         AReply->Headers.Last().Value().Append(AInput);
                         return -1;
                     } else if (IsCtl(AInput)) {
-                        return false;
+                        return 0;
                     } else {
                         AReply->Headers.Last().Value().Append(AInput);
                         AReply->Headers.Last().Data().back().Append(AInput);
@@ -1948,7 +1953,7 @@ namespace Delphi {
                         Context.State = Reply::header_line_start;
                         return -1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::expecting_newline_3:
                     if (AInput == '\n') {
@@ -1976,56 +1981,65 @@ namespace Delphi {
                             return -1;
                         }
 
-                        return true;
+                        return 1;
                     } else {
-                        return false;
+                        return 0;
                     }
                 case Reply::content:
                     AReply->Content.Append(AInput);
                     if (AReply->Content.Size() < AReply->ContentLength) {
                         return -1;
                     }
-                    return true;
+                    return 1;
 
                 case Reply::content_checking_length:
-                    if (AInput == '\n') {
-                        if (Context.ChunkedLength == 0)
-                            return true;
-                        Context.Chunked.Clear();
-                        Context.ChunkedLength = 0;
-                        return -1;
-                    } else if (AInput == '\r') {
-                        if (!Context.Chunked.IsEmpty()) {
-                            Context.ChunkedLength = StrToInt(Context.Chunked.c_str(), 16);
-                            AReply->ContentLength += Context.ChunkedLength;
-                        }
-                        Context.State = Reply::content_checking_newline;
-                        return -1;
-                    } else if (IsChar(AInput)) {
+                    if (IsHex(AInput)) {
                         Context.Chunked.Append(AInput);
                         return -1;
-                    }
-                    return false;
-
-                case Reply::content_checking_newline:
-                    if (AInput == '\n') {
+                    } else if (AInput == '\r') {
+                        if (Context.Chunked.IsEmpty())
+                            return 0;
+                        Context.ChunkedLength = StrToInt(Context.Chunked.c_str(), 16);
+                        return -1;
+                    } else if (AInput == '\n') {
                         Context.State = Reply::content_checking_data;
                         return -1;
                     }
-                    return false;
+                    return 0;
 
-                case Reply::content_checking_data:
-                    if (AInput == '\r' && Context.ChunkedLength == 0) {
+                case Reply::content_checking_newline:
+                    if (AInput == '\r') {
+                        Context.Chunked.Clear();
+                        Context.ChunkedLength = 0;
+                        return -1;
+                    } else if (AInput == '\n') {
                         Context.State = Reply::content_checking_length;
                         return -1;
                     }
+                    return 0;
 
-                    Context.ChunkedLength--;
-                    AReply->Content.Append(AInput);
+                case Reply::content_checking_data:
+                    if (Context.ChunkedLength == 0)
+                        return 1;
+
+                    if (BufferSize > Context.ChunkedLength) {
+                        ChunkedLength = Context.ChunkedLength;
+                        Context.State = Reply::content_checking_newline;
+                    } else {
+                        ChunkedLength = BufferSize;
+                        Context.State = Reply::content_checking_data;
+                    }
+
+                    AReply->Content.Append((LPCSTR) Context.Begin - 1, ChunkedLength);
+                    AReply->ContentLength += ChunkedLength;
+
+                    Context.Begin += ChunkedLength - 1;
+                    Context.ChunkedLength -= ChunkedLength;
+
                     return -1;
 
                 default:
-                    return false;
+                    return 0;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2079,6 +2093,11 @@ namespace Delphi {
 
         bool CReplyParser::IsDigit(int c) {
             return c >= '0' && c <= '9';
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CReplyParser::IsHex(int c) {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2419,7 +2438,7 @@ namespace Delphi {
                 if (Result) {
                     InputBuffer()->Extract(LStream.Memory(), LStream.Size());
 
-                    CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State);
+                    CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
                     const int ParseResult = CReplyParser::Parse(GetReply(), Context);
 
                     switch (ParseResult) {
@@ -2436,9 +2455,15 @@ namespace Delphi {
 
                         default:
                             m_State = Context.State;
-                            if (RecvBufferSize() < GetReply()->ContentLength)
-                                RecvBufferSize(GetReply()->ContentLength);
+
+                            m_ContentLength = Context.ContentLength;
+                            m_ChunkedLength = Context.ChunkedLength;
+
+                            if (RecvBufferSize() < m_ContentLength)
+                                RecvBufferSize(m_ContentLength);
+
                             m_ConnectionStatus = csWaitReply;
+
                             break;
                     }
                 }
