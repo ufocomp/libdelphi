@@ -678,7 +678,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CRequestParser::Consume(CRequest *ARequest, CHTTPContext& Context) {
+            size_t ContentLength = 0;
+
+            const auto BufferSize = Context.End - Context.Begin;
             char AInput = *Context.Begin++;
+
             switch (Context.State) {
                 case Request::method_start:
                     if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
@@ -937,51 +941,58 @@ namespace Delphi {
                     if (AInput == '\n') {
                         Context.State = Request::header_line_start;
                         return -1;
-                    } else {
-                        return 0;
                     }
+
+                    return 0;
+
                 case Request::expecting_newline_3:
                     if (AInput == '\n') {
-                        Context.ContentLength = Context.End - Context.Begin;
+                        ARequest->ContentLength = 0;
+                        Context.ContentLength = BufferSize - 1;
 
                         if (ARequest->Headers.Count() > 0) {
                             if (!ARequest->BuildLocation())
                                 return 0;
+
                             ARequest->BuildCookies();
 
                             const auto& contentLength = ARequest->Headers.Values(_T("Content-Length"));
                             if (!contentLength.IsEmpty()) {
-                                ARequest->ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
-                            } else {
-                                ARequest->ContentLength = Context.ContentLength;
+                                Context.ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
                             }
 
                             const auto& contentType = ARequest->Headers.Values(_T("Content-Type"));
                             if (contentType.Find("application/x-www-form-urlencoded") != CString::npos) {
+                                ARequest->ContentLength = Context.ContentLength;
                                 Context.State = Request::form_data_start;
                                 return -1;
                             }
-                        } else {
-                            ARequest->ContentLength = Context.ContentLength;
                         }
 
-                        if (ARequest->ContentLength > 0) {
+                        if (Context.ContentLength > 0) {
                             Context.State = Request::content;
                             return -1;
                         }
 
                         return 1;
-                    } else {
-                        return 0;
                     }
+
+                    return 0;
+
                 case Request::content:
-                    ARequest->Content.Append(AInput);
+                    if (Context.ContentLength == 0)
+                        return 1;
 
-                    if (ARequest->Content.Size() < ARequest->ContentLength) {
-                        return -1;
-                    }
+                    ContentLength = Context.ContentLength > BufferSize ? BufferSize : Context.ContentLength;
 
-                    return 1;
+                    ARequest->Content.Append((LPCSTR) Context.Begin - 1, ContentLength);
+                    ARequest->ContentLength += ContentLength;
+
+                    Context.Begin += ContentLength - 1;
+                    Context.ContentLength -= ContentLength;
+
+                    return Context.ContentLength == 0 ? 1 : -1;
+
                 case Request::form_data_start:
                     ARequest->Content.Append(AInput);
 
@@ -1735,6 +1746,7 @@ namespace Delphi {
 
         int CReplyParser::Consume(CReply *AReply, CReplyContext& Context) {
 
+            size_t ContentLength = 0;
             size_t ChunkedLength = 0;
 
             const auto BufferSize = Context.End - Context.Begin;
@@ -1952,45 +1964,50 @@ namespace Delphi {
                     if (AInput == '\n') {
                         Context.State = Reply::header_line_start;
                         return -1;
-                    } else {
-                        return 0;
                     }
+
+                    return 0;
+
                 case Reply::expecting_newline_3:
                     if (AInput == '\n') {
-                        Context.ContentLength = Context.End - Context.Begin;
+                        AReply->ContentLength = 0;
+                        Context.ContentLength = BufferSize - 1;
 
                         if (AReply->Headers.Count() > 0) {
                             const auto& contentLength = AReply->Headers.Values(_T("Content-Length"));
                             const auto& transferEncoding = AReply->Headers.Values(_T("Transfer-Encoding"));
 
                             if (!contentLength.IsEmpty()) {
-                                AReply->ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
+                                Context.ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
                             } else if (transferEncoding == "chunked") {
-                                AReply->ContentLength = 0;
                                 Context.State = Reply::content_checking_length;
                                 return -1;
-                            } else {
-                                AReply->ContentLength = Context.ContentLength;
                             }
-                        } else {
-                            AReply->ContentLength = Context.ContentLength;
                         }
 
-                        if (AReply->ContentLength > 0) {
+                        if (Context.ContentLength > 0) {
                             Context.State = Reply::content;
                             return -1;
                         }
 
                         return 1;
-                    } else {
-                        return 0;
                     }
+
+                    return 0;
+
                 case Reply::content:
-                    AReply->Content.Append(AInput);
-                    if (AReply->Content.Size() < AReply->ContentLength) {
-                        return -1;
-                    }
-                    return 1;
+                    if (Context.ContentLength == 0)
+                        return 1;
+
+                    ContentLength = Context.ContentLength > BufferSize ? BufferSize : Context.ContentLength;
+
+                    AReply->Content.Append((LPCSTR) Context.Begin - 1, ContentLength);
+                    AReply->ContentLength += ContentLength;
+
+                    Context.Begin += ContentLength - 1;
+                    Context.ContentLength -= ContentLength;
+
+                    return Context.ContentLength == 0 ? 1 : -1;
 
                 case Reply::content_checking_length:
                     if (IsHex(AInput)) {
@@ -2005,6 +2022,7 @@ namespace Delphi {
                         Context.State = Reply::content_checking_data;
                         return -1;
                     }
+
                     return 0;
 
                 case Reply::content_checking_newline:
@@ -2016,6 +2034,7 @@ namespace Delphi {
                         Context.State = Reply::content_checking_length;
                         return -1;
                     }
+
                     return 0;
 
                 case Reply::content_checking_data:
@@ -2110,6 +2129,7 @@ namespace Delphi {
                 CTCPServerConnection(AServer) {
             m_Protocol = pHTTP;
             m_State = Request::method_start;
+            m_ContentLength = 0;
             m_CloseConnection = true;
             m_ConnectionStatus = csConnected;
             m_Request = nullptr;
@@ -2161,6 +2181,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::Clear() {
             m_State = Request::method_start;
+            m_ContentLength = 0;
             FreeAndNil(m_Request);
             FreeAndNil(m_Reply);
             FreeAndNil(m_WSRequest);
@@ -2169,7 +2190,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::ParseHTTP(CMemoryStream *Stream) {
-            CHTTPContext Context = CHTTPContext((LPCTSTR) Stream->Memory(), Stream->Size(), m_State);
+            CHTTPContext Context = CHTTPContext((LPCTSTR) Stream->Memory(), Stream->Size(), m_State, m_ContentLength);
             const int ParseResult = CRequestParser::Parse(GetRequest(), Context);
 
             switch (ParseResult) {
@@ -2184,9 +2205,14 @@ namespace Delphi {
 
                 default:
                     m_State = Context.State;
-                    if (RecvBufferSize() < GetRequest()->ContentLength)
-                        RecvBufferSize(GetRequest()->ContentLength);
+
+                    m_ContentLength = Context.ContentLength;
+
+                    if (RecvBufferSize() < m_ContentLength)
+                        RecvBufferSize(m_ContentLength);
+
                     m_ConnectionStatus = csWaitRequest;
+
                     break;
             }
         }
@@ -2410,6 +2436,8 @@ namespace Delphi {
 
         CHTTPClientConnection::CHTTPClientConnection(CPollSocketClient *AClient): CTCPClientConnection(AClient) {
             m_State = Reply::http_version_h;
+            m_ContentLength = 0;
+            m_ChunkedLength = 0;
             m_CloseConnection = false;
             m_ConnectionStatus = csConnected;
             m_Request = nullptr;
@@ -2425,6 +2453,8 @@ namespace Delphi {
 
         void CHTTPClientConnection::Clear() {
             m_State = Reply::http_version_h;
+            m_ContentLength = 0;
+            m_ChunkedLength = 0;
             FreeAndNil(m_Request);
             FreeAndNil(m_Reply);
         }

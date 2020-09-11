@@ -773,13 +773,14 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            CHTTPContext(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start) {
+            CHTTPContext(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start,
+                         size_t AContentLength = 0) {
                 Begin = ABegin;
                 End = ABegin + ASize;
                 Size = ASize;
                 Result = -1;
                 State = AState;
-                ContentLength = 0;
+                ContentLength = AContentLength;
                 MimeIndex = 0;
             };
 
@@ -1057,6 +1058,8 @@ namespace Delphi {
             /// The current state of the parser.
             Request::CParserState m_State;
 
+            size_t m_ContentLength;
+
             CHTTPConnectionStatus m_ConnectionStatus;
 
             CHTTPProtocol m_Protocol;
@@ -1105,7 +1108,7 @@ namespace Delphi {
             bool CloseConnection() const { return m_CloseConnection; }
             void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
-            CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; }
+            CHTTPConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
             void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; }
 
             void SendStockReply(CReply::CStatusType AStatus, bool ASendNow = false);
