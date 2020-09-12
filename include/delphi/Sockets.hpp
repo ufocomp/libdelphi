@@ -2080,25 +2080,24 @@ namespace Delphi {
 
         private:
 
-            CServerIOHandler *m_pIOHandler;
-            bool m_FreeIOHandler;
-
             CCommandHandlers *m_pCommandHandlers;
 
             CStringList m_Data;
 
-            void FreeIOHandler();
-
         protected:
 
-            CActiveLevel m_ActiveLevel;
+            bool m_Active;
 
-            void SetActiveLevel(CActiveLevel AValue);
+            CServerIOHandler *m_pIOHandler;
+            bool m_FreeIOHandler;
 
             void SetIOHandler(CServerIOHandler *Value);
+            void FreeIOHandler();
 
             virtual void InitializeCommandHandlers();
             virtual void InitializeBindings() abstract;
+
+            virtual void SetActive(bool AValue) abstract;
 
             bool DoCommand(CTCPConnection *AConnection) override;
 
@@ -2108,8 +2107,8 @@ namespace Delphi {
 
             ~CAsyncServer() override;
 
-            CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
-            void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
+            bool Active() const { return m_Active; }
+            void Active(bool Value) { SetActive(Value); }
 
             CServerIOHandler *IOHandler() const { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
@@ -2190,7 +2189,15 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class CTCPAsyncServer: public CAsyncServer {
+        private:
+
+            void SetActive(bool AValue) override;
+
         protected:
+
+            CActiveLevel m_ActiveLevel;
+
+            void SetActiveLevel(CActiveLevel AValue);
 
             CTCPServerConnection *GetConnection(int AIndex) const;
             void SetConnection(int AIndex, CTCPServerConnection *AValue);
@@ -2199,9 +2206,14 @@ namespace Delphi {
 
         public:
 
+            CTCPAsyncServer();
+
             explicit CTCPAsyncServer(unsigned short AListen);
 
             ~CTCPAsyncServer() override = default;
+
+            CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
+            void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
 
             CTCPServerConnection *Connections(int Index) const { return GetConnection(Index); }
             void Connections(int Index, CTCPServerConnection *Value) { SetConnection(Index, Value); }

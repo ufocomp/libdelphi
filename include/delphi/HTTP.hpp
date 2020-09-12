@@ -1209,7 +1209,7 @@ namespace Delphi {
         typedef TPairs<CJSON> CSites;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHTTPServer: public CAsyncServer {
+        class CHTTPServer: public CTCPAsyncServer {
         protected:
 
             CProviders m_Providers;

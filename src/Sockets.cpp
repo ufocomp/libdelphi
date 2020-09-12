@@ -3770,9 +3770,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CAsyncServer::CAsyncServer(): CEPollServer() {
+            m_Active = false;
             m_pIOHandler = nullptr;
             m_FreeIOHandler = true;
-            m_ActiveLevel = alShutDown;
             m_pCommandHandlers = new CCommandHandlers(this);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3800,59 +3800,6 @@ namespace Delphi {
 
         void CAsyncServer::InitializeCommandHandlers() {
 
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CAsyncServer::SetActiveLevel(CActiveLevel AValue) {
-
-            CPollEventHandler *LEventHandler = nullptr;
-
-            if (m_ActiveLevel != AValue ) {
-
-                if (m_ActiveLevel < AValue) {
-
-                    if (CommandHandlers()->Count() == 0)
-                        InitializeCommandHandlers();
-
-                    if (m_pIOHandler == nullptr)
-                        m_pIOHandler = new CServerIOHandler();
-
-                    if (Bindings()->Count() == 0)
-                        InitializeBindings();
-
-                    for (int i = 0; i < Bindings()->Count(); ++i) {
-                        auto SocketHandle = Bindings()->Handles(i);
-                        if (AValue >= alBinding && !SocketHandle->HandleAllocated()) {
-                            SocketHandle->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
-                            SocketHandle->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
-
-                            SocketHandle->Bind();
-                            SocketHandle->Listen(SOMAXCONN);
-                        }
-
-                        if (AValue == alActive) {
-                            LEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
-                            LEventHandler->Start(etAccept);
-                        }
-                    }
-
-                } else {
-
-                    if (AValue <= alBinding) {
-                        m_pEventHandlers->Clear();
-                        CloseAllConnection();
-                    }
-
-                    if (AValue == alShutDown) {
-                        for (int i = 0; i < Bindings()->Count(); ++i) {
-                            Bindings()->Handles(i)->CloseSocket();
-                        }
-                        FreeIOHandler();
-                    }
-                }
-
-                m_ActiveLevel = AValue;
-            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4029,7 +3976,12 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CTCPAsyncServer::CTCPAsyncServer(unsigned short AListen): CAsyncServer() {
+        CTCPAsyncServer::CTCPAsyncServer(): CAsyncServer() {
+            m_ActiveLevel = alShutDown;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CTCPAsyncServer::CTCPAsyncServer(unsigned short AListen): CTCPAsyncServer() {
             DefaultPort(AListen);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4044,8 +3996,66 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CTCPAsyncServer::DoAccept(CPollEventHandler *AHandler) {
+        void CTCPAsyncServer::SetActive(bool AValue) {
+            CPollEventHandler *LEventHandler = nullptr;
 
+            if (AValue) {
+
+                if (CommandHandlers()->Count() == 0)
+                    InitializeCommandHandlers();
+
+                if (m_pIOHandler == nullptr)
+                    m_pIOHandler = new CServerIOHandler();
+
+                if (Bindings()->Count() == 0)
+                    InitializeBindings();
+
+                for (int i = 0; i < Bindings()->Count(); ++i) {
+                    auto SocketHandle = Bindings()->Handles(i);
+                    if (m_ActiveLevel >= alBinding && !SocketHandle->HandleAllocated()) {
+                        SocketHandle->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
+                        SocketHandle->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+
+                        SocketHandle->Bind();
+                        SocketHandle->Listen(SOMAXCONN);
+                    }
+
+                    if (m_ActiveLevel == alActive) {
+                        LEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
+                        LEventHandler->Start(etAccept);
+                    }
+                }
+
+            } else {
+
+                if (m_ActiveLevel <= alBinding) {
+                    m_pEventHandlers->Clear();
+                    CloseAllConnection();
+                }
+
+                if (m_ActiveLevel == alShutDown) {
+                    for (int i = 0; i < Bindings()->Count(); ++i) {
+                        Bindings()->Handles(i)->CloseSocket();
+                    }
+                    FreeIOHandler();
+                }
+            }
+
+            m_Active = m_ActiveLevel > alShutDown;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPAsyncServer::SetActiveLevel(CActiveLevel AValue) {
+            CActiveLevel OldLevel;
+            if (m_ActiveLevel != AValue ) {
+                OldLevel = m_ActiveLevel;
+                m_ActiveLevel = AValue;
+                SetActive(OldLevel < AValue);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPAsyncServer::DoAccept(CPollEventHandler *AHandler) {
             CIOHandlerSocket *LIOHandler = nullptr;
             CPollEventHandler *LEventHandler = nullptr;
             CTCPServerConnection *LConnection = nullptr;
