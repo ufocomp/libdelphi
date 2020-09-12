@@ -2022,13 +2022,7 @@ namespace Delphi {
         class LIB_DELPHI CEPollServer: public CPollSocketServer, public CEPoll {
         protected:
 
-            void DoTimeOut(CPollEventHandler *AHandler) override;
-
             void DoConnect(CPollEventHandler *AHandler) override {};
-
-            void DoRead(CPollEventHandler *AHandler) override;
-
-            void DoWrite(CPollEventHandler *AHandler) override;
 
             bool DoExecute(CTCPConnection *AConnection) override;
 
@@ -2086,7 +2080,7 @@ namespace Delphi {
 
         protected:
 
-            bool m_Active;
+            CActiveLevel m_ActiveLevel;
 
             CServerIOHandler *m_pIOHandler;
             bool m_FreeIOHandler;
@@ -2097,7 +2091,7 @@ namespace Delphi {
             virtual void InitializeCommandHandlers();
             virtual void InitializeBindings() abstract;
 
-            virtual void SetActive(bool AValue) abstract;
+            virtual void SetActiveLevel(CActiveLevel AValue) abstract;
 
             bool DoCommand(CTCPConnection *AConnection) override;
 
@@ -2107,8 +2101,8 @@ namespace Delphi {
 
             ~CAsyncServer() override;
 
-            bool Active() const { return m_Active; }
-            void Active(bool Value) { SetActive(Value); }
+            CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
+            void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
 
             CServerIOHandler *IOHandler() const { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
@@ -2184,6 +2178,62 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CUDPAsyncServer -------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CUDPAsyncServer;
+
+        typedef std::function<void (CUDPAsyncServer *Sender, const CManagedBuffer &Buffer)> COnUDPServerReadEvent;
+        typedef std::function<void (CUDPAsyncServer *Sender, CSimpleBuffer &Buffer)> COnUDPServerWriteEvent;
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CUDPAsyncServer: public CAsyncServer {
+        private:
+
+            CManagedBuffer m_InputBuffer;
+            CSimpleBuffer m_OutputBuffer;
+
+            COnUDPServerReadEvent m_OnRead;
+            COnUDPServerWriteEvent m_OnWrite;
+
+            void DoBufferRead();
+            void DoBufferWrite();
+
+            void Receive(CSocketHandle *ASocketHandle);
+            void Send(CSocketHandle *ASocketHandle);
+
+            void SetActiveLevel(CActiveLevel AValue) override;
+
+        protected:
+
+            void DoRead(CPollEventHandler *AHandler) override;
+            void DoWrite(CPollEventHandler *AHandler) override;
+
+        public:
+
+            CUDPAsyncServer();
+
+            explicit CUDPAsyncServer(unsigned short AListen);
+
+            ~CUDPAsyncServer() override = default;
+
+            CManagedBuffer &InputBuffer() { return m_InputBuffer; }
+            const CManagedBuffer &InputBuffer() const { return m_InputBuffer; }
+
+            CSimpleBuffer &OutputBuffer() { return m_OutputBuffer; }
+            const CSimpleBuffer &OutputBuffer() const { return m_OutputBuffer; }
+
+            const COnUDPServerReadEvent &OnRead() { return m_OnRead; }
+            void OnRead(COnUDPServerReadEvent && Value) { m_OnRead = Value; }
+
+            const COnUDPServerWriteEvent &OnWrite() { return m_OnWrite; }
+            void OnWrite(COnUDPServerWriteEvent && Value) { m_OnWrite = Value; }
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CTCPAsyncServer -------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2191,18 +2241,20 @@ namespace Delphi {
         class CTCPAsyncServer: public CAsyncServer {
         private:
 
-            void SetActive(bool AValue) override;
-
-        protected:
-
-            CActiveLevel m_ActiveLevel;
-
-            void SetActiveLevel(CActiveLevel AValue);
+            void SetActiveLevel(CActiveLevel AValue) override;
 
             CTCPServerConnection *GetConnection(int AIndex) const;
             void SetConnection(int AIndex, CTCPServerConnection *AValue);
 
+        protected:
+
+            void DoTimeOut(CPollEventHandler *AHandler) override;
+
             void DoAccept(CPollEventHandler *AHandler) override;
+
+            void DoRead(CPollEventHandler *AHandler) override;
+
+            void DoWrite(CPollEventHandler *AHandler) override;
 
         public:
 
@@ -2211,9 +2263,6 @@ namespace Delphi {
             explicit CTCPAsyncServer(unsigned short AListen);
 
             ~CTCPAsyncServer() override = default;
-
-            CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
-            void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
 
             CTCPServerConnection *Connections(int Index) const { return GetConnection(Index); }
             void Connections(int Index, CTCPServerConnection *Value) { SetConnection(Index, Value); }
