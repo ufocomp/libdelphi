@@ -76,7 +76,7 @@ Author:
 //----------------------------------------------------------------------------------------------------------------------
 
 typedef struct sockaddr SOCKADDR, *LPSOCKADDR;
-typedef struct sockaddr_in SOCKADDR_IN;
+typedef struct sockaddr_in SOCKADDR_IN, *LPSOCKADDRIN;
 //----------------------------------------------------------------------------------------------------------------------
 
 typedef struct servent SERVENT, *LPSERVENT;
@@ -210,7 +210,7 @@ namespace Delphi {
             virtual ssize_t Recv(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags);
 
             virtual ssize_t RecvFrom(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags, char *VIP,
-                    size_t ASize, unsigned short *VPort, LPSOCKADDR AFrom, socklen_t *AFromLen);
+                    size_t ASize, unsigned short *VPort, LPSOCKADDRIN AFrom, socklen_t *AFromLen);
 
             virtual CSocket Select(CList *ARead, CList *AWrite, CList *AErrors, int ATimeout);
 
@@ -2188,8 +2188,8 @@ namespace Delphi {
 
         class CUDPAsyncServer;
 
-        typedef std::function<void (CUDPAsyncServer *Sender, CManagedBuffer &Buffer)> COnUDPServerReadEvent;
-        typedef std::function<void (CUDPAsyncServer *Sender, CSimpleBuffer &Buffer)> COnUDPServerWriteEvent;
+        typedef std::function<void (CUDPAsyncServer *Server, CSocketHandle *Socket, CManagedBuffer &Buffer)> COnUDPServerReadEvent;
+        typedef std::function<void (CUDPAsyncServer *Sender, CSocketHandle *Socket, CSimpleBuffer &Buffer)> COnUDPServerWriteEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CUDPAsyncServer: public CAsyncServer {
@@ -2201,11 +2201,8 @@ namespace Delphi {
             COnUDPServerReadEvent m_OnRead;
             COnUDPServerWriteEvent m_OnWrite;
 
-            void DoBufferRead();
-            void DoBufferWrite();
-
-            void Receive(CSocketHandle *ASocketHandle);
-            void Send(CSocketHandle *ASocketHandle);
+            void DoBufferRead(CSocketHandle *ASocketHandle);
+            void DoBufferWrite(CSocketHandle *ASocketHandle);
 
             void SetActiveLevel(CActiveLevel AValue) override;
 
@@ -2223,6 +2220,9 @@ namespace Delphi {
             ~CUDPAsyncServer() override = default;
 
             void InitializeBindings() override;
+
+            ssize_t Receive(CSocketHandle *ASocketHandle);
+            ssize_t Send(CSocketHandle *ASocketHandle);
 
             CManagedBuffer &InputBuffer() { return m_InputBuffer; }
             const CManagedBuffer &InputBuffer() const { return m_InputBuffer; }

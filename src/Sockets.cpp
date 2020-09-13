@@ -327,21 +327,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         ssize_t CStack::RecvFrom(const CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags, char *VIP,
-                                 size_t ASize, unsigned short *VPort, LPSOCKADDR AFrom, socklen_t *AFromLen) {
+                                 size_t ASize, unsigned short *VPort, LPSOCKADDRIN AFrom, socklen_t *AFromLen) {
             ssize_t BytesRecv = 0;
 
             SOCKADDR_IN from = {};
             socklen_t fromLen = sizeof(SOCKADDR_IN);
 
             if (AFrom == nullptr) {
-                AFrom = (LPSOCKADDR) &from;
+                AFrom = &from;
                 AFromLen = &fromLen;
             }
 
             BytesRecv = ::recvfrom(ASocket, ABuffer, ABufferLength, AFlags, (LPSOCKADDR) AFrom, AFromLen);
 
-            chVERIFY(SUCCEEDED(StringCchCopyA(VIP, ASize, inet_ntoa(from.sin_addr))));
-            *VPort = NToHS(from.sin_port);
+            if (BytesRecv != -1) {
+                chVERIFY(SUCCEEDED(StringCchCopyA(VIP, ASize, inet_ntoa(AFrom->sin_addr))));
+                *VPort = NToHS(AFrom->sin_port);
+            }
 
             return BytesRecv;
         }
@@ -444,7 +446,7 @@ namespace Delphi {
         bool CStack::GetHostName(char *AName, size_t ASize) {
             char name[NI_MAXHOST] = {};
 
-            if (!CheckForSocketError(::gethostname(name, sizeof(name)), egSocket)) {
+            if (!CheckForSocketError(::gethostname(name, sizeof(name)), egSystem)) {
                 chVERIFY(SUCCEEDED(StringCchCopyA(AName, ASize, name)));
                 return true;
             }
@@ -455,7 +457,7 @@ namespace Delphi {
 
         int CStack::GetSocketError(CSocket ASocket) {
             socklen_t len = sizeof(m_LastError);
-            CheckForSocketError(GetSockOpt(ASocket, SOL_SOCKET, SO_ERROR, (void *) &m_LastError, &len), egSocket);
+            CheckForSocketError(GetSockOpt(ASocket, SOL_SOCKET, SO_ERROR, (void *) &m_LastError, &len), egSystem);
             return m_LastError;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -470,7 +472,7 @@ namespace Delphi {
             SOCKADDR name = {};
             socklen_t namelen = sizeof(SOCKADDR);
 
-            if (!CheckForSocketError(::getpeername(ASocket, (LPSOCKADDR) &name, &namelen), egSocket)) {
+            if (!CheckForSocketError(::getpeername(ASocket, (LPSOCKADDR) &name, &namelen), egSystem)) {
                 *AFamily = NToHS(((SOCKADDR_IN * ) & name)->sin_family);
                 chVERIFY(SUCCEEDED(StringCchCopyA(AIP, ASize, inet_ntoa(((SOCKADDR_IN *) &name)->sin_addr))));
                 *APort = NToHS(((SOCKADDR_IN * ) & name)->sin_port);
@@ -483,7 +485,7 @@ namespace Delphi {
             SOCKADDR name = {};
             socklen_t namelen = sizeof(SOCKADDR);
 
-            if (!CheckForSocketError(::getsockname(ASocket, (LPSOCKADDR) & name, &namelen), egSocket)) {
+            if (!CheckForSocketError(::getsockname(ASocket, (LPSOCKADDR) & name, &namelen), egSystem)) {
                 *AFamily = NToHS(((SOCKADDR_IN * ) & name)->sin_family);
                 chVERIFY(SUCCEEDED(StringCchCopyA(AIP, ASize, inet_ntoa(((SOCKADDR_IN * ) & name)->sin_addr))));
                 *APort = NToHS(((SOCKADDR_IN * ) & name)->sin_port);
@@ -1035,8 +1037,7 @@ namespace Delphi {
             m_FromLen = sizeof(SOCKADDR_IN);
             ::SecureZeroMemory(&m_From, m_FromLen);
 
-            return GStack->RecvFrom(Handle(), ABuffer, ABufferSize, AFlags, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort,
-                                    (sockaddr * ) & m_From, &m_FromLen);
+            return GStack->RecvFrom(Handle(), ABuffer, ABufferSize, AFlags, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort, &m_From, &m_FromLen);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3973,7 +3974,7 @@ namespace Delphi {
                     for (int i = 0; i < Bindings()->Count(); ++i) {
                         auto SocketHandle = Bindings()->Handles(i);
                         if (AValue >= alBinding && !SocketHandle->HandleAllocated()) {
-                            SocketHandle->AllocateSocket(SOCK_DGRAM, IPPROTO_UDP, 0); // O_NONBLOCK
+                            SocketHandle->AllocateSocket(SOCK_DGRAM, IPPROTO_UDP, O_NONBLOCK);
                             SocketHandle->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
                             SocketHandle->SetSockOpt(SOL_SOCKET, SO_BROADCAST, (void *) &SO_True, sizeof(SO_True));
 
@@ -4009,7 +4010,7 @@ namespace Delphi {
             auto SocketHandle = Bindings()->BindingByHandle(AHandler->Socket());
             if (SocketHandle != nullptr) {
                 Receive(SocketHandle);
-                DoBufferRead();
+                DoBufferRead(SocketHandle);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4017,56 +4018,75 @@ namespace Delphi {
         void CUDPAsyncServer::DoWrite(CPollEventHandler *AHandler) {
             auto SocketHandle = Bindings()->BindingByHandle(AHandler->Socket());
             if (SocketHandle != nullptr) {
-                DoBufferWrite();
+                DoBufferWrite(SocketHandle);
                 Send(SocketHandle);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CUDPAsyncServer::DoBufferRead() {
+        void CUDPAsyncServer::DoBufferRead(CSocketHandle *ASocketHandle) {
             if (m_OnRead != nullptr) {
-                m_OnRead(this, m_InputBuffer);
+                m_OnRead(this, ASocketHandle, m_InputBuffer);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CUDPAsyncServer::DoBufferWrite() {
+        void CUDPAsyncServer::DoBufferWrite(CSocketHandle *ASocketHandle) {
             if (m_OnWrite != nullptr) {
-                m_OnWrite(this, m_OutputBuffer);
+                m_OnWrite(this, ASocketHandle, m_OutputBuffer);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CUDPAsyncServer::Receive(CSocketHandle *ASocketHandle) {
-            ssize_t LByteRecv = 0;
-            CMemoryStream LStream;
-            do {
-                LStream.SetSize(GRecvBufferSizeDefault);
-                LByteRecv = ASocketHandle->RecvFrom(LStream.Memory(), LStream.Size(), MSG_DONTWAIT);
-
-                int Ignore[] = { EAGAIN, EWOULDBLOCK };
-                if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
-                    break;
-
-                LStream.SetSize((size_t) LByteRecv);
-                m_InputBuffer.Seek(0, soEnd);
-                m_InputBuffer.WriteBuffer(LStream.Memory(), LStream.Size());
-            } while (LByteRecv > 0);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CUDPAsyncServer::Send(CSocketHandle *ASocketHandle) {
+        ssize_t CUDPAsyncServer::Receive(CSocketHandle *ASocketHandle) {
             ssize_t LByteCount;
-            while (m_OutputBuffer.Size() != 0) {
-                LByteCount = ASocketHandle->SendTo(ASocketHandle->PeerIP(), ASocketHandle->PeerPort(),
-                                                   m_OutputBuffer.Memory(), m_OutputBuffer.Size(), MSG_DONTWAIT);
+            ssize_t LByteRecv = 0;
 
-                int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
-                    break;
+            if (ASocketHandle != nullptr && ASocketHandle->HandleAllocated()) {
+                CMemoryStream LStream;
+                do {
+                    LStream.SetSize(GRecvBufferSizeDefault);
+                    LByteCount = ASocketHandle->RecvFrom(LStream.Memory(), LStream.Size());
 
-                m_OutputBuffer.Remove((size_t) LByteCount);
+                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                    if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                        break;
+
+                    LStream.SetSize((size_t) LByteCount);
+                    m_InputBuffer.Seek(0, soEnd);
+                    m_InputBuffer.WriteBuffer(LStream.Memory(), LStream.Size());
+
+                    LByteRecv += LByteCount;
+                } while (LByteCount > 0);
+
+                return LByteRecv;
             }
+
+            return -1;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CUDPAsyncServer::Send(CSocketHandle *ASocketHandle) {
+            ssize_t LByteCount;
+            ssize_t LByteSend = 0;
+
+            if (ASocketHandle != nullptr && ASocketHandle->HandleAllocated()) {
+                while (m_OutputBuffer.Size() != 0) {
+                    LByteCount = ASocketHandle->SendTo(ASocketHandle->PeerIP(), ASocketHandle->PeerPort(),
+                                                       m_OutputBuffer.Memory(), m_OutputBuffer.Size());
+
+                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                    if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                        break;
+
+                    m_OutputBuffer.Remove((size_t) LByteCount);
+                    LByteSend += LByteCount;
+                }
+
+                return LByteSend;
+            }
+
+            return -1;
         }
 
         //--------------------------------------------------------------------------------------------------------------
