@@ -436,15 +436,15 @@ namespace Delphi {
 
             void Listen(int anQueueCount) const;
 
-            ssize_t Recv(void *ABuffer, size_t ABufferSize) const;
+            ssize_t Recv(void *ABuffer, size_t ABufferSize, int AFlags = 0) const;
 
-            ssize_t RecvFrom(void *ABuffer, size_t ABufferSize);
+            ssize_t RecvFrom(void *ABuffer, size_t ABufferSize, int AFlags = 0);
 
             void Reset(bool AResetLocal = true);
 
-            ssize_t Send(void *ABuffer, size_t ABufferSize);
+            ssize_t Send(void *ABuffer, size_t ABufferSize, int AFlags = 0);
 
-            ssize_t SendTo(LPCSTR AIP, unsigned short APort, void *ABuffer, size_t ABufferSize) const;
+            ssize_t SendTo(LPCSTR AIP, unsigned short APort, void *ABuffer, size_t ABufferSize, int AFlags = 0) const;
 
             void SetPeer(LPCSTR asIP, unsigned short anPort);
 
@@ -2022,6 +2022,10 @@ namespace Delphi {
         class LIB_DELPHI CEPollServer: public CPollSocketServer, public CEPoll {
         protected:
 
+            void DoTimeOut(CPollEventHandler *AHandler) override {};
+
+            void DoAccept(CPollEventHandler *AHandler) override {};
+
             void DoConnect(CPollEventHandler *AHandler) override {};
 
             bool DoExecute(CTCPConnection *AConnection) override;
@@ -2184,7 +2188,7 @@ namespace Delphi {
 
         class CUDPAsyncServer;
 
-        typedef std::function<void (CUDPAsyncServer *Sender, const CManagedBuffer &Buffer)> COnUDPServerReadEvent;
+        typedef std::function<void (CUDPAsyncServer *Sender, CManagedBuffer &Buffer)> COnUDPServerReadEvent;
         typedef std::function<void (CUDPAsyncServer *Sender, CSimpleBuffer &Buffer)> COnUDPServerWriteEvent;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2217,6 +2221,8 @@ namespace Delphi {
             explicit CUDPAsyncServer(unsigned short AListen);
 
             ~CUDPAsyncServer() override = default;
+
+            void InitializeBindings() override;
 
             CManagedBuffer &InputBuffer() { return m_InputBuffer; }
             const CManagedBuffer &InputBuffer() const { return m_InputBuffer; }

@@ -1020,44 +1020,44 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ABufferSize) const {
+        ssize_t CSocketHandle::Recv(void *ABuffer, size_t ABufferSize, int AFlags) const {
 #ifdef WITH_SSL
             if (m_SSLMethod == sslNotUsed)
-                return GStack->Recv(Handle(), ABuffer, ABufferSize, 0);
+                return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
             return GStack->RecvPacket(m_pSSL, ABuffer, ABufferSize);
 #else
-            return GStack->Recv(Handle(), ABuffer, ABufferSize, 0);
+            return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::RecvFrom(void *ABuffer, size_t ABufferSize) {
+        ssize_t CSocketHandle::RecvFrom(void *ABuffer, size_t ABufferSize, int AFlags) {
             m_FromLen = sizeof(SOCKADDR_IN);
             ::SecureZeroMemory(&m_From, m_FromLen);
 
-            return GStack->RecvFrom(Handle(), ABuffer, ABufferSize, 0, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort,
+            return GStack->RecvFrom(Handle(), ABuffer, ABufferSize, AFlags, m_PeerIP, chARRAY(m_PeerIP), &m_PeerPort,
                                     (sockaddr * ) & m_From, &m_FromLen);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize) {
+        ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize, int AFlags) {
 #ifdef WITH_SSL
             if (m_SSLMethod == sslNotUsed)
-                return SendTo(IP(), Port(), ABuffer, ABufferSize);
+                return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
             return GStack->SendPacket(m_pSSL, ABuffer, ABufferSize);
 #else
-            return SendTo(IP(), Port(), ABuffer, ABufferSize);
+            return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::SendTo(LPCSTR AIP, const unsigned short APort, void *ABuffer, size_t ABufferSize) const {
+        ssize_t CSocketHandle::SendTo(LPCSTR AIP, const unsigned short APort, void *ABuffer, size_t ABufferSize, int AFlags) const {
             ssize_t BytesOut;
 
             if (m_SocketType == SOCK_STREAM || m_SocketType == SOCK_SEQPACKET)
-                BytesOut = GStack->Send(Handle(), ABuffer, ABufferSize, 0);
+                BytesOut = GStack->Send(Handle(), ABuffer, ABufferSize, AFlags);
             else
-                BytesOut = GStack->SendTo(Handle(), ABuffer, ABufferSize, 0, AIP, APort);
+                BytesOut = GStack->SendTo(Handle(), ABuffer, ABufferSize, AFlags, AIP, APort);
 
             if (BytesOut == SOCKET_ERROR) {
                 int LastError = GStack->GetLastError();
@@ -3951,6 +3951,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CUDPAsyncServer::InitializeBindings() {
+            CSocketHandle* LBinding = Bindings()->Add();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CUDPAsyncServer::SetActiveLevel(CActiveLevel AValue) {
 
             CPollEventHandler *LEventHandler = nullptr;
@@ -4037,7 +4042,7 @@ namespace Delphi {
             CMemoryStream LStream;
             do {
                 LStream.SetSize(GRecvBufferSizeDefault);
-                LByteRecv = ASocketHandle->RecvFrom(LStream.Memory(), LStream.Size());
+                LByteRecv = ASocketHandle->RecvFrom(LStream.Memory(), LStream.Size(), MSG_DONTWAIT);
 
                 int Ignore[] = { EAGAIN, EWOULDBLOCK };
                 if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
@@ -4054,7 +4059,7 @@ namespace Delphi {
             ssize_t LByteCount;
             while (m_OutputBuffer.Size() != 0) {
                 LByteCount = ASocketHandle->SendTo(ASocketHandle->PeerIP(), ASocketHandle->PeerPort(),
-                                                   m_OutputBuffer.Memory(), m_OutputBuffer.Size());
+                                                   m_OutputBuffer.Memory(), m_OutputBuffer.Size(), MSG_DONTWAIT);
 
                 int Ignore[] = {EAGAIN, EWOULDBLOCK};
                 if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
