@@ -132,7 +132,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocket CStack::CreateSocketHandle(int ASocketType, int AProtocol, int AFlag) {
+        CSocket CStack::CreateSocketHandle(int ASocketType, int AProtocol, unsigned int AFlag) {
             return Socket(AF_INET, ASocketType, AProtocol, AFlag);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -163,8 +163,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        SSL *CStack::SSLNew(CSSLMethod AMethod) {
-            const SSL_METHOD *method = AMethod == sslClient ? TLS_client_method() : TLS_server_method();
+        SSL *CStack::SSLNew(bool IsSever) {
+            const SSL_METHOD *method = IsSever ? TLS_server_method() : TLS_client_method();
             SSL_CTX *ctx = ::SSL_CTX_new(method);
             return ::SSL_new(ctx);
         }
@@ -769,13 +769,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-#ifdef WITH_SSL
-        CSocketHandle::CSocketHandle(CCollection *ACollection, CSSLMethod ASSLMethod): CSocketComponent(), CCollectionItem(ACollection) {
-
-            m_pSSL = nullptr;
-            m_SSLMethod = ASSLMethod;
-#else
         CSocketHandle::CSocketHandle(CCollection *ACollection): CSocketComponent(), CCollectionItem(ACollection) {
+#ifdef WITH_SSL
+            m_pSSL = nullptr;
+            m_SSLMethod = sslNotUsed;
 #endif
             m_HandleAllocated = false;
             m_Nonblocking = false;
@@ -793,13 +790,49 @@ namespace Delphi {
         CSocketHandle::~CSocketHandle() {
             CloseSocket();
 #ifdef WITH_SSL
-            if (m_SSLMethod != sslNotUsed) {
-                CStack::SSLFree(m_pSSL);
-            }
+            CloseSSL();
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
+#ifdef WITH_SSL
+        void CSocketHandle::AllocateSSL() {
+            if (m_SSLMethod != sslNotUsed) {
+                if (m_pSSL == nullptr)
+                    m_pSSL = CStack::SSLNew(m_SSLMethod == sslServer);
+                CStack::SSLAllocate(m_pSSL, m_Handle);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
 
+        void CSocketHandle::ShutdownSSL() {
+            if (m_pSSL != nullptr) {
+                GStack->CheckForSSLError(CStack::SSLShutdown(m_pSSL));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::CloseSSL() {
+            if (m_pSSL != nullptr) {
+                CStack::SSLFree(m_pSSL);
+                m_pSSL = nullptr;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::ClearSSL() {
+            if (m_pSSL != nullptr) {
+                GStack->CheckForSSLError(CStack::SSLClear(m_pSSL));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::ConnectSSL() {
+            if (m_pSSL != nullptr) {
+                GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+#endif
         int CSocketHandle::GetSocketError() const {
             return GStack->GetSocketError(Handle());
         }
@@ -853,7 +886,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CSocketHandle::Accept(CSocket ASocket, int AFlags) {
+        bool CSocketHandle::Accept(CSocket ASocket, unsigned int AFlags) {
             int Ignore[] = {EINTR,     // CloseSocket while in Accept
                             ENOTSOCK}; // CloseSocket just prior to Accept;
 
@@ -875,7 +908,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::AllocateSocket(int ASocketType, int AProtocol, int AFlag) {
+        void CSocketHandle::AllocateSocket(int ASocketType, int AProtocol, unsigned int AFlag) {
             // If we are reallocating a socket - close and destroy the old socket handle
             CloseSocket();
             if (HandleAllocated())
@@ -886,11 +919,7 @@ namespace Delphi {
             m_HandleAllocated = true;
             m_Nonblocking = (AFlag == O_NONBLOCK);
 #ifdef WITH_SSL
-            if (m_SSLMethod != sslNotUsed) {
-                if (m_pSSL == nullptr)
-                    m_pSSL = CStack::SSLNew(m_SSLMethod);
-                CStack::SSLAllocate(m_pSSL, m_Handle);
-            }
+            AllocateSSL();
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -898,9 +927,7 @@ namespace Delphi {
         void CSocketHandle::CloseSocket(bool AResetLocal) {
             if (HandleAllocated()) {
 #ifdef WITH_SSL
-                if (m_SSLMethod != sslNotUsed) {
-                    GStack->CheckForSSLError(CStack::SSLShutdown(m_pSSL));
-                }
+                ShutdownSSL();
 #endif
                 // Must be first, closing socket will trigger some errors, and they
                 // may then check (in other threads) Connected, which checks this.
@@ -916,11 +943,7 @@ namespace Delphi {
 
         void CSocketHandle::Reset(bool AResetLocal) {
 #ifdef WITH_SSL
-            if (m_SSLMethod != sslNotUsed) {
-                if (m_pSSL == nullptr)
-                    m_pSSL = CStack::SSLNew(m_SSLMethod);
-                GStack->CheckForSSLError(CStack::SSLClear(m_pSSL));
-            }
+            ClearSSL();
 #endif
             m_HandleAllocated = false;
             m_Nonblocking = false;
@@ -990,9 +1013,7 @@ namespace Delphi {
                 UpdateBindingPeer();
             }
 #ifdef WITH_SSL
-            if (m_SSLMethod != sslNotUsed) {
-                GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
-            }
+            ConnectSSL();
 #endif
             return SocketError;
         }
@@ -1024,12 +1045,10 @@ namespace Delphi {
 
         ssize_t CSocketHandle::Recv(void *ABuffer, size_t ABufferSize, int AFlags) const {
 #ifdef WITH_SSL
-            if (m_SSLMethod == sslNotUsed)
-                return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
-            return GStack->RecvPacket(m_pSSL, ABuffer, ABufferSize);
-#else
-            return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
+            if (m_pSSL != nullptr)
+                return GStack->RecvPacket(m_pSSL, ABuffer, ABufferSize);
 #endif
+            return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1043,12 +1062,10 @@ namespace Delphi {
 
         ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize, int AFlags) {
 #ifdef WITH_SSL
-            if (m_SSLMethod == sslNotUsed)
-                return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
-            return GStack->SendPacket(m_pSSL, ABuffer, ABufferSize);
-#else
-            return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
+            if (m_pSSL != nullptr)
+                return GStack->SendPacket(m_pSSL, ABuffer, ABufferSize);
 #endif
+            return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1136,9 +1153,6 @@ namespace Delphi {
 
         CSocketHandles::CSocketHandles(): CCollection(this) {
             m_DefaultPort = 0;
-#ifdef WITH_SSL
-            m_SSLMethod = sslNotUsed;
-#endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1152,10 +1166,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketHandle *CSocketHandles::Add() {
 #ifdef WITH_SSL
-            auto Result = new CSocketHandle(this, m_SSLMethod);
+        CSocketHandle *CSocketHandles::Add(CSSLMethod ASSLMethod) {
+            auto Result = new CSocketHandle(this);
+            Result->SSLMethod(ASSLMethod);
 #else
+        CSocketHandle *CSocketHandles::Add() {
             auto Result = new CSocketHandle(this);
 #endif
             inherited::Added((CCollectionItem *) Result);
@@ -1203,9 +1219,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 #ifdef WITH_SSL
         void CIOHandlerSocket::Open(CSSLMethod SSLMethod) {
-            if (m_pBinding == nullptr)
-                m_pBinding = new CSocketHandle(nullptr, SSLMethod);
-            else
+            if (m_pBinding == nullptr) {
+                m_pBinding = new CSocketHandle(nullptr);
+                m_pBinding->SSLMethod(SSLMethod);
+            } else
                 m_pBinding->Reset(true);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2743,8 +2760,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CCommandHandlers::CCommandHandlers(): CCollection(this) {
-            m_pServer = nullptr;
-            m_pClient = nullptr;
+            m_pOwner = nullptr;
             m_EnabledDefault = true;
             m_ParseParamsDefault = true;
             m_DisconnectDefault = false;
@@ -2752,12 +2768,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CCommandHandlers::CCommandHandlers(CSocketServer *AServer): CCommandHandlers() {
-            m_pServer = AServer;
+            m_pOwner = AServer;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CCommandHandlers::CCommandHandlers(CSocketClient *AClient): CCommandHandlers() {
-            m_pClient = AClient;
+            m_pOwner = AClient;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3822,11 +3838,11 @@ namespace Delphi {
             m_pCommandHandlers = new CCommandHandlers(this);
         }
 
-        CAsyncClient::CAsyncClient(LPCTSTR AHost, unsigned short APort): CAsyncClient() {
-            m_Host = AHost;
-            m_Port = APort;
+        CAsyncClient::CAsyncClient(const CString &Host, unsigned short Port): CAsyncClient() {
+            m_Host = Host;
+            m_Port = Port;
 #ifdef WITH_SSL
-            m_UsedSSL = APort == 443;
+            m_UsedSSL = Port == 443;
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ Library name:
 
 Module Name:
 
-  Server.hpp
+  HTTP.hpp
 
 Notices:
 
@@ -1036,12 +1036,6 @@ namespace Delphi {
         class CHTTPServer;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CHTTPConnectionStatus { csConnected = 0,
-                csWaitRequest, csRequestOk, csRequestReady, csRequestSent, csRequestError,
-                csWaitReply, csReplyOk, csReplyReady, csReplySent, csReplyError
-        };
-        //--------------------------------------------------------------------------------------------------------------
-
         enum CHTTPProtocol { pHTTP = 0, pWebSocket };
 
         class CHTTPServerConnection: public CTCPServerConnection {
@@ -1060,7 +1054,7 @@ namespace Delphi {
 
             size_t m_ContentLength;
 
-            CHTTPConnectionStatus m_ConnectionStatus;
+            CConnectionStatus m_ConnectionStatus;
 
             CHTTPProtocol m_Protocol;
 
@@ -1108,8 +1102,8 @@ namespace Delphi {
             bool CloseConnection() const { return m_CloseConnection; }
             void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
-            CHTTPConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
-            void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; }
+            CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
+            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }
 
             void SendStockReply(CReply::CStatusType AStatus, bool ASendNow = false);
             void SendReply(CReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
@@ -1154,7 +1148,7 @@ namespace Delphi {
             size_t m_ContentLength;
             size_t m_ChunkedLength;
 
-            CHTTPConnectionStatus m_ConnectionStatus;
+            CConnectionStatus m_ConnectionStatus;
 
             bool m_CloseConnection;
 
@@ -1187,8 +1181,8 @@ namespace Delphi {
             bool CloseConnection() const { return m_CloseConnection; };
             void CloseConnection(bool Value) { m_CloseConnection = Value; };
 
-            CHTTPConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
-            void ConnectionStatus(CHTTPConnectionStatus Value) { m_ConnectionStatus = Value; };
+            CConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
+            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };
 
             void SendRequest(bool ASendNow = false);
 
@@ -1271,6 +1265,7 @@ namespace Delphi {
         //-- CHTTPClient -----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
+
         class CHTTPClient;
 
         typedef std::function<void (CHTTPClient *Sender, CRequest *Request)> COnHTTPClientRequestEvent;
@@ -1301,7 +1296,7 @@ namespace Delphi {
 
             CHTTPClient();
 
-            explicit CHTTPClient(LPCTSTR AHost, unsigned short APort);
+            explicit CHTTPClient(const CString &Host, unsigned short Port);
 
             ~CHTTPClient() override = default;
 
@@ -1324,7 +1319,7 @@ namespace Delphi {
 
             explicit CHTTPClientItem(CHTTPClientManager *AManager);
 
-            explicit CHTTPClientItem(CHTTPClientManager *AManager, LPCTSTR AHost, unsigned short APort);
+            explicit CHTTPClientItem(CHTTPClientManager *AManager, const CString &Host, unsigned short Port);
 
         };
 
@@ -1349,7 +1344,7 @@ namespace Delphi {
 
             ~CHTTPClientManager() override = default;
 
-            CHTTPClientItem *Add(LPCTSTR AHost, unsigned short APort);
+            CHTTPClientItem *Add(const CString &Host, unsigned short Port);
 
             void CleanUp();
 

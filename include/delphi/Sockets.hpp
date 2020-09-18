@@ -155,10 +155,10 @@ namespace Delphi {
 
             inline static void DeleteSocket() { delete GStack; };
 
-            CSocket CreateSocketHandle(int ASocketType, int AProtocol = IPPROTO_IP, int AFlag = 0);
+            CSocket CreateSocketHandle(int ASocketType, int AProtocol = IPPROTO_IP, unsigned int AFlag = 0);
 #ifdef WITH_SSL
             static void SSLInit();
-            static SSL *SSLNew(CSSLMethod AMethod = sslClient);
+            static SSL *SSLNew(bool IsSever = false);
             static void SSLFree(SSL *ssl);
             static CSocket SSLGetSocket(SSL *ssl);
             static void SSLAllocate(SSL *ssl, CSocket ASocket);
@@ -403,16 +403,25 @@ namespace Delphi {
             static int GetLastError();
 
         public:
-#ifdef WITH_SSL
-            explicit CSocketHandle(CCollection *ACollection, CSSLMethod ASSLMethod = sslNotUsed);
-#else
+
             explicit CSocketHandle(CCollection *ACollection);
-#endif
+
             ~CSocketHandle() override;
+#ifdef WITH_SSL
+            void AllocateSSL();
+            void CloseSSL();
+            void ShutdownSSL();
+            void ClearSSL();
+            void ConnectSSL();
 
-            bool Accept(CSocket ASocket, int AFlag);
+            CSSLMethod SSLMethod() const { return m_SSLMethod; }
+            void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
 
-            void AllocateSocket(int ASocketType, int AProtocol, int AFlag);
+            bool UsedSSL() const { return m_SSLMethod != sslNotUsed; }
+#endif
+            bool Accept(CSocket ASocket, unsigned int AFlag);
+
+            void AllocateSocket(int ASocketType, int AProtocol, unsigned int AFlag);
 
             void Bind();
 
@@ -467,10 +476,7 @@ namespace Delphi {
             bool Nonblocking() const { return m_Nonblocking; }
 
             CSocket Handle() const { return m_Handle; }
-#ifdef WITH_SSL
-            bool UsedSSL() const { return m_SSLMethod != sslNotUsed; }
-            CSSLMethod SSLMethod() const { return m_SSLMethod; }
-#endif
+
             char *IP() { return m_IP; }
             void IP(LPCSTR Value) { SetIP(Value); }
 
@@ -505,9 +511,7 @@ namespace Delphi {
             CString m_DefaultIP;
 
             unsigned short m_DefaultPort;
-#ifdef WITH_SSL
-            CSSLMethod m_SSLMethod;
-#endif
+
             CSocketHandle *GetItem(int Index) const override;
             void SetItem(int Index, CSocketHandle *Value);
 
@@ -515,8 +519,11 @@ namespace Delphi {
 
             CSocketHandles();
 
+#ifdef WITH_SSL
+            CSocketHandle *Add(CSSLMethod ASSLMethod = sslNotUsed);
+#else
             CSocketHandle *Add();
-
+#endif
             CSocketHandle *Insert(int Index);
 
             CSocketHandle *BindingByHandle(CSocket AHandle);
@@ -529,10 +536,7 @@ namespace Delphi {
 
             unsigned short DefaultPort() const { return m_DefaultPort; }
             void DefaultPort(unsigned short Value) { m_DefaultPort = Value; }
-#ifdef WITH_SSL
-            CSSLMethod SSLMethod() const { return m_SSLMethod; }
-            void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
-#endif
+
             CSocketHandle *operator[] (int Index) const override { return Handles(Index); };
         };
 
@@ -680,6 +684,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CTCPServer;
+        //--------------------------------------------------------------------------------------------------------------
+
+        enum CConnectionStatus { csConnected = 0,
+            csWaitRequest, csRequestOk, csRequestReady, csRequestSent, csRequestError,
+            csWaitReply, csReplyOk, csReplyReady, csReplySent, csReplyError
+        };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CTCPConnection: public CPollConnection {
@@ -1537,8 +1547,7 @@ namespace Delphi {
             typedef CCollection inherited;
         private:
 
-            CSocketServer *m_pServer;
-            CSocketClient *m_pClient;
+            CSocketComponent *m_pOwner;
 
             bool m_EnabledDefault;
             bool m_ParseParamsDefault;
@@ -1558,8 +1567,8 @@ namespace Delphi {
 
             explicit CCommandHandlers(CSocketClient *AClient);
 
-            CSocketServer *Server() { return m_pServer; }
-            CSocketClient *Client() { return m_pClient; }
+            CSocketServer *Server() { return (CSocketServer *) m_pOwner; }
+            CSocketClient *Client() { return (CSocketClient *) m_pOwner; }
 
             CCommandHandler *Add();
 
@@ -2155,7 +2164,7 @@ namespace Delphi {
 
             CAsyncClient();
 
-            explicit CAsyncClient(LPCTSTR AHost, unsigned short APort);
+            explicit CAsyncClient(const CString &Host, unsigned short Port);
 
             ~CAsyncClient() override;
 

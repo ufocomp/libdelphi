@@ -6,7 +6,7 @@ Library name:
 
 Module Name:
 
-  Server.cpp
+  HTTP.cpp
 
 Notices:
 
@@ -2789,7 +2789,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPClient::CHTTPClient(LPCTSTR AHost, unsigned short APort): CAsyncClient(AHost, APort) {
+        CHTTPClient::CHTTPClient(const CString &Host, unsigned short Port): CAsyncClient(Host, Port) {
 
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2932,8 +2932,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPClientItem::CHTTPClientItem(CHTTPClientManager *AManager, LPCTSTR AHost, unsigned short APort):
-            CCollectionItem(AManager), CHTTPClient(AHost, APort) {
+        CHTTPClientItem::CHTTPClientItem(CHTTPClientManager *AManager, const CString &Host, unsigned short Port):
+            CCollectionItem(AManager), CHTTPClient(Host, Port) {
 
         }
 
@@ -2948,8 +2948,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPClientItem *CHTTPClientManager::Add(LPCTSTR AHost, unsigned short APort) {
-            return new CHTTPClientItem(this, AHost, APort);
+        CHTTPClientItem *CHTTPClientManager::Add(const CString &Host, unsigned short Port) {
+            return new CHTTPClientItem(this, Host, Port);
         }
         //--------------------------------------------------------------------------------------------------------------
 
