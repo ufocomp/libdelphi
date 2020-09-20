@@ -840,9 +840,9 @@ namespace Delphi {
 
         typedef std::function<void (CTCPConnection *AConnection)> COnSocketConnectionEvent;
 
-        typedef std::function<void (CSocketEvent *Sender, Exception::Exception *AException)> COnSocketListenExceptionEvent;
+        typedef std::function<void (CSocketEvent *Sender, const Delphi::Exception::Exception &E)> COnSocketListenExceptionEvent;
 
-        typedef std::function<void (CTCPConnection *AConnection, Exception::Exception *AException)> COnSocketExceptionEvent;
+        typedef std::function<void (CTCPConnection *AConnection, const Delphi::Exception::Exception &E)> COnSocketExceptionEvent;
 
         typedef std::function<void (CSocketEvent *Sender, LPCTSTR AData, CTCPConnection *AConnection)> COnSocketBeforeCommandHandlerEvent;
 
@@ -885,8 +885,8 @@ namespace Delphi {
             virtual void DoConnected(CObject *Sender);
             virtual void DoDisconnected(CObject *Sender);
 
-            virtual void DoException(CTCPConnection *AConnection, Exception::Exception *AException);
-            virtual void DoListenException(Exception::Exception *AException);
+            virtual void DoException(CTCPConnection *AConnection, const Delphi::Exception::Exception &E);
+            virtual void DoListenException(const Delphi::Exception::Exception &E);
 
             virtual void DoBeforeCommandHandler(CTCPConnection *AConnection, LPCTSTR ALine);
             virtual void DoAfterCommandHandler(CTCPConnection *AConnection);
@@ -1252,7 +1252,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CSocketThread *AThread)> COnSocketThreadNotifyEvent;
-        typedef std::function<void (CSocketThread *AThread, Exception::Exception *AException)> COnSocketThreadExceptionEvent;
+        typedef std::function<void (CSocketThread *AThread, const Delphi::Exception::Exception &E)> COnSocketThreadExceptionEvent;
         typedef std::function<void (CSocketThread *AThread, Pointer AData)> COnSocketThreadSynchronizeEvent;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1278,7 +1278,7 @@ namespace Delphi {
 
             virtual void Cleanup() {};
 
-            virtual void DoException(Exception::Exception *AException);
+            virtual void DoException(const Delphi::Exception::Exception &E);
 
             virtual void DoStopped();
 
@@ -1495,7 +1495,7 @@ namespace Delphi {
             COnSocketCommandEvent m_OnCommand;
             COnSocketExceptionEvent m_OnException;
 
-            virtual void DoException(CTCPConnection *AConnection, Exception::Exception *AException);
+            virtual void DoException(CTCPConnection *AConnection, const Delphi::Exception::Exception &E);
 
         public:
 
@@ -1855,7 +1855,7 @@ namespace Delphi {
         class LIB_DELPHI CAsyncServer;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef std::function<void (CPollEventHandler *AHandler, Exception::Exception *AException)> COnPollEventHandlerExceptionEvent;
+        typedef std::function<void (CPollEventHandler *AHandler, const Delphi::Exception::Exception &E)> COnPollEventHandlerExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CPollEventHandlers: public CCollection {
@@ -1878,7 +1878,7 @@ namespace Delphi {
             void PollMod(CPollEventHandler *AHandler);
             void PollDel(CPollEventHandler *AHandler);
 
-            void DoException(CPollEventHandler *AHandler, Exception::Exception *AException);
+            void DoException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E);
 
         public:
 
@@ -1994,7 +1994,7 @@ namespace Delphi {
 
             virtual void DoWrite(CPollEventHandler *AHandler) abstract;
 
-            void DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException);
+            void DoEventHandlersException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E);
 
         public:
 

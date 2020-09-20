@@ -983,8 +983,8 @@ namespace Delphi {
                 if (LConnection != nullptr) {
                     try {
                         LConnection->QueryStart(this);
-                    } catch (Exception::Exception &E) {
-                        DoException(&E);
+                    } catch (Delphi::Exception::Exception &E) {
+                        DoException(E);
                         LConnection->QueryStop();
                     }
                 } else {
@@ -996,8 +996,8 @@ namespace Delphi {
                 }
 
                 return -1;
-            } catch (Exception::Exception &E) {
-                DoException(&E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(E);
             }
 
             return POLL_QUERY_START_ERROR;
@@ -1030,10 +1030,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQPollQuery::DoException(Exception::Exception *AException) {
+        void CPQPollQuery::DoException(const Delphi::Exception::Exception &E) {
             if (m_OnException != nullptr) {
                 try {
-                    m_OnException(this, AException);
+                    m_OnException(this, E);
                 } catch (...) {
                 }
             }
@@ -1094,9 +1094,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPollEvent::DoConnectException(CPQConnection *AConnection,
-                Exception::Exception *AException) {
+                const Delphi::Exception::Exception &E) {
             if (m_OnConnectException != nullptr) {
-                m_OnConnectException(AConnection, AException);
+                m_OnConnectException(AConnection, E);
             }
         }
 
@@ -1218,8 +1218,8 @@ namespace Delphi {
                 LEventHandler->Binding(AConnection);
                 LEventHandler->Start(etIO);
 
-            } catch (Exception::Exception &E) {
-                DoServerException(&E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoServerException(E);
                 FreeAndNil(LEventHandler);
             }
 
@@ -1334,8 +1334,8 @@ namespace Delphi {
                 LConnection->ConnectPoll();
 
                 return true;
-            } catch (Exception::Exception &E) {
-                DoConnectException(LConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoConnectException(LConnection, E);
                 delete LConnection;
             }
 
@@ -1458,9 +1458,9 @@ namespace Delphi {
                         m_ConnInfo.PingValid(false);
                         break;
                 }
-            } catch (Exception::Exception &E) {
+            } catch (Delphi::Exception::Exception &E) {
                 LConnection->ConnectionStatus(qsError);
-                DoConnectException(LConnection, &E);
+                DoConnectException(LConnection, E);
                 m_ConnInfo.PingValid(false);
                 AHandler->Stop();
             }
@@ -1508,9 +1508,9 @@ namespace Delphi {
                         m_ConnInfo.PingValid(false);
                         break;
                 }
-            } catch (Exception::Exception &E) {
+            } catch (Delphi::Exception::Exception &E) {
                 LConnection->ConnectionStatus(qsError);
-                DoConnectException(LConnection, &E);
+                DoConnectException(LConnection, E);
                 m_ConnInfo.PingValid(false);
                 AHandler->Stop();
             }
@@ -1546,9 +1546,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQServer::DoServerException(Exception::Exception *AException) {
+        void CPQServer::DoServerException(const Delphi::Exception::Exception &E) {
             if (m_OnServerException != nullptr) {
-                m_OnServerException(this, AException);
+                m_OnServerException(this, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------

@@ -364,7 +364,7 @@ namespace Delphi {
 
         typedef std::function<void (CPQResult *AResult)> COnPQResultEvent;
         typedef std::function<void (CPQResult *AResult, ExecStatusType AExecStatus)> COnPQExecResultEvent;
-        typedef std::function<void (CPQResult *AResult, Exception::Exception *AException)> COnPQResultExceptionEvent;
+        typedef std::function<void (CPQResult *AResult, const Delphi::Exception::Exception &E)> COnPQResultExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQResult: public CCollectionItem {
@@ -536,7 +536,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CPQPollQuery *APollQuery)> COnPQPollQueryExecutedEvent;
-        typedef std::function<void (CPQPollQuery *APollQuery, Exception::Exception *AException)> COnPQPollQueryExceptionEvent;
+        typedef std::function<void (CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E)> COnPQPollQueryExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         #define POLL_QUERY_START_ERROR 0x10000u
@@ -557,7 +557,7 @@ namespace Delphi {
 
             void DoExecuted() override;
 
-            void DoException(Exception::Exception *AException);
+            void DoException(const Delphi::Exception::Exception &E);
 
         public:
 
@@ -613,8 +613,8 @@ namespace Delphi {
         class CPQServer;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef std::function<void (CPQConnection *AConnection, Exception::Exception *AException)> COnPQConnectionExceptionEvent;
-        typedef std::function<void (CPQServer *AServer, Exception::Exception *AException)> COnPQServerExceptionEvent;
+        typedef std::function<void (CPQConnection *AConnection, const Delphi::Exception::Exception &E)> COnPQConnectionExceptionEvent;
+        typedef std::function<void (CPQServer *AServer, const Delphi::Exception::Exception &E)> COnPQServerExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQConnectPollEvent: public CObject {
@@ -637,8 +637,8 @@ namespace Delphi {
             virtual void DoStatus(CPQConnection *AConnection);
             virtual void DoPollingStatus(CPQConnection *AConnection);
 
-            virtual void DoConnectException(CPQConnection *AConnection, Exception::Exception *AException);
-            virtual void DoServerException(Exception::Exception *AException) abstract;
+            virtual void DoConnectException(CPQConnection *AConnection, const Delphi::Exception::Exception &E);
+            virtual void DoServerException(const Delphi::Exception::Exception &E) abstract;
 
         public:
 
@@ -769,7 +769,7 @@ namespace Delphi {
             bool DoCommand(CTCPConnection *AConnection) override;
             bool DoExecute(CTCPConnection *AConnection) override;
 
-            void DoServerException(Exception::Exception *AException) override;
+            void DoServerException(const Delphi::Exception::Exception &E) override;
 
         public:
 

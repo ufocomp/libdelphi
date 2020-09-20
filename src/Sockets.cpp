@@ -2175,15 +2175,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketEvent::DoException(CTCPConnection *AConnection, Exception::Exception *AException) {
+        void CSocketEvent::DoException(CTCPConnection *AConnection, const Delphi::Exception::Exception &E) {
             if (m_OnException != nullptr)
-                m_OnException(AConnection, AException);
+                m_OnException(AConnection, E);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketEvent::DoListenException(Exception::Exception *AException) {
+        void CSocketEvent::DoListenException(const Delphi::Exception::Exception &E) {
             if (m_OnListenException != nullptr)
-                m_OnListenException(this, AException);
+                m_OnListenException(this, E);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2357,9 +2357,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketThread::DoException(Exception::Exception *AException) {
+        void CSocketThread::DoException(const Delphi::Exception::Exception &E) {
             if (m_OnException)
-                m_OnException(this, AException);
+                m_OnException(this, E);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2412,8 +2412,8 @@ namespace Delphi {
         void CSocketThread::Execute() {
             try {
                 ExecuteTry();
-            } catch (Exception::Exception &E) {
-                DoException(&E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(E);
                 Terminate();
             }
         }
@@ -2545,7 +2545,7 @@ namespace Delphi {
                         throw Exception::Exception(_T("No recv execute handler found."));
                 }
                 catch (ESocketError &E) {
-                    m_pConnection->Server()->DoException(m_pConnection, &E);
+                    m_pConnection->Server()->DoException(m_pConnection, E);
                     switch (E.GetLastError()) {
                         case ECONNABORTED:
                         case ECONNRESET:
@@ -2559,8 +2559,8 @@ namespace Delphi {
                 if (!Connection()->Connected())
                     Stop();
 
-            } catch (Exception::Exception &E) {
-                m_pConnection->Server()->DoException(m_pConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                m_pConnection->Server()->DoException(m_pConnection, E);
                 throw;
             }
         }
@@ -2633,10 +2633,10 @@ namespace Delphi {
                         }
                     }
                 }
-                catch (Exception::Exception &E) {
+                catch (Delphi::Exception::Exception &E) {
                     if (Assigned(LThread))
                         FreeAndNil(LThread);
-                    m_pServer->DoListenException(&E);
+                    m_pServer->DoListenException(E);
                 }
             }
 
@@ -2727,8 +2727,8 @@ namespace Delphi {
                     try {
                         LCommand->DoCommand();
                     }
-                    catch (Exception::Exception &E) {
-                        DoException(AConnection, &E);
+                    catch (Delphi::Exception::Exception &E) {
+                        DoException(AConnection, E);
                     }
 
                     delete LCommand;
@@ -2737,8 +2737,8 @@ namespace Delphi {
                         AConnection->Disconnect();
                 }
             }
-            catch (Exception::Exception &E) {
-                DoException(AConnection, &E);
+            catch (Delphi::Exception::Exception &E) {
+                DoException(AConnection, E);
             }
 
             delete[] lpCommand;
@@ -2748,9 +2748,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCommandHandler::DoException(CTCPConnection *AConnection, Exception::Exception *AException) {
+        void CCommandHandler::DoException(CTCPConnection *AConnection, const Delphi::Exception::Exception &E) {
             if (m_OnException)
-                m_OnException(AConnection, AException);
+                m_OnException(AConnection, E);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -3335,8 +3335,8 @@ namespace Delphi {
         void CPollEventHandlers::PollAdd(CPollEventHandler *AHandler) {
             try {
                 m_pPollStack->Add(AHandler);
-            } catch (Exception::Exception &E) {
-                DoException(AHandler, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(AHandler, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3344,8 +3344,8 @@ namespace Delphi {
         void CPollEventHandlers::PollMod(CPollEventHandler *AHandler) {
             try {
                 m_pPollStack->Mod(AHandler);
-            } catch (Exception::Exception &E) {
-                DoException(AHandler, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(AHandler, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3353,8 +3353,8 @@ namespace Delphi {
         void CPollEventHandlers::PollDel(CPollEventHandler *AHandler) {
             try {
                 m_pPollStack->Del(AHandler);
-            } catch (Exception::Exception &E) {
-                DoException(AHandler, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(AHandler, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3370,9 +3370,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandlers::DoException(CPollEventHandler *AHandler, Exception::Exception *AException) {
+        void CPollEventHandlers::DoException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E) {
             if (m_OnException != nullptr)
-                m_OnException(AHandler, AException);
+                m_OnException(AHandler, E);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -3669,9 +3669,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CEPoll::DoEventHandlersException(CPollEventHandler *AHandler, Exception::Exception *AException) {
+        void CEPoll::DoEventHandlersException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E) {
             if (m_OnEventHandlerException != nullptr)
-                m_OnEventHandlerException(AHandler, AException);
+                m_OnEventHandlerException(AHandler, E);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -3716,7 +3716,7 @@ namespace Delphi {
             try {
                 LConnection->Disconnect();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3725,8 +3725,8 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
                 DoExecute(LConnection);
-            } catch (Exception::Exception &E) {
-                DoException(LConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -3739,7 +3739,7 @@ namespace Delphi {
                 LConnection->FreeWriteBuffer();
                 LConnection->FlushOutputBuffer();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -4189,7 +4189,7 @@ namespace Delphi {
             try {
                 LConnection->Disconnect();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -4199,8 +4199,8 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
                 DoExecute(LConnection);
-            } catch (Exception::Exception &E) {
-                DoException(LConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -4213,7 +4213,7 @@ namespace Delphi {
                 LConnection->FreeWriteBuffer();
                 LConnection->FlushOutputBuffer();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -4246,9 +4246,9 @@ namespace Delphi {
                 } else {
                     throw ETCPServerError(_T("TCP Server Error..."));
                 }
-            } catch (Exception::Exception &E) {
+            } catch (Delphi::Exception::Exception &E) {
                 delete LConnection;
-                DoListenException(&E);
+                DoListenException(E);
             }
         }
 
@@ -4297,8 +4297,8 @@ namespace Delphi {
                     AHandler->Start(etIO);
                     DoConnected(LConnection);
                 }
-            } catch (Exception::Exception &E) {
-                DoException(LConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(LConnection, E);
                 AHandler->Stop();
             }
         }

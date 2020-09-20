@@ -2647,7 +2647,7 @@ namespace Delphi {
                         LConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -2684,7 +2684,7 @@ namespace Delphi {
                 }
             } catch (Delphi::Exception::Exception &E) {
                 delete LConnection;
-                DoListenException(&E);
+                DoListenException(E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2710,7 +2710,7 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -2731,7 +2731,7 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -2757,7 +2757,7 @@ namespace Delphi {
                     if (i == CommandHandlers()->Count())
                         DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
-                    DoException(AConnection, &E);
+                    DoException(AConnection, E);
                 }
                 DoAfterCommandHandler(AConnection);
             }
@@ -2824,8 +2824,8 @@ namespace Delphi {
 
                     AHandler->Start(etIO);
                 }
-            } catch (Exception::Exception &E) {
-                DoException(LConnection, &E);
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(LConnection, E);
                 AHandler->Stop();
             }
         }
@@ -2855,7 +2855,7 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -2870,7 +2870,7 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 LConnection->Disconnect();
             }
         }
@@ -2897,7 +2897,7 @@ namespace Delphi {
                     if (i == CommandHandlers()->Count())
                         DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
-                    DoException(AConnection, &E);
+                    DoException(AConnection, E);
                 }
                 DoAfterCommandHandler(AConnection);
             }
@@ -3009,7 +3009,7 @@ namespace Delphi {
                     AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, &E);
+                DoException(LConnection, E);
                 AHandler->Stop();
             }
         }
