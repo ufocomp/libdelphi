@@ -2668,81 +2668,74 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCommandHandler::Check(LPCTSTR AData, size_t ASize, CTCPConnection *AConnection) {
+            CString LCommand;
+            LCommand.Write(AData, ASize);
+            return Check(LCommand, AConnection);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CCommandHandler::Check(const CString &Data, CTCPConnection *AConnection) {
             bool Result = false;
 
-            LPTSTR lpCommand = nullptr;
-            LPTSTR lpUnparsedParams = nullptr;
+            CString LCommand;
+            CString LUnparsedParams;
 
             try {
-                lpCommand = new TCHAR[ASize + 1];
-                lpUnparsedParams = new TCHAR[ASize + 1];
-
-                ::SecureZeroMemory(lpCommand, (ASize + 1) * sizeof(TCHAR));
-                ::SecureZeroMemory(lpUnparsedParams, (ASize + 1) * sizeof(TCHAR));
-
-                Result = SameText(AData, Command());
+                Result = m_Command == Data;
 
                 if (!Result) {
-                    size_t Len = 0;
-                    chVERIFY(SUCCEEDED(StringCchLength(Command(), MAX_BUFFER_SIZE, &Len)));
+                    size_t Len = m_Command.Length();
 
-                    if (Len >= ASize)
+                    if (Len >= Data.Length())
                         return false;
 
                     if (CmdDelimiter() != 0) {
-                        chVERIFY(SUCCEEDED(StringCchCopy(lpCommand, ASize, AData)));
-                        Result = (lpCommand[Len] == CmdDelimiter());
+                        LCommand = Data;
+                        Result = (LCommand[Len] == m_CmdDelimiter);
                         if (Result) {
-                            lpCommand[Len] = 0;
-                            Result = SameText(lpCommand, Command());
-                            chVERIFY(SUCCEEDED(StringCchCopy(lpUnparsedParams, ASize, AData + Len + 1)));
+                            LUnparsedParams = LCommand.SubString(Len);
+                            LCommand.SetLength(Len);
+                            LCommand.Truncate();
+                            Result = m_Command == LCommand;
                         }
                     } else {
                         // Dont strip any part of the params out.. - just remove the command purely on length and no delim
-                        chVERIFY(SUCCEEDED(StringCchCopy(lpCommand, ASize, AData)));
-                        lpCommand[Len] = 0;
-                        Result = SameText(lpCommand, Command());
-                        chVERIFY(SUCCEEDED(StringCchCopy(lpUnparsedParams, ASize, AData + Len + 1)));
+                        LCommand = Data;
+                        LUnparsedParams = LCommand.SubString(Len);
+                        LCommand.SetLength(Len);
+                        LCommand.Truncate();
+                        Result = m_Command == LCommand;
                     }
                 }
 
                 if (Result) {
-                    auto LCommand = new CCommand(this);
+                    auto pCommand = new CCommand(this);
 
-                    LCommand->m_pConnection = AConnection;
-                    LCommand->m_RawLine = AData;
-                    LCommand->m_UnparsedParams = lpUnparsedParams;
+                    pCommand->m_pConnection = AConnection;
+                    pCommand->m_RawLine = Data;
+                    pCommand->m_UnparsedParams = LUnparsedParams;
 
                     if (ParseParams()) {
-                        LCommand->Params()->Clear();
-
-                        size_t Len = 0;
-                        chVERIFY(SUCCEEDED(StringCchLength(lpUnparsedParams, ASize + 1, &Len)));
-
-                        SplitColumns(lpUnparsedParams, Len, LCommand->m_pParams, m_ParamDelimiter);
+                        pCommand->m_Params.Clear();
+                        SplitColumns(LUnparsedParams, pCommand->m_Params, m_ParamDelimiter);
                     }
 
-                    LCommand->PerformReply(true);
+                    pCommand->PerformReply(true);
 
                     try {
-                        LCommand->DoCommand();
-                    }
-                    catch (Delphi::Exception::Exception &E) {
+                        pCommand->DoCommand();
+                    } catch (Delphi::Exception::Exception &E) {
                         DoException(AConnection, E);
                     }
 
-                    delete LCommand;
+                    delete pCommand;
 
                     if (Disconnect())
                         AConnection->Disconnect();
                 }
-            }
-            catch (Delphi::Exception::Exception &E) {
+            } catch (Delphi::Exception::Exception &E) {
                 DoException(AConnection, E);
             }
-
-            delete[] lpCommand;
-            delete[] lpUnparsedParams;
 
             return Result;
         }
@@ -2807,16 +2800,10 @@ namespace Delphi {
         CCommand::CCommand(CCommandHandler *ACommandHandler): CObject() {
             m_pConnection = nullptr;
             m_pCommandHandler = ACommandHandler;
-            m_pParams = new CStringList;
 
             m_PerformReply = false;
             m_RawLine = nullptr;
             m_UnparsedParams = nullptr;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CCommand::~CCommand() {
-            FreeAndNil(m_pParams);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3785,39 +3772,37 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CAsyncServer::DoCommand(CTCPConnection *AConnection) {
-            int i;
-            CMemoryStream *LStream = nullptr;
+            CCommandHandler *pHandler;
 
             bool Result = m_pCommandHandlers->Count() > 0;
 
             if (Result) {
                 if (AConnection->Connected()) {
-                    LStream = new CMemoryStream();
-                    LStream->SetSize(MaxLineLengthDefault);
-                    LStream->SetSize(AConnection->ReadLn((char *) LStream->Memory()));
 
-                    if (LStream->Size() > 0 && LStream->Size() < MaxLineLengthDefault) {
-                        DoBeforeCommandHandler(AConnection, (char *) LStream->Memory());
+                    CMemoryStream LStream;
+
+                    LStream.SetSize(MaxLineLengthDefault);
+                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
+
+                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
+                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
                         try {
-                            for (i = 0; i < m_pCommandHandlers->Count(); ++i) {
-                                if (m_pCommandHandlers->Commands(i)->Enabled()) {
-                                    if (m_pCommandHandlers->Commands(i)->Check((char *) LStream->Memory(),
-                                                                              LStream->Size(), AConnection))
+                            int Index;
+                            for (Index = 0; Index < m_pCommandHandlers->Count(); ++Index) {
+                                pHandler = m_pCommandHandlers->Commands(Index);
+                                if (pHandler->Enabled()) {
+                                    if (pHandler->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
                                         break;
                                 }
                             }
-
-                            if (i == m_pCommandHandlers->Count())
-                                DoNoCommandHandler((char *) LStream->Memory(), AConnection);
+                            if (Index == m_pCommandHandlers->Count())
+                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
+                        } catch (Delphi::Exception::Exception &E) {
+                            DoException(AConnection, E);
                         }
-                        catch (...) {
-                        }
-
                         DoAfterCommandHandler(AConnection);
                     }
                 }
-
-                delete LStream;
             }
 
             return Result;
@@ -3913,39 +3898,37 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CAsyncClient::DoCommand(CTCPConnection *AConnection) {
-            int i;
-            CMemoryStream *LStream = nullptr;
+            CCommandHandler *pHandler;
 
             bool Result = m_pCommandHandlers->Count() > 0;
 
             if (Result) {
                 if (AConnection->Connected()) {
-                    LStream = new CMemoryStream();
-                    LStream->SetSize(MaxLineLengthDefault);
-                    LStream->SetSize(AConnection->ReadLn((char *) LStream->Memory()));
 
-                    if (LStream->Size() > 0 && LStream->Size() < MaxLineLengthDefault) {
-                        DoBeforeCommandHandler(AConnection, (char *) LStream->Memory());
+                    CMemoryStream LStream;
+
+                    LStream.SetSize(MaxLineLengthDefault);
+                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
+
+                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
+                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
                         try {
-                            for (i = 0; i < m_pCommandHandlers->Count(); ++i) {
-                                if (m_pCommandHandlers->Commands(i)->Enabled()) {
-                                    if (m_pCommandHandlers->Commands(i)->Check((char *) LStream->Memory(),
-                                                                              LStream->Size(), AConnection))
+                            int Index;
+                            for (Index = 0; Index < m_pCommandHandlers->Count(); ++Index) {
+                                pHandler = m_pCommandHandlers->Commands(Index);
+                                if (pHandler->Enabled()) {
+                                    if (pHandler->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
                                         break;
                                 }
                             }
-
-                            if (i == m_pCommandHandlers->Count())
-                                DoNoCommandHandler((char *) LStream->Memory(), AConnection);
+                            if (Index == m_pCommandHandlers->Count())
+                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
+                        } catch (Delphi::Exception::Exception &E) {
+                            DoException(AConnection, E);
                         }
-                        catch (...) {
-                        }
-
                         DoAfterCommandHandler(AConnection);
                     }
                 }
-
-                delete LStream;
             }
 
             return Result;

@@ -2738,6 +2738,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CHTTPServer::DoCommand(CTCPConnection *AConnection) {
+            CCommandHandler *pHandler;
+
             auto LConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             auto LRequest = LConnection->Request();
 
@@ -2746,15 +2748,16 @@ namespace Delphi {
             if (Result) {
                 DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
                 try {
-                    int i;
-                    for (i = 0; i < CommandHandlers()->Count(); ++i) {
-                        if (CommandHandlers()->Commands(i)->Enabled()) {
-                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(), LRequest->Method.Size(), AConnection))
+                    int Index;
+                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
+                        pHandler = CommandHandlers()->Commands(Index);
+                        if (pHandler->Enabled()) {
+                            if (pHandler->Check(LRequest->Method, AConnection))
                                 break;
                         }
                     }
 
-                    if (i == CommandHandlers()->Count())
+                    if (Index == CommandHandlers()->Count())
                         DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
@@ -2877,7 +2880,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CHTTPClient::DoCommand(CTCPConnection *AConnection) {
-            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AConnection);
+            CCommandHandler *pHandler;
+
+            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             auto LRequest = LConnection->Request();
 
             bool Result = CommandHandlers()->Count() > 0;
@@ -2885,16 +2890,16 @@ namespace Delphi {
             if (Result) {
                 DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
                 try {
-                    int i;
-                    for (i = 0; i < CommandHandlers()->Count(); ++i) {
-                        if (CommandHandlers()->Commands(i)->Enabled()) {
-                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(),
-                                                                      LRequest->Method.Size(), AConnection))
+                    int Index;
+                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
+                        pHandler = CommandHandlers()->Commands(Index);
+                        if (pHandler->Enabled()) {
+                            if (pHandler->Check(LRequest->Method, AConnection))
                                 break;
                         }
                     }
 
-                    if (i == CommandHandlers()->Count())
+                    if (Index == CommandHandlers()->Count())
                         DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);

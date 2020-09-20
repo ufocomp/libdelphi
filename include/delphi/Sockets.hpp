@@ -844,9 +844,9 @@ namespace Delphi {
 
         typedef std::function<void (CTCPConnection *AConnection, const Delphi::Exception::Exception &E)> COnSocketExceptionEvent;
 
-        typedef std::function<void (CSocketEvent *Sender, LPCTSTR AData, CTCPConnection *AConnection)> COnSocketBeforeCommandHandlerEvent;
+        typedef std::function<void (CSocketEvent *Sender, const CString &Data, CTCPConnection *AConnection)> COnSocketBeforeCommandHandlerEvent;
 
-        typedef std::function<void (CSocketEvent *Sender, LPCTSTR AData, CTCPConnection *AConnection)> COnSocketNoCommandHandlerEvent;
+        typedef std::function<void (CSocketEvent *Sender, const CString &Data, CTCPConnection *AConnection)> COnSocketNoCommandHandlerEvent;
 
         typedef std::function<void (CSocketEvent *Sender, CTCPConnection *AConnection)> COnSocketAfterCommandHandlerEvent;
 
@@ -1481,7 +1481,7 @@ namespace Delphi {
 
             char m_CmdDelimiter;
 
-            LPCTSTR m_Command;
+            CString m_Command;
             Pointer m_Data;
 
             bool m_Disconnect;
@@ -1504,6 +1504,7 @@ namespace Delphi {
             ~CCommandHandler() override = default;
 
             virtual bool Check(LPCTSTR AData, size_t ALen, CTCPConnection *AConnection);
+            virtual bool Check(const CString &Data, CTCPConnection *AConnection);
 
             Pointer Data() { return m_Data; }
             void Data(Pointer Value) { m_Data = Value; }
@@ -1511,8 +1512,8 @@ namespace Delphi {
             char CmdDelimiter() const { return m_CmdDelimiter; }
             void CmdDelimiter(char Value) { m_CmdDelimiter = Value; }
 
-            LPCTSTR Command() { return m_Command; }
-            void Command(LPCTSTR Value) { m_Command = Value; }
+            CString &Command() { return m_Command; }
+            const CString &Command() const { return m_Command; }
 
             bool Disconnect() const { return m_Disconnect; }
             void Disconnect(bool Value) { m_Disconnect = Value; }
@@ -1601,10 +1602,13 @@ namespace Delphi {
 
             CTCPConnection *m_pConnection;
             CCommandHandler *m_pCommandHandler;
-            CStringList *m_pParams;
+
+            CStringList m_Params;
+
             bool m_PerformReply;
-            LPCTSTR m_RawLine;
-            LPCTSTR m_UnparsedParams;
+
+            CString m_RawLine;
+            CString m_UnparsedParams;
 
             virtual void DoCommand();
 
@@ -1612,7 +1616,7 @@ namespace Delphi {
 
             explicit CCommand(CCommandHandler *ACommandHandler);
 
-            ~CCommand() override;
+            ~CCommand() override = default;
 
             CTCPConnection *Connection() { return m_pConnection; }
 
@@ -1621,11 +1625,15 @@ namespace Delphi {
             bool PerformReply() const { return m_PerformReply; }
             void PerformReply(bool Value) { m_PerformReply = Value; }
 
-            CStringList *Params() { return m_pParams; }
+            CStringList &Params() { return m_Params; }
+            const CStringList &Params() const { return m_Params; }
 
-            LPCTSTR RawLine() { return m_RawLine; }
+            CString &RawLine() { return m_RawLine; }
+            const CString &RawLine() const { return m_RawLine; }
 
-            LPCTSTR UnparsedParams() { return m_UnparsedParams; }
+            CString &UnparsedParams() { return m_UnparsedParams; }
+            const CString &UnparsedParams() const { return m_UnparsedParams; }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
