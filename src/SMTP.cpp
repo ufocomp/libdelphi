@@ -148,8 +148,8 @@ namespace Delphi {
                 if (Result) {
                     InputBuffer()->Extract(LStream.Memory(), LStream.Size());
 /*
-                    CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
-                    const int ParseResult = CReplyParser::Parse(GetReply(), Context);
+                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
+                    const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
 
                     switch (ParseResult) {
                         case 0:

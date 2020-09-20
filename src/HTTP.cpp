@@ -257,11 +257,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CRequest --------------------------------------------------------------------------------------------------
+        //-- CHTTPRequest ----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::ToBuffers(CMemoryStream *AStream) {
+        void CHTTPRequest::ToBuffers(CMemoryStream *AStream) {
 
             Method.SaveToStream(AStream);
             StringArrayToStream(AStream, MiscStrings::space);
@@ -293,7 +293,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::Clear() {
+        void CHTTPRequest::Clear() {
             Method = "GET";
             URI = "/";
             VMajor = 1;
@@ -306,22 +306,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
+        void CHTTPRequest::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
             Headers.AddPair(lpszName, lpszValue);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::AddHeader(LPCTSTR lpszName, const CString &Value) {
+        void CHTTPRequest::AddHeader(LPCTSTR lpszName, const CString &Value) {
             Headers.AddPair(lpszName, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::AddHeader(const CString &Name, const CString &Value) {
+        void CHTTPRequest::AddHeader(const CString &Name, const CString &Value) {
             Headers.AddPair(Name, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::ToText() {
+        void CHTTPRequest::ToText() {
             CString Temp;
             TCHAR ch;
             if (!Content.IsEmpty()) {
@@ -336,7 +336,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::ToJSON() {
+        void CHTTPRequest::ToJSON() {
             CString Temp;
             if (!Content.IsEmpty()) {
                 Temp = Content;
@@ -372,7 +372,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CRequest *CRequest::Prepare(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI, LPCTSTR AContentType) {
+        CHTTPRequest *CHTTPRequest::Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI, LPCTSTR AContentType) {
 
             TCHAR szSize[_INT_T_LEN + 1] = {0};
 
@@ -428,7 +428,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CRequest *CRequest::Authorization(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin,
+        CHTTPRequest *CHTTPRequest::Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin,
                 LPCTSTR APassword) {
 
             CString LPassphrase, LAuthorization;
@@ -447,7 +447,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CRequest::BuildLocation() {
+        bool CHTTPRequest::BuildLocation() {
             CString Protocol;
             const auto& Host = Headers.Values(_T("Host"));
             if (Host.Find(':') == CString::npos) {
@@ -463,7 +463,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CRequest::BuildCookies() {
+        void CHTTPRequest::BuildCookies() {
             const auto& Cookie = Headers.Values(_T("Cookie"));
             if (!Cookie.empty()) {
                 SplitColumns(Cookie, Cookies, ';');
@@ -673,11 +673,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CRequestParser --------------------------------------------------------------------------------------------
+        //-- CHTTPRequestParser ----------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        int CRequestParser::Consume(CRequest *ARequest, CHTTPContext& Context) {
+        int CHTTPRequestParser::Consume(CHTTPRequest *ARequest, CHTTPContext& Context) {
             size_t ContentLength = 0;
 
             const auto BufferSize = Context.End - Context.Begin;
@@ -1054,7 +1054,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CRequestParser::Parse(CRequest *ARequest, CHTTPContext& Context) {
+        int CHTTPRequestParser::Parse(CHTTPRequest *ARequest, CHTTPContext& Context) {
             Context.Result = -1;
             while ((Context.Result == -1) && (Context.Begin != Context.End)) {
                 Context.Result = Consume(ARequest, Context);
@@ -1063,7 +1063,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CRequestParser::ParseFormData(CRequest *ARequest, CFormData& FormData) {
+        int CHTTPRequestParser::ParseFormData(CHTTPRequest *ARequest, CFormData& FormData) {
             const CString& Content = ARequest->Content;
 
             if (Content.IsEmpty())
@@ -1103,7 +1103,7 @@ namespace Delphi {
                 }
 
                 CStringList& formData = ARequest->FormData;
-                CRequest Request;
+                CHTTPRequest Request;
 
                 for (int I = 0; I < Data.Count(); I++) {
                     CHTTPContext Context = CHTTPContext(Data[I].Data(), Data[I].Size());
@@ -1133,17 +1133,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CRequestParser::IsChar(int c) {
+        bool CHTTPRequestParser::IsChar(int c) {
             return c >= 0 && c <= 127;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CRequestParser::IsCtl(int c) {
+        bool CHTTPRequestParser::IsCtl(int c) {
             return (c >= 0 && c <= 31) || (c == 127);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CRequestParser::IsTSpecial(int c) {
+        bool CHTTPRequestParser::IsTSpecial(int c) {
             switch (c) {
                 case '(':
                 case ')':
@@ -1171,7 +1171,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CRequestParser::IsDigit(int c) {
+        bool CHTTPRequestParser::IsDigit(int c) {
             return c >= '0' && c <= '9';
         }
 
@@ -1193,32 +1193,32 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CReply ----------------------------------------------------------------------------------------------------
+        //-- CHTTPReply ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        static const CReply::CStatusType StatusArray[] = {
-                CReply::switching_protocols,
-                CReply::ok,
-                CReply::created,
-                CReply::accepted,
-                CReply::non_authoritative,
-                CReply::no_content,
-                CReply::multiple_choices,
-                CReply::moved_permanently,
-                CReply::moved_temporarily,
-                CReply::see_other,
-                CReply::not_modified,
-                CReply::bad_request,
-                CReply::unauthorized,
-                CReply::forbidden,
-                CReply::not_found,
-                CReply::not_allowed,
-                CReply::internal_server_error,
-                CReply::not_implemented,
-                CReply::bad_gateway,
-                CReply::service_unavailable,
-                CReply::gateway_timeout
+        static const CHTTPReply::CStatusType StatusArray[] = {
+                CHTTPReply::switching_protocols,
+                CHTTPReply::ok,
+                CHTTPReply::created,
+                CHTTPReply::accepted,
+                CHTTPReply::non_authoritative,
+                CHTTPReply::no_content,
+                CHTTPReply::multiple_choices,
+                CHTTPReply::moved_permanently,
+                CHTTPReply::moved_temporarily,
+                CHTTPReply::see_other,
+                CHTTPReply::not_modified,
+                CHTTPReply::bad_request,
+                CHTTPReply::unauthorized,
+                CHTTPReply::forbidden,
+                CHTTPReply::not_found,
+                CHTTPReply::not_allowed,
+                CHTTPReply::internal_server_error,
+                CHTTPReply::not_implemented,
+                CHTTPReply::bad_gateway,
+                CHTTPReply::service_unavailable,
+                CHTTPReply::gateway_timeout
         };
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1246,118 +1246,118 @@ namespace Delphi {
             const TCHAR service_unavailable[] = _T("Service Unavailable");
             const TCHAR gateway_timeout[] = _T("Gateway Timeout");
 
-            size_t ToBuffer(CReply::CStatusType AStatus, CStream *AStream) {
+            size_t ToBuffer(CHTTPReply::CStatusType AStatus, CStream *AStream) {
                 switch (AStatus) {
-                    case CReply::switching_protocols:
+                    case CHTTPReply::switching_protocols:
                         return StringArrayToStream(AStream, switching_protocols);
-                    case CReply::ok:
+                    case CHTTPReply::ok:
                         return StringArrayToStream(AStream, ok);
-                    case CReply::created:
+                    case CHTTPReply::created:
                         return StringArrayToStream(AStream, created);
-                    case CReply::accepted:
+                    case CHTTPReply::accepted:
                         return StringArrayToStream(AStream, accepted);
-                    case CReply::non_authoritative:
+                    case CHTTPReply::non_authoritative:
                         return StringArrayToStream(AStream, non_authoritative);
-                    case CReply::no_content:
+                    case CHTTPReply::no_content:
                         return StringArrayToStream(AStream, no_content);
-                    case CReply::multiple_choices:
+                    case CHTTPReply::multiple_choices:
                         return StringArrayToStream(AStream, multiple_choices);
-                    case CReply::moved_permanently:
+                    case CHTTPReply::moved_permanently:
                         return StringArrayToStream(AStream, moved_permanently);
-                    case CReply::moved_temporarily:
+                    case CHTTPReply::moved_temporarily:
                         return StringArrayToStream(AStream, moved_temporarily);
-                    case CReply::see_other:
+                    case CHTTPReply::see_other:
                         return StringArrayToStream(AStream, see_other);
-                    case CReply::not_modified:
+                    case CHTTPReply::not_modified:
                         return StringArrayToStream(AStream, not_modified);
-                    case CReply::bad_request:
+                    case CHTTPReply::bad_request:
                         return StringArrayToStream(AStream, bad_request);
-                    case CReply::unauthorized:
+                    case CHTTPReply::unauthorized:
                         return StringArrayToStream(AStream, unauthorized);
-                    case CReply::forbidden:
+                    case CHTTPReply::forbidden:
                         return StringArrayToStream(AStream, forbidden);
-                    case CReply::not_found:
+                    case CHTTPReply::not_found:
                         return StringArrayToStream(AStream, not_found);
-                    case CReply::not_allowed:
+                    case CHTTPReply::not_allowed:
                         return StringArrayToStream(AStream, not_allowed);
-                    case CReply::internal_server_error:
+                    case CHTTPReply::internal_server_error:
                         return StringArrayToStream(AStream, internal_server_error);
-                    case CReply::not_implemented:
+                    case CHTTPReply::not_implemented:
                         return StringArrayToStream(AStream, not_implemented);
-                    case CReply::bad_gateway:
+                    case CHTTPReply::bad_gateway:
                         return StringArrayToStream(AStream, bad_gateway);
-                    case CReply::service_unavailable:
+                    case CHTTPReply::service_unavailable:
                         return StringArrayToStream(AStream, service_unavailable);
-                    case CReply::gateway_timeout:
+                    case CHTTPReply::gateway_timeout:
                         return StringArrayToStream(AStream, gateway_timeout);
                     default:
                         return StringArrayToStream(AStream, internal_server_error);
                 }
             }
 
-            void ToString(CReply::CStatusType AStatus, CString &AString) {
+            void ToString(CHTTPReply::CStatusType AStatus, CString &AString) {
                 switch (AStatus) {
-                    case CReply::switching_protocols:
+                    case CHTTPReply::switching_protocols:
                         AString = switching_protocols;
                         break;
-                    case CReply::ok:
+                    case CHTTPReply::ok:
                         AString = ok;
                         break;
-                    case CReply::created:
+                    case CHTTPReply::created:
                         AString = created;
                         break;
-                    case CReply::accepted:
+                    case CHTTPReply::accepted:
                         AString = accepted;
                         break;
-                    case CReply::non_authoritative:
+                    case CHTTPReply::non_authoritative:
                         AString = non_authoritative;
                         break;
-                    case CReply::no_content:
+                    case CHTTPReply::no_content:
                         AString = no_content;
                         break;
-                    case CReply::multiple_choices:
+                    case CHTTPReply::multiple_choices:
                         AString = multiple_choices;
                         break;
-                    case CReply::moved_permanently:
+                    case CHTTPReply::moved_permanently:
                         AString = moved_permanently;
                         break;
-                    case CReply::moved_temporarily:
+                    case CHTTPReply::moved_temporarily:
                         AString = moved_temporarily;
                         break;
-                    case CReply::see_other:
+                    case CHTTPReply::see_other:
                         AString = see_other;
                         break;
-                    case CReply::not_modified:
+                    case CHTTPReply::not_modified:
                         AString = not_modified;
                         break;
-                    case CReply::bad_request:
+                    case CHTTPReply::bad_request:
                         AString = bad_request;
                         break;
-                    case CReply::unauthorized:
+                    case CHTTPReply::unauthorized:
                         AString = unauthorized;
                         break;
-                    case CReply::forbidden:
+                    case CHTTPReply::forbidden:
                         AString = forbidden;
                         break;
-                    case CReply::not_found:
+                    case CHTTPReply::not_found:
                         AString = not_found;
                         break;
-                    case CReply::not_allowed:
+                    case CHTTPReply::not_allowed:
                         AString = not_allowed;
                         break;
-                    case CReply::internal_server_error:
+                    case CHTTPReply::internal_server_error:
                         AString = internal_server_error;
                         break;
-                    case CReply::not_implemented:
+                    case CHTTPReply::not_implemented:
                         AString = not_implemented;
                         break;
-                    case CReply::bad_gateway:
+                    case CHTTPReply::bad_gateway:
                         AString = bad_gateway;
                         break;
-                    case CReply::service_unavailable:
+                    case CHTTPReply::service_unavailable:
                         AString = service_unavailable;
                         break;
-                    case CReply::gateway_timeout:
+                    case CHTTPReply::gateway_timeout:
                         AString = gateway_timeout;
                         break;
                     default:
@@ -1368,7 +1368,7 @@ namespace Delphi {
         } // namespace StatusStrings
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::ToBuffers(CMemoryStream *AStream) {
+        void CHTTPReply::ToBuffers(CMemoryStream *AStream) {
 
             StatusString = Status;
             StatusStrings::ToString(Status, StatusText);
@@ -1443,53 +1443,53 @@ namespace Delphi {
             LPCTSTR service_unavailable[]   = CreateStockReplies(503, Service Unavailable);
             LPCTSTR gateway_timeout[]       = CreateStockReplies(504, Gateway Timeout);
 
-            LPCTSTR ToString(CReply::CStatusType AStatus, CReply::CContentType AMessage) {
+            LPCTSTR ToString(CHTTPReply::CStatusType AStatus, CHTTPReply::CContentType AMessage) {
 
-                if (AMessage > CReply::CContentType::json)
-                    AMessage = CReply::CContentType::html;
+                if (AMessage > CHTTPReply::CContentType::json)
+                    AMessage = CHTTPReply::CContentType::html;
 
                 switch (AStatus) {
-                    case CReply::switching_protocols:
+                    case CHTTPReply::switching_protocols:
                         return switching_protocols[AMessage];
-                    case CReply::ok:
+                    case CHTTPReply::ok:
                         return ok[AMessage];
-                    case CReply::created:
+                    case CHTTPReply::created:
                         return created[AMessage];
-                    case CReply::accepted:
+                    case CHTTPReply::accepted:
                         return accepted[AMessage];
-                    case CReply::non_authoritative:
+                    case CHTTPReply::non_authoritative:
                         return non_authoritative[AMessage];
-                    case CReply::no_content:
+                    case CHTTPReply::no_content:
                         return no_content[AMessage];
-                    case CReply::multiple_choices:
+                    case CHTTPReply::multiple_choices:
                         return multiple_choices[AMessage];
-                    case CReply::moved_permanently:
+                    case CHTTPReply::moved_permanently:
                         return moved_permanently[AMessage];
-                    case CReply::moved_temporarily:
+                    case CHTTPReply::moved_temporarily:
                         return moved_temporarily[AMessage];
-                    case CReply::see_other:
+                    case CHTTPReply::see_other:
                         return see_other[AMessage];
-                    case CReply::not_modified:
+                    case CHTTPReply::not_modified:
                         return not_modified[AMessage];
-                    case CReply::bad_request:
+                    case CHTTPReply::bad_request:
                         return bad_request[AMessage];
-                    case CReply::unauthorized:
+                    case CHTTPReply::unauthorized:
                         return unauthorized[AMessage];
-                    case CReply::forbidden:
+                    case CHTTPReply::forbidden:
                         return forbidden[AMessage];
-                    case CReply::not_found:
+                    case CHTTPReply::not_found:
                         return not_found[AMessage];
-                    case CReply::not_allowed:
+                    case CHTTPReply::not_allowed:
                         return not_allowed[AMessage];
-                    case CReply::internal_server_error:
+                    case CHTTPReply::internal_server_error:
                         return internal_server_error[AMessage];
-                    case CReply::not_implemented:
+                    case CHTTPReply::not_implemented:
                         return not_implemented[AMessage];
-                    case CReply::bad_gateway:
+                    case CHTTPReply::bad_gateway:
                         return bad_gateway[AMessage];
-                    case CReply::service_unavailable:
+                    case CHTTPReply::service_unavailable:
                         return service_unavailable[AMessage];
-                    case CReply::gateway_timeout:
+                    case CHTTPReply::gateway_timeout:
                         return gateway_timeout[AMessage];
                     default:
                         return internal_server_error[AMessage];
@@ -1499,7 +1499,7 @@ namespace Delphi {
         } // namespace stock_replies
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::Clear() {
+        void CHTTPReply::Clear() {
             VMajor = 1;
             VMinor = 1;
             Status = CStatusType::internal_server_error;
@@ -1512,28 +1512,28 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
+        void CHTTPReply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
             Headers.Add(CHeader());
             Headers.Last().Name() = lpszName;
             Headers.Last().Value() = lpszValue;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::AddHeader(LPCTSTR lpszName, const CString &Value) {
+        void CHTTPReply::AddHeader(LPCTSTR lpszName, const CString &Value) {
             Headers.Add(CHeader());
             Headers.Last().Name() = lpszName;
             Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::AddHeader(const CString &Name, const CString &Value) {
+        void CHTTPReply::AddHeader(const CString &Name, const CString &Value) {
             Headers.Add(CHeader());
             Headers.Last().Name() = Name;
             Headers.Last().Value() = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::ToText() {
+        void CHTTPReply::ToText() {
             CString Temp;
             TCHAR ch;
             if (!Content.IsEmpty()) {
@@ -1548,7 +1548,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::ToJSON() {
+        void CHTTPReply::ToJSON() {
             CString Temp;
             if (!Content.IsEmpty()) {
                 Temp = Content;
@@ -1584,7 +1584,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::StringToStatus() {
+        void CHTTPReply::StringToStatus() {
             int I = StrToInt(StatusString.c_str());
             for (const auto S : StatusArray) {
                 if (I == S) {
@@ -1595,7 +1595,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LPCTSTR CReply::GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta) {
+        LPCTSTR CHTTPReply::GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta) {
             time_t timer = 0;
             struct tm *gmt;
 
@@ -1610,7 +1610,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath, time_t Expires,
+        void CHTTPReply::SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath, time_t Expires,
                 bool HttpOnly, LPCTSTR lpszSameSite) {
 
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
@@ -1628,7 +1628,7 @@ namespace Delphi {
 
             if (Expires > 0) {
                 Cookie << "; Expires=";
-                Cookie << CReply::GetGMT(szDate, sizeof(szDate), Expires);
+                Cookie << CHTTPReply::GetGMT(szDate, sizeof(szDate), Expires);
             } else if (Expires < 0) {
                 Cookie << "; Max-Age=0";
             }
@@ -1645,7 +1645,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CReply *CReply::GetReply(CReply *AReply, CStatusType AStatus, LPCTSTR AContentType) {
+        CHTTPReply *CHTTPReply::GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType) {
 
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
             TCHAR szSize[_INT_T_LEN + 1] = {0};
@@ -1718,15 +1718,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CReply *CReply::GetStockReply(CReply *AReply, CReply::CStatusType AStatus) {
-            if (AStatus != CReply::no_content)
+        CHTTPReply *CHTTPReply::GetStockReply(CHTTPReply *AReply, CHTTPReply::CStatusType AStatus) {
+            if (AStatus != CHTTPReply::no_content)
                 AReply->Content = StockReplies::ToString(AStatus, AReply->ContentType);
             AReply = GetReply(AReply, AStatus);
             return AReply;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CReply::AddUnauthorized(CReply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
+        void CHTTPReply::AddUnauthorized(CHTTPReply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
             auto& LAuthenticate = AReply->Headers.Values(_T("WWW-Authenticate"));
             if (LAuthenticate.IsEmpty()) {
                 CString Basic(_T("Basic realm=\"Access denied\", charset=\"UTF-8\""));
@@ -1740,11 +1740,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CReplyParser ----------------------------------------------------------------------------------------------
+        //-- CHTTPReplyParser ------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        int CReplyParser::Consume(CReply *AReply, CReplyContext& Context) {
+        int CHTTPReplyParser::Consume(CHTTPReply *AReply, CHTTPReplyContext& Context) {
 
             size_t ContentLength = 0;
             size_t ChunkedLength = 0;
@@ -2063,7 +2063,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CReplyParser::Parse(CReply *AReply, CReplyContext& Context) {
+        int CHTTPReplyParser::Parse(CHTTPReply *AReply, CHTTPReplyContext& Context) {
             Context.Result = -1;
             while (Context.Result == -1 && Context.Begin != Context.End) {
                 Context.Result = Consume(AReply, Context);
@@ -2072,17 +2072,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CReplyParser::IsChar(int c) {
+        bool CHTTPReplyParser::IsChar(int c) {
             return c >= 0 && c <= 127;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CReplyParser::IsCtl(int c) {
+        bool CHTTPReplyParser::IsCtl(int c) {
             return (c >= 0 && c <= 31) || (c == 127);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CReplyParser::IsTSpecial(int c) {
+        bool CHTTPReplyParser::IsTSpecial(int c) {
             switch (c) {
                 case '(':
                 case ')':
@@ -2110,12 +2110,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CReplyParser::IsDigit(int c) {
+        bool CHTTPReplyParser::IsDigit(int c) {
             return c >= '0' && c <= '9';
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CReplyParser::IsHex(int c) {
+        bool CHTTPReplyParser::IsHex(int c) {
             return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
         }
 
@@ -2148,16 +2148,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CRequest *CHTTPServerConnection::GetRequest() {
+        CHTTPRequest *CHTTPServerConnection::GetRequest() {
             if (m_Request == nullptr)
-                m_Request = new CRequest();
+                m_Request = new CHTTPRequest();
             return m_Request;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CReply *CHTTPServerConnection::GetReply() {
+        CHTTPReply *CHTTPServerConnection::GetReply() {
             if (m_Reply == nullptr) {
-                m_Reply = new CReply();
+                m_Reply = new CHTTPReply();
                 m_Reply->ServerName = Server()->ServerName();
                 m_Reply->AllowedMethods = Server()->AllowedMethods();
             }
@@ -2191,7 +2191,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::ParseHTTP(CMemoryStream *Stream) {
             CHTTPContext Context = CHTTPContext((LPCTSTR) Stream->Memory(), Stream->Size(), m_State, m_ContentLength);
-            const int ParseResult = CRequestParser::Parse(GetRequest(), Context);
+            const int ParseResult = CHTTPRequestParser::Parse(GetRequest(), Context);
 
             switch (ParseResult) {
                 case 0:
@@ -2283,19 +2283,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::SendStockReply(CReply::CStatusType AStatus, bool ASendNow) {
+        void CHTTPServerConnection::SendStockReply(CHTTPReply::CStatusType AStatus, bool ASendNow) {
 
             GetReply()->CloseConnection = CloseConnection();
 
-            CReply::GetStockReply(m_Reply, AStatus);
+            CHTTPReply::GetStockReply(m_Reply, AStatus);
 
             SendReply(ASendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::SendReply(CReply::CStatusType AStatus, LPCTSTR AContentType, bool ASendNow) {
+        void CHTTPServerConnection::SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType, bool ASendNow) {
 
-            if (AStatus == CReply::ok) {
+            if (AStatus == CHTTPReply::ok) {
                 const CString &Value = GetRequest()->Headers.Values(_T("Connection")).Lower();
                 if (!Value.IsEmpty()) {
                     if (Value == _T("keep-alive") || Value == _T("upgrade"))
@@ -2305,7 +2305,7 @@ namespace Delphi {
 
             GetReply()->CloseConnection = CloseConnection();
 
-            CReply::GetReply(m_Reply, AStatus, AContentType);
+            CHTTPReply::GetReply(m_Reply, AStatus, AContentType);
 
             SendReply(ASendNow);
         }
@@ -2337,7 +2337,7 @@ namespace Delphi {
 
             auto LReply = GetReply();
 
-            LReply->Status = CReply::switching_protocols;
+            LReply->Status = CHTTPReply::switching_protocols;
 
             LReply->AddHeader("Upgrade", "websocket");
             LReply->AddHeader("Connection", "Upgrade");
@@ -2468,8 +2468,8 @@ namespace Delphi {
                 if (Result) {
                     InputBuffer()->Extract(LStream.Memory(), LStream.Size());
 
-                    CReplyContext Context = CReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
-                    const int ParseResult = CReplyParser::Parse(GetReply(), Context);
+                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
+                    const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
 
                     switch (ParseResult) {
                         case 0:
@@ -2503,9 +2503,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CRequest *CHTTPClientConnection::GetRequest() {
+        CHTTPRequest *CHTTPClientConnection::GetRequest() {
             if (m_Request == nullptr) {
-                m_Request = new CRequest();
+                m_Request = new CHTTPRequest();
                 m_Request->Location.hostname = Client()->Host();
                 m_Request->Location.port = Client()->Port();
                 m_Request->UserAgent = Client()->ClientName();
@@ -2514,9 +2514,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CReply *CHTTPClientConnection::GetReply() {
+        CHTTPReply *CHTTPClientConnection::GetReply() {
             if (m_Reply == nullptr) {
-                m_Reply = new CReply;
+                m_Reply = new CHTTPReply;
             }
             return m_Reply;
         }
@@ -2639,7 +2639,7 @@ namespace Delphi {
 
                     if (LConnection->ConnectionStatus() == csRequestOk) {
                         if (LConnection->Protocol() == pHTTP)
-                            LConnection->SendStockReply(CReply::gateway_timeout, true);
+                            LConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
                         LConnection->CloseConnection(true);
                     }
 
@@ -2697,7 +2697,7 @@ namespace Delphi {
                         case csRequestError:
                             LConnection->CloseConnection(true);
                             if (LConnection->Protocol() == pHTTP)
-                                LConnection->SendStockReply(CReply::bad_request);
+                                LConnection->SendStockReply(CHTTPReply::bad_request);
                             LConnection->Clear();
                             break;
 
@@ -3022,9 +3022,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CRequest *CHTTPProxy::GetRequest() {
+        CHTTPRequest *CHTTPProxy::GetRequest() {
             if (m_Request == nullptr) {
-                m_Request = new CRequest();
+                m_Request = new CHTTPRequest();
                 m_Request->Location.hostname = Host();
                 m_Request->Location.port = Port();
                 m_Request->UserAgent = ClientName();

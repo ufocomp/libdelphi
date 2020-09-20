@@ -515,11 +515,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CRequest --------------------------------------------------------------------------------------------------
+        //-- CHTTPRequest ----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        struct CRequest {
+        struct CHTTPRequest {
 
             CString Method;
 
@@ -588,13 +588,13 @@ namespace Delphi {
             void BuildCookies();
 
             /// Get a prepare request.
-            static CRequest *Prepare(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
+            static CHTTPRequest *Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
                     LPCTSTR AContentType = nullptr);
 
             /// Add Authorization header to headers
-            static CRequest *Authorization(CRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
+            static CHTTPRequest *Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
 
-            CRequest &operator=(const CRequest &Value) {
+            CHTTPRequest &operator=(const CHTTPRequest &Value) {
                 if (this != &Value) {
                     Method = Value.Method;
                     URI = Value.URI;
@@ -721,7 +721,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CRequestParser --------------------------------------------------------------------------------------------
+        //-- CHTTPRequestParser ----------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -788,7 +788,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming HTTP requests.
-        class CRequestParser {
+        class CHTTPRequestParser {
         public:
 
             /// Check if a byte is an HTTP character.
@@ -804,16 +804,22 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CRequest *ARequest, CHTTPContext &Context);
+            static int Consume(CHTTPRequest *ARequest, CHTTPContext &Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CRequest *ARequest, CHTTPContext &Context);
+            static int Parse(CHTTPRequest *ARequest, CHTTPContext &Context);
 
-            static int ParseFormData(CRequest *ARequest, CFormData &FormData);
+            static int ParseFormData(CHTTPRequest *ARequest, CFormData &FormData);
 
         };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CWebSocketParser ------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming WebSocket requests.
         class CWebSocketParser {
@@ -825,14 +831,14 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CReply ----------------------------------------------------------------------------------------------------
+        //-- CHTTPReply ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPServerConnection;
         //--------------------------------------------------------------------------------------------------------------
 
-        struct CReply
+        struct CHTTPReply
         {
             int VMajor;
             int VMinor;
@@ -923,18 +929,18 @@ namespace Delphi {
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
 
             /// Get a prepare reply.
-            static CReply *GetReply(CReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr);
+            static CHTTPReply *GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr);
 
             /// Get a stock reply.
-            static CReply *GetStockReply(CReply *AReply, CStatusType AStatus);
+            static CHTTPReply *GetStockReply(CHTTPReply *AReply, CStatusType AStatus);
 
-            static void AddUnauthorized(CReply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
+            static void AddUnauthorized(CHTTPReply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
 
         };
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CReplyParser ----------------------------------------------------------------------------------------------
+        //-- CHTTPReplyParser ------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -972,7 +978,7 @@ namespace Delphi {
             //----------------------------------------------------------------------------------------------------------
         }
 
-        struct CReplyContext {
+        struct CHTTPReplyContext {
             LPCTSTR Begin;
             LPCTSTR End;
             size_t Size;
@@ -984,7 +990,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            CReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h,
+            CHTTPReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h,
                           size_t AContentLength = 0, size_t AChunkedLength = 0) {
                 Begin = ABegin;
                 End = ABegin + ASize;
@@ -1000,7 +1006,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         /// Parser for incoming requests.
-        class CReplyParser {
+        class CHTTPReplyParser {
         public:
             /// Check if a byte is an HTTP character.
             static bool IsChar(int c);
@@ -1018,12 +1024,12 @@ namespace Delphi {
             static bool IsHex(int c);
 
             /// Handle the next character of input.
-            static int Consume(CReply *AReply, CReplyContext& Context);
+            static int Consume(CHTTPReply *AReply, CHTTPReplyContext& Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CReply *AReply, CReplyContext& Context);
+            static int Parse(CHTTPReply *AReply, CHTTPReplyContext& Context);
 
         };
 
@@ -1037,14 +1043,15 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         enum CHTTPProtocol { pHTTP = 0, pWebSocket };
+        //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPServerConnection: public CTCPServerConnection {
             typedef CTCPServerConnection inherited;
 
         private:
 
-            CRequest *m_Request;
-            CReply *m_Reply;
+            CHTTPRequest *m_Request;
+            CHTTPReply *m_Reply;
 
             CWebSocket *m_WSRequest;
             CWebSocket *m_WSReply;
@@ -1069,8 +1076,8 @@ namespace Delphi {
 
         protected:
 
-            CRequest *GetRequest();
-            CReply *GetReply();
+            CHTTPRequest *GetRequest();
+            CHTTPReply *GetReply();
 
             CWebSocket *GetWSRequest();
             CWebSocket *GetWSReply();
@@ -1091,8 +1098,8 @@ namespace Delphi {
 
             CHTTPServer *HTTPServer() { return (CHTTPServer *) Server(); }
 
-            CRequest *Request() { return GetRequest(); }
-            CReply *Reply() { return GetReply(); }
+            CHTTPRequest *Request() { return GetRequest(); }
+            CHTTPReply *Reply() { return GetReply(); }
 
             CWebSocket *WSRequest() { return GetWSRequest(); }
             CWebSocket *WSReply() { return GetWSReply(); }
@@ -1105,8 +1112,8 @@ namespace Delphi {
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }
 
-            void SendStockReply(CReply::CStatusType AStatus, bool ASendNow = false);
-            void SendReply(CReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
+            void SendStockReply(CHTTPReply::CStatusType AStatus, bool ASendNow = false);
+            void SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
             void SendReply(bool ASendNow = false);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
@@ -1138,9 +1145,9 @@ namespace Delphi {
 
         private:
 
-            CRequest *m_Request;
+            CHTTPRequest *m_Request;
 
-            CReply *m_Reply;
+            CHTTPReply *m_Reply;
 
             /// The current state of the parser.
             Reply::CParserState m_State;
@@ -1157,9 +1164,9 @@ namespace Delphi {
 
         protected:
 
-            CRequest *GetRequest();
+            CHTTPRequest *GetRequest();
 
-            CReply *GetReply();
+            CHTTPReply *GetReply();
 
             void DoRequest();
             void DoReply();
@@ -1174,9 +1181,9 @@ namespace Delphi {
 
             bool ParseInput();
 
-            CRequest *Request() { return GetRequest(); }
+            CHTTPRequest *Request() { return GetRequest(); }
 
-            CReply *Reply() { return GetReply(); };
+            CHTTPReply *Reply() { return GetReply(); };
 
             bool CloseConnection() const { return m_CloseConnection; };
             void CloseConnection(bool Value) { m_CloseConnection = Value; };
@@ -1268,7 +1275,7 @@ namespace Delphi {
 
         class CHTTPClient;
 
-        typedef std::function<void (CHTTPClient *Sender, CRequest *Request)> COnHTTPClientRequestEvent;
+        typedef std::function<void (CHTTPClient *Sender, CHTTPRequest *Request)> COnHTTPClientRequestEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPClient: public CAsyncClient {
@@ -1368,11 +1375,11 @@ namespace Delphi {
 
             CHTTPServerConnection *m_pConnection;
 
-            CRequest *m_Request;
+            CHTTPRequest *m_Request;
 
         protected:
 
-            CRequest *GetRequest();
+            CHTTPRequest *GetRequest();
 
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
@@ -1387,7 +1394,7 @@ namespace Delphi {
 
             CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
-            CRequest *Request() { return GetRequest(); }
+            CHTTPRequest *Request() { return GetRequest(); }
 
         };
 
