@@ -73,6 +73,37 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CSMTPCommand ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSMTPCommand::CSMTPCommand(): CObject() {
+            m_ErrorCode = 0;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSMTPCommand::CSMTPCommand(const CSMTPCommand &Value): CSMTPCommand() {
+            Assign(Value);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSMTPCommand::Assign(const CSMTPCommand &Value) {
+            m_Command = Value.m_Command;
+            m_Params = Value.m_Params;
+            m_ErrorCode = Value.m_ErrorCode;
+            m_Reply = Value.m_Reply;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSMTPCommand::Clear() {
+            m_Command.Clear();
+            m_Params.Clear();
+            m_ErrorCode = 0;
+            m_Reply.Clear();
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CSMTPMessage ----------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -117,6 +148,89 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CSMTPReplyParser ------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSMTPReplyParser::CSMTPReplyParser(LPCTSTR ABegin, LPCTSTR AEnd) {
+            m_Result = -1;
+            m_State = smtp_code;
+            m_pBegin = ABegin;
+            m_pEnd = AEnd;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSMTPReplyParser::IsChar(int c) {
+            return c >= 0 && c <= 127;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSMTPReplyParser::IsCtl(int c) {
+            return (c >= 0 && c <= 31) || (c == 127);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSMTPReplyParser::IsDigit(int c) {
+            return c >= '0' && c <= '9';
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CSMTPReplyParser::Consume(CSMTPCommand &Command, char AInput) {
+            switch (m_State) {
+                case smtp_code:
+                    if (IsDigit(AInput)) {
+                        m_Line.Append(AInput);
+                        return -1;
+                    } else if (AInput == ' ') {
+                        m_State = smtp_code_space;
+                        return -1;
+                    } else if (AInput == '-') {
+                        m_State = smtp_code_hyphen;
+                        return -1;
+                    }
+                    return 0;
+                case smtp_code_hyphen:
+                case smtp_code_space:
+                    if (!m_Line.IsEmpty()) {
+                        Command.ErrorCode(StrToInt(m_Line.c_str()));
+                        m_Line.Clear();
+                        m_State = smtp_text;
+                        return -1;
+                    }
+                    return 0;
+                case smtp_text:
+                    if (IsCtl(AInput)) {
+                        return 0;
+                    } else if (AInput == '\r') {
+                        m_State = smtp_newline;
+                        return -1;
+                    } else {
+                        m_Line.Append(AInput);
+                        return -1;
+                    }
+                case smtp_newline:
+                    if (AInput == '\n') {
+                        Command.Reply().Add(m_Line);
+                        m_Line.Clear();
+                        m_State = smtp_code;
+                        return -1;
+                    }
+                    return 0;
+            }
+            return 0;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CSMTPReplyParser::Parse(CSMTPCommand &Command) {
+            int Result = -1;
+            while (Result == -1 && m_pBegin != m_pEnd) {
+                Result = Consume(Command, *m_pBegin++);
+            }
+            return Result;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CSMTPConnection -------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -128,13 +242,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSMTPConnection::~CSMTPConnection() {
-            Clear();
+            CSMTPConnection::Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPConnection::Clear() {
-            m_Request.Clear();
-            m_Reply.Clear();
+            m_Command.Clear();
             m_ConnectionStatus = csConnected;
             m_CloseConnection = false;
         }
@@ -147,9 +260,9 @@ namespace Delphi {
                 Result = LStream.Size() > 0;
                 if (Result) {
                     InputBuffer()->Extract(LStream.Memory(), LStream.Size());
-/*
-                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
-                    const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
+
+                    CSMTPReplyParser LParser((LPCSTR) LStream.Memory(), (LPCSTR) LStream.Memory() + LStream.Size());
+                    const int ParseResult = LParser.Parse(m_Command);
 
                     switch (ParseResult) {
                         case 0:
@@ -164,19 +277,9 @@ namespace Delphi {
                             break;
 
                         default:
-                            m_State = Context.State;
-
-                            m_ContentLength = Context.ContentLength;
-                            m_ChunkedLength = Context.ChunkedLength;
-
-                            if (RecvBufferSize() < m_ContentLength)
-                                RecvBufferSize(m_ContentLength);
-
                             m_ConnectionStatus = csWaitReply;
-
                             break;
                     }
-*/
                 }
             }
 
@@ -186,7 +289,7 @@ namespace Delphi {
 
         void CSMTPConnection::SendRequest(bool ASendNow) {
 
-            OutputBuffer()->WriteBuffer(m_Request.Data(), m_Request.Size());
+            //OutputBuffer()->WriteBuffer(m_Request.Data(), m_Request.Size());
 
             m_ConnectionStatus = csRequestReady;
 
@@ -254,7 +357,7 @@ namespace Delphi {
                     LConnection->OnDisconnected(std::bind(&CSMTPClient::DoDisconnected, this, _1));
 #endif
                     DoConnected(LConnection);
-                    //DoRequest(LConnection);
+                    //DoSendCommand(LConnection);
 
                     AHandler->Start(etIO);
                 }
@@ -311,31 +414,32 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CSMTPClient::DoCommand(CTCPConnection *AConnection) {
+            CCommandHandler *Handler;
+
             auto LConnection = dynamic_cast<CSMTPConnection *> (AConnection);
-            auto LRequest = LConnection->Request();
+            const auto& LCommand = LConnection->Command();
 
             bool Result = CommandHandlers()->Count() > 0;
-/*
+
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
+                DoBeforeCommandHandler(AConnection, LCommand.Command());
                 try {
-                    int i;
-                    for (i = 0; i < CommandHandlers()->Count(); ++i) {
-                        if (CommandHandlers()->Commands(i)->Enabled()) {
-                            if (CommandHandlers()->Commands(i)->Check(LRequest->Method.c_str(),
-                                                                      LRequest->Method.Size(), AConnection))
+                    int Index;
+                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
+                        Handler = CommandHandlers()->Commands(Index);
+                        if (Handler->Enabled()) {
+                            if (Handler->Check(LCommand.Command(), AConnection))
                                 break;
                         }
                     }
-
-                    if (i == CommandHandlers()->Count())
-                        DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
+                    if (Index == CommandHandlers()->Count())
+                        DoNoCommandHandler(LCommand.Command(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }
                 DoAfterCommandHandler(AConnection);
             }
-*/
+
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------

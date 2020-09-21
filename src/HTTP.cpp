@@ -2746,7 +2746,7 @@ namespace Delphi {
             bool Result = CommandHandlers()->Count() > 0;
 
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
+                DoBeforeCommandHandler(AConnection, LRequest->Method);
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
@@ -2758,7 +2758,7 @@ namespace Delphi {
                     }
 
                     if (Index == CommandHandlers()->Count())
-                        DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
+                        DoNoCommandHandler(LRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }
@@ -2888,7 +2888,7 @@ namespace Delphi {
             bool Result = CommandHandlers()->Count() > 0;
 
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LRequest->Method.c_str());
+                DoBeforeCommandHandler(AConnection, LRequest->Method);
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
@@ -2900,7 +2900,7 @@ namespace Delphi {
                     }
 
                     if (Index == CommandHandlers()->Count())
-                        DoNoCommandHandler(LRequest->Method.c_str(), AConnection);
+                        DoNoCommandHandler(LRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }

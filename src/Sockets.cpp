@@ -725,7 +725,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CManagedBuffer::Memory() {
+        Pointer CManagedBuffer::Memory() const {
             return Pointer(size_t(inherited::Memory()) + m_ReadSize);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2151,9 +2151,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketEvent::DoBeforeCommandHandler(CTCPConnection *AConnection, LPCTSTR ALine) {
+        void CSocketEvent::DoBeforeCommandHandler(CTCPConnection *AConnection, const CString &Line) {
             if (m_OnBeforeCommandHandler != nullptr)
-                m_OnBeforeCommandHandler(this, ALine, AConnection);
+                m_OnBeforeCommandHandler(this, Line, AConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2187,9 +2187,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketEvent::DoNoCommandHandler(LPCTSTR AData, CTCPConnection *AConnection) {
+        void CSocketEvent::DoNoCommandHandler(const CString &Data, CTCPConnection *AConnection) {
             if (m_OnNoCommandHandler != nullptr)
-                m_OnNoCommandHandler(this, AData, AConnection);
+                m_OnNoCommandHandler(this, Data, AConnection);
             else
                 throw ETCPServerError(_T("No command handler found."));
         }
@@ -2699,7 +2699,7 @@ namespace Delphi {
                             Result = m_Command == LCommand;
                         }
                     } else {
-                        // Dont strip any part of the params out.. - just remove the command purely on length and no delim
+                        // Dont strip any part of the params out.. - just remove the command purely on length and no delimiter
                         LCommand = Data;
                         LUnparsedParams = LCommand.SubString(Len);
                         LCommand.SetLength(Len);

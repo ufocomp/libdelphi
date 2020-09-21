@@ -342,7 +342,7 @@ namespace Delphi {
 
             size_t Extract(void *ABuffer, size_t AByteCount) override;
 
-            Pointer Memory() override;
+            Pointer Memory() const override;
 
             void PackBuffer();
 
@@ -888,9 +888,9 @@ namespace Delphi {
             virtual void DoException(CTCPConnection *AConnection, const Delphi::Exception::Exception &E);
             virtual void DoListenException(const Delphi::Exception::Exception &E);
 
-            virtual void DoBeforeCommandHandler(CTCPConnection *AConnection, LPCTSTR ALine);
+            virtual void DoBeforeCommandHandler(CTCPConnection *AConnection, const CString &Line);
             virtual void DoAfterCommandHandler(CTCPConnection *AConnection);
-            virtual void DoNoCommandHandler(LPCTSTR AData, CTCPConnection *AConnection);
+            virtual void DoNoCommandHandler(const CString &Data, CTCPConnection *AConnection);
 
         public:
 
@@ -1506,7 +1506,7 @@ namespace Delphi {
             virtual bool Check(LPCTSTR AData, size_t ALen, CTCPConnection *AConnection);
             virtual bool Check(const CString &Data, CTCPConnection *AConnection);
 
-            Pointer Data() { return m_Data; }
+            Pointer Data() const { return m_Data; }
             void Data(Pointer Value) { m_Data = Value; }
 
             char CmdDelimiter() const { return m_CmdDelimiter; }
@@ -1530,10 +1530,10 @@ namespace Delphi {
             int ReplyExceptionCode() const { return m_ReplyExceptionCode; }
             void ReplyExceptionCode(int Value) { m_ReplyExceptionCode = Value; }
 
-            const COnSocketCommandEvent &OnCommand() { return m_OnCommand; }
+            const COnSocketCommandEvent &OnCommand() const { return m_OnCommand; }
             void OnCommand(COnSocketCommandEvent && Value) { m_OnCommand = Value; }
 
-            const COnSocketExceptionEvent &OnException() { return m_OnException; }
+            const COnSocketExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnSocketExceptionEvent && Value) { m_OnException = Value; }
 
         };
@@ -1557,7 +1557,6 @@ namespace Delphi {
         protected:
 
             CCommandHandler *GetItem(int AIndex) const override;
-
             void SetItem(int AIndex, const CCommandHandler *AValue);
 
         public:
@@ -1565,11 +1564,10 @@ namespace Delphi {
             CCommandHandlers();
 
             explicit CCommandHandlers(CSocketServer *AServer);
-
             explicit CCommandHandlers(CSocketClient *AClient);
 
-            CSocketServer *Server() { return (CSocketServer *) m_pOwner; }
-            CSocketClient *Client() { return (CSocketClient *) m_pOwner; }
+            CSocketServer *Server() const { return (CSocketServer *) m_pOwner; }
+            CSocketClient *Client() const { return (CSocketClient *) m_pOwner; }
 
             CCommandHandler *Add();
 
@@ -1618,9 +1616,9 @@ namespace Delphi {
 
             ~CCommand() override = default;
 
-            CTCPConnection *Connection() { return m_pConnection; }
+            CTCPConnection *Connection() const { return m_pConnection; }
 
-            CCommandHandler *CommandHandler() { return m_pCommandHandler; }
+            CCommandHandler *CommandHandler() const { return m_pCommandHandler; }
 
             bool PerformReply() const { return m_PerformReply; }
             void PerformReply(bool Value) { m_PerformReply = Value; }

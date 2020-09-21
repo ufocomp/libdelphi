@@ -90,6 +90,103 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CSMTPCommand ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CSMTPCommand: public CObject {
+        private:
+
+            CString m_Command;
+
+            CStringList m_Params;
+
+            int m_ErrorCode;
+
+            CStringList m_Reply;
+
+        public:
+
+            CSMTPCommand();
+
+            CSMTPCommand(const CSMTPCommand &Value);
+
+            ~CSMTPCommand() override = default;
+
+            void Assign(const CSMTPCommand &Value);
+
+            void Clear();
+
+            CString &Command() { return m_Command; };
+            const CString &Command() const { return m_Command; };
+
+            CStringList &Params() { return m_Params; }
+            const CStringList &Location() const { return m_Params; }
+
+            int ErrorCode() const { return m_ErrorCode; };
+            void ErrorCode(int Value) { m_ErrorCode = Value; };
+
+            CStringList &Reply() { return m_Reply; };
+            const CStringList &Reply() const { return m_Reply; };
+
+            CSMTPCommand& operator= (const CSMTPCommand &Value) {
+                if (this != &Value) {
+                    Assign(Value);
+                }
+                return *this;
+            };
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CSMTPReplyParser ------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        /// Parser for incoming SMTP requests.
+        class CSMTPReplyParser {
+        private:
+
+            enum CParserState {
+                smtp_code,
+                smtp_code_hyphen,
+                smtp_code_space,
+                smtp_text,
+                smtp_newline
+            } m_State;
+
+            LPCTSTR m_pBegin;
+            LPCTSTR m_pEnd;
+
+            CString m_Line;
+
+            int m_Result;
+
+        public:
+
+            CSMTPReplyParser(LPCTSTR ABegin, LPCTSTR AEnd);
+
+            /// Check if a byte is an SMTP character.
+            static bool IsChar(int c);
+
+            /// Check if a byte is an SMTP control character.
+            static bool IsCtl(int c);
+
+            /// Check if a byte is a digit.
+            static bool IsDigit(int c);
+
+            /// Handle the next character of input.
+            int Consume(CSMTPCommand &Command, char AInput);
+
+            /// Parse some data. The int return value is "1" when a complete request
+            /// has been parsed, "0" if the data is invalid, "-1" when more
+            /// data is required.
+            int Parse(CSMTPCommand &Command);
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CSMTPConnection -------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -99,8 +196,7 @@ namespace Delphi {
 
         private:
 
-            CString m_Request;
-            CString m_Reply;
+            CSMTPCommand m_Command;
 
             CConnectionStatus m_ConnectionStatus;
 
@@ -124,11 +220,8 @@ namespace Delphi {
 
             bool ParseInput();
 
-            CString &Request() { return m_Request; }
-            const CString &Request() const { return m_Request; }
-
-            CString &Reply() { return m_Reply; };
-            const CString &Reply() const { return m_Reply; };
+            CSMTPCommand &Command() { return m_Command; }
+            const CSMTPCommand &Command() const { return m_Command; }
 
             bool CloseConnection() const { return m_CloseConnection; };
             void CloseConnection(bool Value) { m_CloseConnection = Value; };

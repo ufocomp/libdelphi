@@ -590,7 +590,7 @@ namespace Delphi {
             void SaveToStream(CStream *Stream);
             void SaveToFile(LPCTSTR lpszFileName);
 
-            virtual Pointer Memory() { return m_Memory; }
+            virtual Pointer Memory() const { return m_Memory; }
 
         }; // CCustomMemoryStream
 
