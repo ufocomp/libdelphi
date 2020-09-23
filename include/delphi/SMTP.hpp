@@ -33,7 +33,7 @@ namespace Delphi {
 
         class CSMTPMessage;
 
-        typedef std::function<void (CSMTPMessage *Message)> COnSMTPMessageDoneEvent;
+        typedef std::function<void (CSMTPMessage *Message)> COnSMTPMessageSentEvent;
         typedef std::function<void (CSMTPMessage *Message)> COnSMTPMessageErrorEvent;
 
         //--------------------------------------------------------------------------------------------------------------
@@ -98,10 +98,10 @@ namespace Delphi {
         private:
 
             CString m_Command;
+            CString m_Data;
 
-            CStringList m_Params;
-
-            int m_ErrorCode;
+            int m_LastCode;
+            CString m_LastMessage;
 
             CStringList m_Reply;
 
@@ -111,20 +111,27 @@ namespace Delphi {
 
             CSMTPCommand(const CSMTPCommand &Value);
 
+            explicit CSMTPCommand(const CString &Command, const CString &Data = CString());
+
             ~CSMTPCommand() override = default;
 
             void Assign(const CSMTPCommand &Value);
 
             void Clear();
 
+            void ToBuffers(CMemoryStream *AStream) const;
+
             CString &Command() { return m_Command; };
             const CString &Command() const { return m_Command; };
 
-            CStringList &Params() { return m_Params; }
-            const CStringList &Location() const { return m_Params; }
+            CString &Data() { return m_Data; }
+            const CString &Data() const { return m_Data; }
 
-            int ErrorCode() const { return m_ErrorCode; };
-            void ErrorCode(int Value) { m_ErrorCode = Value; };
+            int LastCode() const { return m_LastCode; };
+            void LastCode(int Value) { m_LastCode = Value; };
+
+            CString &LastMessage() { return m_LastMessage; };
+            const CString &LastMessage() const { return m_LastMessage; };
 
             CStringList &Reply() { return m_Reply; };
             const CStringList &Reply() const { return m_Reply; };
@@ -159,6 +166,7 @@ namespace Delphi {
             LPCTSTR m_pBegin;
             LPCTSTR m_pEnd;
 
+            CString m_Code;
             CString m_Line;
 
             int m_Result;
@@ -191,6 +199,9 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef TList<CSMTPCommand> CSMTPCommands;
+        //--------------------------------------------------------------------------------------------------------------
+
         class CSMTPConnection: public CTCPClientConnection {
             typedef CTCPClientConnection inherited;
 
@@ -202,11 +213,13 @@ namespace Delphi {
 
             bool m_CloseConnection;
 
+            CNotifyEvent m_OnWaitRequest;
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
         protected:
 
+            void DoWaitRequest();
             void DoRequest();
             void DoReply();
 
@@ -219,6 +232,9 @@ namespace Delphi {
             virtual void Clear();
 
             bool ParseInput();
+            bool SendCommand();
+
+            void NewCommand(const CString &Command, const CString &Data = CString());
 
             CSMTPCommand &Command() { return m_Command; }
             const CSMTPCommand &Command() const { return m_Command; }
@@ -229,12 +245,13 @@ namespace Delphi {
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; };
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };
 
-            void SendRequest(bool ASendNow = false);
+            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
+            void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
 
-            const CNotifyEvent &OnRequest() const { return m_OnRequest; }
+            const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
 
-            const CNotifyEvent &OnReply() const { return m_OnReply; }
+            const CNotifyEvent &OnReply() { return m_OnReply; }
             void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
         }; // CHTTPServerConnection
@@ -249,6 +266,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class CSMTPMessage: public CSMTPConnection {
+            friend CSMTPClient;
+
         private:
 
             CString m_MessageId;
@@ -259,12 +278,14 @@ namespace Delphi {
             CString m_Subject;
             CStringList m_Body;
 
-            COnSMTPMessageDoneEvent m_OnDone;
+            bool m_Sent;
+
+            COnSMTPMessageSentEvent m_OnSent;
             COnSMTPMessageErrorEvent m_OnError;
 
         protected:
 
-            void DoDone();
+            void DoSent();
             void DoError();
 
         public:
@@ -276,6 +297,8 @@ namespace Delphi {
             void Assign(const CSMTPMessage& Message);
 
             void Clear() override;
+
+            bool Sent() const { return m_Sent; }
 
             CString &MessageId() { return m_MessageId; };
             const CString &MessageId() const { return m_MessageId; };
@@ -292,8 +315,8 @@ namespace Delphi {
             CStringList &Body() { return m_Body; };
             const CStringList &Body() const { return m_Body; };
 
-            const COnSMTPMessageDoneEvent &OnDone() const { return m_OnDone; }
-            void OnDone(COnSMTPMessageDoneEvent && Value) { m_OnDone = Value; }
+            const COnSMTPMessageSentEvent &OnSent() const { return m_OnSent; }
+            void OnSent(COnSMTPMessageSentEvent && Value) { m_OnSent = Value; }
 
             const COnSMTPMessageErrorEvent &OnError() const { return m_OnError; }
             void OnError(COnSMTPMessageErrorEvent && Value) { m_OnError = Value; }
@@ -318,6 +341,14 @@ namespace Delphi {
 
             CSMTPConfig m_Config;
 
+            int m_MessageIndex;
+            int m_ToIndex;
+
+            CNotifyEvent m_OnRequest;
+            CNotifyEvent m_OnReply;
+
+            void InitializeCommandHandlers() override;
+
         protected:
 
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
@@ -331,6 +362,19 @@ namespace Delphi {
             bool DoCommand(CTCPConnection *AConnection) override;
 
             bool DoExecute(CTCPConnection *AConnection) override;
+
+            void DoCONNECT(CCommand *ACommand);
+            void DoHELLO(CCommand *ACommand);
+            void DoSTARTTLS(CCommand *ACommand);
+            void DoAUTH(CCommand *ACommand);
+            void DoFROM(CCommand *ACommand);
+            void DoTO(CCommand *ACommand);
+            void DoDATA(CCommand *ACommand);
+            void DoCONTENT(CCommand *ACommand);
+            void DoQUIT(CCommand *ACommand);
+
+            void DoRequest(CObject *Sender);
+            void DoReply(CObject *Sender);
 
         public:
 
@@ -348,6 +392,12 @@ namespace Delphi {
             const CSMTPConfig &Config() const { return m_Config; }
 
             int IndexOfMessageId(const CString &MessageId) const;
+
+            const CNotifyEvent &OnRequest() { return m_OnRequest; }
+            void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
+
+            const CNotifyEvent &OnReply() { return m_OnReply; }
+            void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
             CSMTPMessage *Items(int Index) const override { return (CSMTPMessage *) GetItem(Index); }
             void Items(int Index, CSMTPMessage *Value) { SetItem(Index, Value); }

@@ -1596,7 +1596,8 @@ namespace Delphi {
 
                 LByteCount = WriteBufferAsync(m_pOutputBuffer->Memory(), (size_t) AByteCount);
 
-                m_pOutputBuffer->Remove((size_t) LByteCount);
+                if (LByteCount > 0 )
+                    m_pOutputBuffer->Remove((size_t) LByteCount);
             }
 
             return (LByteCount == AByteCount);
