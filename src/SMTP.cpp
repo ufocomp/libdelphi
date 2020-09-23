@@ -386,8 +386,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoCONNECT(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoCONNECT, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoCONNECT, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -397,8 +397,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoHELLO(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoHELLO, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoHELLO, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -408,8 +408,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoSTARTTLS(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoSTARTTLS, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoSTARTTLS, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -419,8 +419,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoAUTH(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoAUTH, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoAUTH, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -430,8 +430,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoFROM(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoFROM, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoFROM, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -441,8 +441,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoTO(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoTO, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoTO, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -452,8 +452,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoDATA(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoDATA, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoDATA, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -463,8 +463,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoCONTENT(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoCONTENT, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoCONTENT, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
             LCommand = CommandHandlers()->Add();
@@ -474,8 +474,8 @@ namespace Delphi {
             LCommand->OnCommand([this](auto && ACommand) { DoQUIT(ACommand); });
             LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CMessageServer::DoQUIT, this, _1));
-            LCommand->OnException(std::bind(&CMessageServer::DoException, this, _1, _2));
+            LCommand->OnCommand(std::bind(&CSMTPClient::DoQUIT, this, _1));
+            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
