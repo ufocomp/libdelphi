@@ -30,6 +30,8 @@ namespace Delphi {
 
     namespace SMTP {
 
+        #define SMTP_LINEFEED "\r\n"
+
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CSMTPConfig -----------------------------------------------------------------------------------------------
@@ -123,10 +125,13 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSMTPMessage::CSMTPMessage(CSMTPClient *AClient): CSMTPConnection(AClient) {
-            m_Sent = false;
-            m_OnSent = nullptr;
-            m_OnError = nullptr;
+        CSMTPMessage::CSMTPMessage(): CObject() {
+            m_Body.LineBreak(SMTP_LINEFEED);
+            m_Body.NameValueSeparator(':');
+
+            m_Submitted = false;
+            m_OnDone = nullptr;
+            m_OnFail = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -136,11 +141,13 @@ namespace Delphi {
             m_To = Message.m_To;
             m_Subject = Message.m_Subject;
             m_Body = Message.m_Body;
+            m_Submitted = Message.m_Submitted;
+            m_OnDone = Message.m_OnDone;
+            m_OnFail = Message.m_OnFail;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPMessage::Clear() {
-            CSMTPConnection::Clear();
             m_MessageId.Clear();
             m_From.Clear();
             m_To.Clear();
@@ -149,16 +156,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSMTPMessage::DoSent() {
-            if (m_OnSent != nullptr) {
-                m_OnSent(this);
+        void CSMTPMessage::DoDone() {
+            if (m_OnDone != nullptr) {
+                m_OnDone(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSMTPMessage::DoError() {
-            if (m_OnError != nullptr) {
-                m_OnError(this);
+        void CSMTPMessage::DoFail() {
+            if (m_OnFail != nullptr) {
+                m_OnFail(this);
             }
         }
 
@@ -365,12 +372,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSMTPClient::CSMTPClient(const CSMTPConfig &Config): CAsyncClient(Config.Host(), Config.Port()) {
-            m_MessageIndex = 0;
-            m_ToIndex = 0;
+        CSMTPClient::CSMTPClient(const CSMTPConfig &Config): CSMTPClient() {
             m_Config = Config;
-            m_OnRequest = nullptr;
-            m_OnReply = nullptr;
+            m_Host = Config.Host();
+            m_Port = Config.Port();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -619,24 +624,43 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSMTPClient::IndexOfMessageId(const CString &MessageId) const {
+        int CSMTPClient::IndexOfMsgId(const CString &MsgId) const {
             int Index = 0;
-            while (Index < Count() && Items(Index)->MessageId() != MessageId)
+            while (Index < m_Messages.Count() && m_Messages[Index].MsgId() != MsgId)
                 Index++;
-            if (Index == Count())
+            if (Index == m_Messages.Count())
                 Index = -1;
             return Index;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSMTPMessage *CSMTPClient::NewMessage() {
-            return new CSMTPMessage(this);
+        int CSMTPClient::IndexOfMessageId(const CString &MessageId) const {
+            int Index = 0;
+            while (Index < m_Messages.Count() && m_Messages[Index].MessageId() != MessageId)
+                Index++;
+            if (Index == m_Messages.Count())
+                Index = -1;
+            return Index;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSMTPMessage &CSMTPClient::NewMessage() {
+            m_Messages.Add(CSMTPMessage());
+            return m_Messages.Last();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSMTPClient::SendNext() {
+            if (++m_MessageIndex < m_Messages.Count()) {
+                m_ToIndex = 0;
+                UsedSSL(false);
+                ConnectStart();
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::SendMail() {
-            //UsedSSL(m_Config.Port() == 465);
-            Active(Count() != 0);
+            Active(m_Messages.Count() != 0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -699,8 +723,8 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 235) {
-                auto LMessage = Items(m_MessageIndex);
-                LConnection->NewCommand("FROM", CString().Format("MAIL FROM:<%s>", LMessage->From().c_str()));
+                const auto &LMessage = CurrentMessage();
+                LConnection->NewCommand("FROM", CString().Format("MAIL FROM: <%s>", LMessage.From().c_str()));
             } else {
                 LConnection->NewCommand("QUIT");
             }
@@ -711,8 +735,8 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
-                auto LMessage = Items(m_MessageIndex);
-                LConnection->NewCommand("TO", CString().Format("RCPT TO:<%s>", LMessage->To()[m_ToIndex++].c_str()));
+                const auto &LMessage = CurrentMessage();
+                LConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", LMessage.To()[m_ToIndex++].c_str()));
             } else {
                 LConnection->NewCommand("QUIT");
             }
@@ -723,9 +747,9 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250 || LCommand.LastCode() == 251) {
-                auto LMessage = Items(m_MessageIndex);
-                if (m_ToIndex < LMessage->To().Count()) {
-                    LConnection->NewCommand("TO", CString().Format("RCPT TO:<%s>", LMessage->To()[m_ToIndex++].c_str()));
+                const auto &LMessage = CurrentMessage();
+                if (m_ToIndex < LMessage.To().Count()) {
+                    LConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", LMessage.To()[m_ToIndex++].c_str()));
                 } else {
                     LConnection->NewCommand("DATA");
                 }
@@ -739,29 +763,8 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250 || LCommand.LastCode() == 354) {
-                auto LMessage = Items(m_MessageIndex);
-
-                CStringList LBody;
-
-                CString LDate;
-                LDate.SetLength(64);
-                if (CHTTPReply::GetGMT(LDate.Data(), LDate.Size()) != nullptr) {
-                    LDate.Truncate();
-                    LBody.Add("Date: " + LDate);
-                }
-
-                CString LTo(LMessage->To()[0]);
-                for (int i = 1; i < LMessage->To().Count(); ++i) {
-                    LTo << ", " << LMessage->To()[i];
-                }
-
-                LBody.Add("From: " + LMessage->From());
-                LBody.Add("To: " + LTo);
-                LBody.Add("Subject: " + LMessage->Subject());
-
-                LBody << LMessage->Body();
-
-                LConnection->NewCommand("CONTENT", LBody.Text() + "\r\n.");
+                const auto &LMessage = CurrentMessage();
+                LConnection->NewCommand("CONTENT", LMessage.Body().Text() + "\r\n.");
             } else {
                 LConnection->NewCommand("QUIT");
             }
@@ -772,24 +775,21 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
-                auto LMessage = Items(m_MessageIndex);
-                LMessage->m_Sent = true;
+                auto &LMessage = CurrentMessage();
+                LMessage.m_Submitted = true;
             }
             LConnection->NewCommand("QUIT");
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoQUIT(CCommand *ACommand) {
-            auto LMessage = Items(m_MessageIndex);
-
-            if (LMessage->Sent()) {
-                LMessage->DoSent();
+            auto &LMessage = CurrentMessage();
+            if (LMessage.Submitted()) {
+                LMessage.DoDone();
             } else {
-                LMessage->DoError();
+                LMessage.DoFail();
             }
-
-            m_ToIndex = 0;
-            m_MessageIndex++;
+            SendNext();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -829,12 +829,22 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSMTPCollectionItem *CSMTPManager::GetItem(int Index) const {
-            return (CSMTPCollectionItem *) inherited::GetItem(Index);
+            return dynamic_cast<CSMTPCollectionItem *> (inherited::GetItem(Index));
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CSMTPCollectionItem *CSMTPManager::Add(const CSMTPConfig &Config) {
             return new CSMTPCollectionItem(this, Config);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CSMTPManager::InProgress(const CString &MsgId) {
+            for (int i = 0; i < Count(); ++i) {
+                auto Item = GetItem(i);
+                if (Item->IndexOfMsgId(MsgId) != -1)
+                    return true;
+            }
+            return false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
