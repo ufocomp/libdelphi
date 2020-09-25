@@ -69,6 +69,7 @@ namespace Delphi {
             mutable CStringPairs auth_uri;
             mutable CStringPairs token_uri;
             mutable TPairs<CStringList> redirect_uris;
+            mutable TPairs<CStringList> javascript_origins;
             mutable CStringPairs auth_provider_x509_cert_url;
 
             void CheckApplication(const CString &Application) const {
@@ -216,6 +217,19 @@ namespace Delphi {
                     }
                 }
                 return redirect_uris[Application].Value();
+            }
+
+            const CStringList& JavaScriptOrigins(const CString &Application) const {
+                CheckApplication(Application);
+                if (redirect_uris[Application].Value().Count() == 0) {
+                    const auto& JavaScriptOrigins = Params[Application]["javascript_origins"];
+                    if (JavaScriptOrigins.IsArray()) {
+                        for (int i = 0; i < JavaScriptOrigins.Count(); ++i) {
+                            javascript_origins[Application].Value().Add(JavaScriptOrigins[i].AsString());
+                        }
+                    }
+                }
+                return javascript_origins[Application].Value();
             }
 
             const CString& CertURI(const CString &Application) const {
