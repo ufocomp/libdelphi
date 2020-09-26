@@ -33,8 +33,8 @@ namespace Delphi {
 
         class CSMTPMessage;
 
-        typedef std::function<void (CSMTPMessage *Message)> COnSMTPMessageDoneEvent;
-        typedef std::function<void (CSMTPMessage *Message)> COnSMTPMessageFailEvent;
+        typedef std::function<void (const CSMTPMessage &Message)> COnSMTPMessageEvent;
+        typedef std::function<void (const CSMTPMessage &Message, const CString &Error)> COnSMTPMessageErrorEvent;
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -49,8 +49,6 @@ namespace Delphi {
 
             CString m_UserName;
             CString m_Password;
-
-            CString m_Domain;
 
         public:
 
@@ -80,9 +78,6 @@ namespace Delphi {
 
             CString &Password() { return m_Password; };
             const CString &Password() const { return m_Password; };
-
-            CString &Domain() { return m_Domain; };
-            const CString &Domain() const { return m_Domain; };
 
             CSMTPConfig& operator= (const CSMTPConfig &Value) {
                 if (this != &Value) {
@@ -119,13 +114,13 @@ namespace Delphi {
 
             bool m_Submitted;
 
-            COnSMTPMessageDoneEvent m_OnDone;
-            COnSMTPMessageFailEvent m_OnFail;
+            COnSMTPMessageEvent m_OnDone;
+            COnSMTPMessageErrorEvent m_OnFail;
 
         protected:
 
             void DoDone();
-            void DoFail();
+            void DoFail(const CString &Error);
 
         public:
 
@@ -157,11 +152,13 @@ namespace Delphi {
             CStringList &Body() { return m_Body; };
             const CStringList &Body() const { return m_Body; };
 
-            const COnSMTPMessageDoneEvent &OnDone() const { return m_OnDone; }
-            void OnDone(COnSMTPMessageDoneEvent && Value) { m_OnDone = Value; }
+            static CString encodingSubject(const CString &Subject, const CString &CharSet = "utf-8");
 
-            const COnSMTPMessageFailEvent &OnFail() const { return m_OnFail; }
-            void OnFail(COnSMTPMessageFailEvent && Value) { m_OnFail = Value; }
+            const COnSMTPMessageEvent &OnDone() const { return m_OnDone; }
+            void OnDone(COnSMTPMessageEvent && Value) { m_OnDone = Value; }
+
+            const COnSMTPMessageErrorEvent &OnFail() const { return m_OnFail; }
+            void OnFail(COnSMTPMessageErrorEvent && Value) { m_OnFail = Value; }
 
             CSMTPMessage& operator= (const CSMTPMessage &Value) {
                 if (this != &Value) {

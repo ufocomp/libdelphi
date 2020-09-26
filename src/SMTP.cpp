@@ -130,6 +130,7 @@ namespace Delphi {
             m_Body.NameValueSeparator(':');
 
             m_Submitted = false;
+
             m_OnDone = nullptr;
             m_OnFail = nullptr;
         }
@@ -141,7 +142,9 @@ namespace Delphi {
             m_To = Message.m_To;
             m_Subject = Message.m_Subject;
             m_Body = Message.m_Body;
+
             m_Submitted = Message.m_Submitted;
+
             m_OnDone = Message.m_OnDone;
             m_OnFail = Message.m_OnFail;
         }
@@ -156,16 +159,27 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CString CSMTPMessage::encodingSubject(const CString &Subject, const CString &CharSet) {
+            CString Result;
+            Result << "=?";
+            Result << CharSet;
+            Result << "?B?";
+            Result << base64_encode(Subject);
+            Result << "?=";
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CSMTPMessage::DoDone() {
             if (m_OnDone != nullptr) {
-                m_OnDone(this);
+                m_OnDone(*this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSMTPMessage::DoFail() {
+        void CSMTPMessage::DoFail(const CString &Error) {
             if (m_OnFail != nullptr) {
-                m_OnFail(this);
+                m_OnFail(*this, Error);
             }
         }
 
@@ -776,6 +790,9 @@ namespace Delphi {
             const auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
                 auto &LMessage = CurrentMessage();
+                const auto& Line = LCommand.LastMessage();
+                size_t Pos = Line.Find("id=");
+                LMessage.MessageId() = LCommand.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
                 LMessage.m_Submitted = true;
             }
             LConnection->NewCommand("QUIT");
@@ -783,11 +800,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoQUIT(CCommand *ACommand) {
+            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            const auto& LCommand = LConnection->Command();
             auto &LMessage = CurrentMessage();
             if (LMessage.Submitted()) {
                 LMessage.DoDone();
             } else {
-                LMessage.DoFail();
+                LMessage.DoFail(LCommand.LastMessage());
             }
             SendNext();
         }
