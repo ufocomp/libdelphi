@@ -87,18 +87,17 @@ namespace Delphi {
             CJSON Params;
             CJSON Keys;
 
-            CDateTime StatusTime;
+            CDateTime KeyStatusTime;
 
             enum CKeyStatus {
                 ksUnknown = -1,
                 ksFetching,
                 ksSuccess,
-                ksError,
-                ksSaved
-            } Status;
+                ksFailed
+            } KeyStatus;
 
-            CProvider(): Status(ksUnknown) {
-                StatusTime = Now();
+            CProvider(): KeyStatus(ksUnknown) {
+                KeyStatusTime = Now();
             }
 
             CProvider(const CProvider &Other): CProvider() {
@@ -106,8 +105,8 @@ namespace Delphi {
                     this->Name = Other.Name;
                     this->Params = Other.Params;
                     this->Keys = Other.Keys;
-                    this->StatusTime = Other.StatusTime;
-                    this->Status = Other.Status;
+                    this->KeyStatusTime = Other.KeyStatusTime;
+                    this->KeyStatus = Other.KeyStatus;
                 }
             }
 
@@ -241,7 +240,7 @@ namespace Delphi {
             }
 
             CString PublicKey(const CString &KeyId) const {
-                if (Keys.IsObject())
+                if (KeyStatus == ksSuccess)
                     return Keys[KeyId].AsString();
                 return CString();
             }
