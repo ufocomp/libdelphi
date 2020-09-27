@@ -133,6 +133,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        bool CCustomIniFile::ReadBool(const CString &SectionName, const CString &KeyName, bool Default) const {
+            return ReadBool(SectionName.c_str(), KeyName.c_str(), Default);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         bool CCustomIniFile::ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) const {
 
             LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
