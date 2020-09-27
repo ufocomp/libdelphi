@@ -32,20 +32,22 @@ namespace Delphi {
 
     namespace IniFiles {
 
+        class CCustomIniFile;
+
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CCustomIniFile --------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef std::function<void (Pointer Sender, LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszValue,
+        typedef std::function<void (CCustomIniFile *Sender, LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, LPCTSTR lpszValue,
                 LPCTSTR lpszDefault, int Line)> COnIniFileParseError;
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CCustomIniFile: public CObject {
         private:
 
-            CString m_pszFileName;
+            CString m_FileName;
 
             COnIniFileParseError m_OnIniFileParseError;
 
@@ -70,7 +72,7 @@ namespace Delphi {
 
         public:
 
-            explicit CCustomIniFile(LPCTSTR lpszFileName);
+            explicit CCustomIniFile(const CString &FileName);
 
             ~CCustomIniFile() override = default;
 
@@ -118,8 +120,8 @@ namespace Delphi {
 
             virtual void UpdateFile() abstract;
 
-            const CString &FileName() { return m_pszFileName; };
-            void FileName(LPCTSTR Value) { m_pszFileName = Value; };
+            CString &FileName() { return m_FileName; };
+            const CString &FileName() const { return m_FileName; };
 
             void OnIniFileParseError(COnIniFileParseError && Value) { m_OnIniFileParseError = Value; };
 
@@ -279,7 +281,7 @@ namespace Delphi {
 
         public:
 
-            explicit CMemIniFile(LPCTSTR lpszFileName);
+            explicit CMemIniFile(const CString &FileName);
 
             ~CMemIniFile() override;
 
@@ -311,7 +313,7 @@ namespace Delphi {
 
             void ReadSectionValues(LPCTSTR lpszSectionName, CStrings *Strings) const override;
 
-            void Rename(LPCTSTR lpszFileName, bool Reload);
+            void Rename(const CString &NewFile, bool Reload);
 
             void SetStrings(CStrings *List);
 
@@ -361,11 +363,11 @@ namespace Delphi {
 
         public:
 
-            explicit CIniFile(LPCTSTR lpszFileName): CMemIniFile(lpszFileName) {};
+            explicit CIniFile(const CString &FileName): CMemIniFile(FileName) {};
 
             ~CIniFile() override = default;
 
-            inline static class CIniFile* Create(LPCTSTR lpszFileName) { return new CIniFile(lpszFileName); };
+            inline static class CIniFile* Create(const CString &FileName) { return new CIniFile(FileName); };
 
             BOOL EraseIniFile() override;
 

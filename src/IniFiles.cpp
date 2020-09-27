@@ -37,8 +37,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CCustomIniFile::CCustomIniFile(LPCTSTR lpszFileName): CObject()  {
-            m_pszFileName = lpszFileName;
+        CCustomIniFile::CCustomIniFile(const CString &FileName): CObject(), m_FileName(FileName) {
+
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ namespace Delphi {
                 LPCTSTR lpszDefault) const {
             if (m_OnIniFileParseError) {
                 int Line = GetKeyLine(lpszSectionName, lpszKeyName);
-                m_OnIniFileParseError((Pointer) this, lpszSectionName, lpszKeyName, lpszValue, lpszDefault, Line);
+                m_OnIniFileParseError((CCustomIniFile *) this, lpszSectionName, lpszKeyName, lpszValue, lpszDefault, Line);
             }
         }
 
@@ -480,7 +480,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CMemIniFile::CMemIniFile(LPCTSTR lpszFileName) : CCustomIniFile(lpszFileName) {
+        CMemIniFile::CMemIniFile(const CString &FileName) : CCustomIniFile(FileName) {
             m_Modified = false;
             m_AutoSave = false;
             m_CaseSensitive = true;
@@ -517,20 +517,13 @@ namespace Delphi {
 
         void CMemIniFile::LoadValues() {
 
-            CStringList *List;
+            CStringList List;
 
             try {
                 if (!FileName().IsEmpty() && FileExists(FileName().c_str())) {
-                    List = CStringList::Create();
-                    List->Delimiter('\n');
-                    try {
-                        List->LoadFromFile(FileName().c_str());
-                        SetStrings(List);
-                    } catch (...) {
-                        delete List;
-                        throw;
-                    }
-                    delete List;
+                    List.Delimiter('\n');
+                    List.LoadFromFile(FileName().c_str());
+                    SetStrings(&List);
                 } else
                     Clear();
             } catch (...) {
@@ -726,9 +719,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemIniFile::Rename(LPCTSTR lpszFileName, bool Reload) {
-            Modified(Modified() || (FileName().Compare(lpszFileName) == 0));
-            FileName(lpszFileName);
+        void CMemIniFile::Rename(const CString &NewFile, bool Reload) {
+            Modified(Modified() || (FileName() == NewFile));
+            FileName() = NewFile;
             if (Reload)
                 LoadValues();
         }
