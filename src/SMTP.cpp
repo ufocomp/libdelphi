@@ -126,8 +126,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSMTPMessage::CSMTPMessage(): CObject() {
-            m_Body.LineBreak(SMTP_LINEFEED);
+            //m_Body.LineBreak(SMTP_LINEFEED);
             m_Body.NameValueSeparator(':');
+            m_Body.Delimiter('\n');
 
             m_Submitted = false;
 
@@ -159,13 +160,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CSMTPMessage::encodingSubject(const CString &Subject, const CString &CharSet) {
+        CString CSMTPMessage::EncodingSubject(const CString &Subject, const CString &CharSet) {
             CString Result;
             Result << "=?";
             Result << CharSet;
             Result << "?B?";
             Result << base64_encode(Subject);
             Result << "?=";
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CStringList CSMTPMessage::SplitMIME(const CString &Text, size_t LineSize) {
+            CStringList Result;
+            size_t Pos = 0;
+            while (Pos < Text.Size()) {
+                Result.Add(Text.SubString(Pos, LineSize));
+                Pos += LineSize;
+            }
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -674,16 +686,18 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::SendMail() {
+            UsedSSL(m_Config.Port() == 465);
             Active(m_Messages.Count() != 0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoCONNECT(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 220) {
                 LConnection->NewCommand("HELLO", CString().Format("EHLO %s", LConnection->Socket()->Binding()->IP()));
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->CloseConnection(true);
             }
         }
@@ -691,9 +705,8 @@ namespace Delphi {
 
         void CSMTPClient::DoHELLO(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
-
                 int Index = 0;
                 while (Index < LCommand.Reply().Count() && LCommand.Reply()[Index].Find("STARTTLS") == -1)
                     Index++;
@@ -711,6 +724,7 @@ namespace Delphi {
                     LConnection->NewCommand("STARTTLS");
                 }
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -718,7 +732,7 @@ namespace Delphi {
 
         void CSMTPClient::DoSTARTTLS(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 220) {
                 auto Socket = LConnection->Socket()->Binding();
                 if (Assigned(Socket)) {
@@ -728,6 +742,7 @@ namespace Delphi {
                 }
                 LConnection->NewCommand("HELLO", CString().Format("EHLO %s", LConnection->Socket()->Binding()->IP()));
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -735,11 +750,12 @@ namespace Delphi {
 
         void CSMTPClient::DoAUTH(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 235) {
                 const auto &LMessage = CurrentMessage();
                 LConnection->NewCommand("FROM", CString().Format("MAIL FROM: <%s>", LMessage.From().c_str()));
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -747,11 +763,12 @@ namespace Delphi {
 
         void CSMTPClient::DoFROM(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
                 const auto &LMessage = CurrentMessage();
                 LConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", LMessage.To()[m_ToIndex++].c_str()));
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -759,7 +776,7 @@ namespace Delphi {
 
         void CSMTPClient::DoTO(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250 || LCommand.LastCode() == 251) {
                 const auto &LMessage = CurrentMessage();
                 if (m_ToIndex < LMessage.To().Count()) {
@@ -768,6 +785,7 @@ namespace Delphi {
                     LConnection->NewCommand("DATA");
                 }
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -775,11 +793,12 @@ namespace Delphi {
 
         void CSMTPClient::DoDATA(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250 || LCommand.LastCode() == 354) {
                 const auto &LMessage = CurrentMessage();
                 LConnection->NewCommand("CONTENT", LMessage.Body().Text() + "\r\n.");
             } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
                 LConnection->NewCommand("QUIT");
             }
         }
@@ -787,13 +806,15 @@ namespace Delphi {
 
         void CSMTPClient::DoCONTENT(CCommand *ACommand) {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
+            auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 250) {
                 auto &LMessage = CurrentMessage();
                 const auto& Line = LCommand.LastMessage();
                 size_t Pos = Line.Find("id=");
                 LMessage.MessageId() = LCommand.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
                 LMessage.m_Submitted = true;
+            } else {
+                LCommand.ErrorMessage() = LCommand.LastMessage();
             }
             LConnection->NewCommand("QUIT");
         }
@@ -806,7 +827,7 @@ namespace Delphi {
             if (LMessage.Submitted()) {
                 LMessage.DoDone();
             } else {
-                LMessage.DoFail(LCommand.LastMessage());
+                LMessage.DoFail(LCommand.ErrorMessage());
             }
             SendNext();
         }

@@ -152,7 +152,8 @@ namespace Delphi {
             CStringList &Body() { return m_Body; };
             const CStringList &Body() const { return m_Body; };
 
-            static CString encodingSubject(const CString &Subject, const CString &CharSet = "utf-8");
+            static CString EncodingSubject(const CString &Subject, const CString &CharSet = "utf-8");
+            static CStringList SplitMIME(const CString &Text, size_t LineSize = 76);
 
             const COnSMTPMessageEvent &OnDone() const { return m_OnDone; }
             void OnDone(COnSMTPMessageEvent && Value) { m_OnDone = Value; }
@@ -182,7 +183,9 @@ namespace Delphi {
             CString m_Data;
 
             int m_LastCode;
+
             CString m_LastMessage;
+            CString m_ErrorMessage;
 
             CStringList m_Reply;
 
@@ -213,6 +216,9 @@ namespace Delphi {
 
             CString &LastMessage() { return m_LastMessage; };
             const CString &LastMessage() const { return m_LastMessage; };
+
+            CString &ErrorMessage() { return m_ErrorMessage; };
+            const CString &ErrorMessage() const { return m_ErrorMessage; };
 
             CStringList &Reply() { return m_Reply; };
             const CStringList &Reply() const { return m_Reply; };
