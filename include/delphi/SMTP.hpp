@@ -300,13 +300,13 @@ namespace Delphi {
 
             bool m_CloseConnection;
 
-            CNotifyEvent m_OnWaitRequest;
+            CNotifyEvent m_OnWaitReply;
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
         protected:
 
-            void DoWaitRequest();
+            void DoWaitReply();
             void DoRequest();
             void DoReply();
 
@@ -332,8 +332,8 @@ namespace Delphi {
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; };
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };
 
-            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
-            void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
+            const CNotifyEvent &OnWaitReply() { return m_OnWaitReply; }
+            void OnWaitReply(CNotifyEvent && Value) { m_OnWaitReply = Value; }
 
             const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }

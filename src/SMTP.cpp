@@ -297,7 +297,7 @@ namespace Delphi {
         CSMTPConnection::CSMTPConnection(CPollSocketClient *AClient) : CTCPClientConnection(AClient) {
             m_ConnectionStatus = csConnected;
             m_CloseConnection = false;
-            m_OnWaitRequest = nullptr;
+            m_OnWaitReply = nullptr;
             m_OnRequest = nullptr;
             m_OnReply= nullptr;
         }
@@ -348,7 +348,7 @@ namespace Delphi {
                             break;
 
                         default:
-                            DoWaitRequest();
+                            DoWaitReply();
                             m_ConnectionStatus = csWaitReply;
                             break;
                     }
@@ -366,9 +366,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSMTPConnection::DoWaitRequest() {
-            if (m_OnWaitRequest != nullptr) {
-                m_OnWaitRequest(this);
+        void CSMTPConnection::DoWaitReply() {
+            if (m_OnWaitReply != nullptr) {
+                m_OnWaitReply(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
