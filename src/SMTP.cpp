@@ -682,14 +682,18 @@ namespace Delphi {
         void CSMTPClient::SendNext() {
             if (++m_MessageIndex < m_Messages.Count()) {
                 m_ToIndex = 0;
+#ifdef WITH_SSL
                 UsedSSL(m_Config.Port() == 465);
+#endif
                 ConnectStart();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::SendMail() {
+#ifdef WITH_SSL
             UsedSSL(m_Config.Port() == 465);
+#endif
             Active(m_Messages.Count() != 0);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -724,7 +728,11 @@ namespace Delphi {
 
                     LConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(LPlain));
                 } else {
+#ifdef WITH_SSL
                     LConnection->NewCommand("STARTTLS");
+#else
+                    throw Delphi::Exception::ESocketError("WARNING: TLS/SSL not supported in this build (Need WITH_SSL: ON).");
+#endif
                 }
             } else {
                 LCommand.ErrorMessage() = LCommand.LastMessage();
@@ -737,12 +745,14 @@ namespace Delphi {
             auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             auto& LCommand = LConnection->Command();
             if (LCommand.LastCode() == 220) {
+#ifdef WITH_SSL
                 auto Socket = LConnection->Socket()->Binding();
                 if (Assigned(Socket)) {
                     Socket->SSLMethod(sslClient);
                     Socket->AllocateSSL();
                     Socket->ConnectSSL();
                 }
+#endif
                 LConnection->NewCommand("HELLO", CString().Format("EHLO %s", LConnection->Socket()->Binding()->IP()));
             } else {
                 LCommand.ErrorMessage() = LCommand.LastMessage();
