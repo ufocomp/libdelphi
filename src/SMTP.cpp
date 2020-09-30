@@ -581,6 +581,7 @@ namespace Delphi {
             try {
                 switch (LConnection->ConnectionStatus()) {
                     case Socket::csConnected:
+                        DoRead(AHandler);
                         break;
 
                     case csRequestError:
@@ -679,7 +680,7 @@ namespace Delphi {
         void CSMTPClient::SendNext() {
             if (++m_MessageIndex < m_Messages.Count()) {
                 m_ToIndex = 0;
-                UsedSSL(false);
+                UsedSSL(m_Config.Port() == 465);
                 ConnectStart();
             }
         }
