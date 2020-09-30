@@ -325,6 +325,7 @@ namespace Delphi {
 
         bool CSMTPConnection::ParseInput() {
             bool Result = false;
+
             if (Connected()) {
                 CMemoryStream LStream(ReadAsync());
                 Result = LStream.Size() > 0;
@@ -347,6 +348,7 @@ namespace Delphi {
                             break;
 
                         default:
+                            DoWaitRequest();
                             m_ConnectionStatus = csWaitReply;
                             break;
                     }
