@@ -769,11 +769,17 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketHandle::CSocketHandle(CCollection *ACollection): CSocketComponent(), CCollectionItem(ACollection) {
+        CSocketHandle::CSocketHandle(CCollection *ACollection): CSocketComponent(), CCollectionItem(ACollection),
+                m_IP{0}, m_PeerIP{0}, m_From{} {
 #ifdef WITH_SSL
             m_pSSL = nullptr;
             m_SSLMethod = sslNotUsed;
 #endif
+            m_Port = 0;
+            m_PeerPort = 0;
+
+            m_FromLen = sizeof(SOCKADDR_IN);
+
             m_HandleAllocated = false;
             m_Nonblocking = false;
 
@@ -1035,7 +1041,9 @@ namespace Delphi {
                     if (SocketError == i)
                         return false;
                 }
-
+#ifdef WITH_SSL
+                CloseSSL();
+#endif
                 GStack->RaiseSocketError(SocketError);
             }
 
