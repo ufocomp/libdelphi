@@ -171,7 +171,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CStringList CSMTPMessage::SplitMIME(const CString &Text, size_t LineSize) {
+        CStringList CSMTPMessage::SplitText(const CString &Text, size_t LineSize) {
             CStringList Result;
             size_t Pos = 0;
             size_t Size = Text.Size();
