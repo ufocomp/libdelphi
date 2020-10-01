@@ -153,7 +153,7 @@ namespace Delphi {
             const CStringList &Body() const { return m_Body; };
 
             static CString EncodingSubject(const CString &Subject, const CString &CharSet = "utf-8");
-            static CStringList SplitMIME(const CString &Text, size_t LineSize = 76);
+            static CStringList SplitText(const CString &Text, size_t LineSize = 76);
 
             const COnSMTPMessageEvent &OnDone() const { return m_OnDone; }
             void OnDone(COnSMTPMessageEvent && Value) { m_OnDone = Value; }
