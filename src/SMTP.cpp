@@ -126,7 +126,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSMTPMessage::CSMTPMessage(): CObject() {
-            //m_Body.LineBreak(SMTP_LINEFEED);
+            m_Body.LineBreak(SMTP_LINEFEED);
             m_Body.NameValueSeparator(':');
             m_Body.Delimiter('\n');
 
