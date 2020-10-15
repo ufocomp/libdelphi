@@ -522,6 +522,7 @@ namespace Delphi {
                 Stream->Write(Pong, sizeof(Pong));
             } else {
                 Stream->Write(Pong, 1);
+                m_Frame.Mask = 0;
                 PayloadToStream(Stream);
             }
         }
