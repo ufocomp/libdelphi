@@ -2382,7 +2382,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocketPong(bool ASendNow) {
 
-            GetWSReply()->Pong(OutputBuffer());
+            GetWSRequest()->Pong(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
