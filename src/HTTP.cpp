@@ -500,6 +500,7 @@ namespace Delphi {
                 Stream->Write(Close, sizeof(Close));
             } else {
                 Stream->Write(Close, 1);
+                m_Frame.Mask = 0;
                 PayloadToStream(Stream);
             }
         }
@@ -2241,7 +2242,8 @@ namespace Delphi {
                     break;
 
                 case WS_OPCODE_CLOSE:
-                    Disconnect();
+                    m_CloseConnection = true;
+                    SendWebSocketClose();
                     break;
 
                 case WS_OPCODE_PING:
@@ -2397,7 +2399,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocketClose(bool ASendNow) {
 
-            GetWSReply()->Close(OutputBuffer());
+            GetWSRequest()->Close(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
