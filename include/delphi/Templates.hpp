@@ -189,6 +189,7 @@ namespace Delphi {
                 return false;
             }
 
+            int Count() const { return m_pList->Count(); }
             int Index() const { return m_Index; }
 
             reference Current() { return GetCurrent(); }

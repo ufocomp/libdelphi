@@ -58,20 +58,6 @@ namespace Delphi {
         struct CProvider {
         private:
 
-            mutable CStringList issuers;
-            mutable CStringList scopes;
-            mutable CStringList clients;
-
-            mutable CStringPairs algorithm;
-            mutable CStringPairs client_id;
-            mutable CStringPairs issuer;
-            mutable CStringPairs client_secret;
-            mutable CStringPairs auth_uri;
-            mutable CStringPairs token_uri;
-            mutable TPairs<CStringList> redirect_uris;
-            mutable TPairs<CStringList> javascript_origins;
-            mutable CStringPairs auth_provider_x509_cert_url;
-
             void CheckApplication(const CString &Application) const {
                 if (Application.IsEmpty())
                     throw COAuth2Error(_T("Application value cannot be empty."));
@@ -114,129 +100,97 @@ namespace Delphi {
                 return Params.Object();
             }
 
-            const CStringList &GetClients() const {
-                if (clients.Count() == 0) {
-                    const auto &apps = Applications();
-                    for (int i = 0; i < apps.Count(); i++) {
-                        const auto& String = apps.Members(i).String();;
-                        clients.AddPair(ClientId(String), String);
+            void GetClients(CStringList &Clients) const {
+                const auto &apps = Applications();
+                for (int i = 0; i < apps.Count(); i++) {
+                    const auto& String = apps.Members(i).String();;
+                    Clients.AddPair(ClientId(String), String);
+                }
+            }
+
+            void GetScopes(const CString &Application, CStringList &Scopes) const {
+                const auto& Issuers = Applications()[Application]["scopes"];
+                if (Issuers.IsArray()) {
+                    for (int i = 0; i < Issuers.Count(); ++i) {
+                        Scopes.AddPair(Issuers[i].AsString(), Name);
                     }
                 }
-                return clients;
+
+                if (Scopes.Count() == 0 && Name == "google") {
+                    Scopes.Add("api");
+                    Scopes.Add("openid");
+                }
             }
 
-            const CStringList& GetScopes(const CString &Application) const {
-                if (scopes.Count() == 0) {
-                    const auto& Issuers = Applications()[Application]["scopes"];
-                    if (Issuers.IsArray()) {
-                        for (int i = 0; i < Issuers.Count(); ++i) {
-                            scopes.AddPair(Issuers[i].AsString(), Name);
-                        }
-                    }
-                    if (scopes.Count() == 0 && Name == "google") {
-                        scopes.Add("api");
-                        scopes.Add("openid");
+            void GetIssuers(const CString &Application, CStringList &Issuers) const {
+                const auto& issuers = Applications()[Application]["issuers"];
+                if (issuers.IsArray()) {
+                    for (int i = 0; i < issuers.Count(); ++i) {
+                        Issuers.AddPair(issuers[i].AsString(), Name);
                     }
                 }
-                return scopes;
-            }
 
-            const CStringList& GetIssuers(const CString &Application) const {
-                if (issuers.Count() == 0) {
-                    const auto& Issuers = Applications()[Application]["issuers"];
-                    if (Issuers.IsArray()) {
-                        for (int i = 0; i < Issuers.Count(); ++i) {
-                            issuers.AddPair(Issuers[i].AsString(), Name);
-                        }
-                    }
-                    if (issuers.Count() == 0 && Name == "google") {
-                        issuers.AddPair("accounts.google.com", Name);
-                        issuers.AddPair("https://accounts.google.com", Name);
-                    }
+                if (Issuers.Count() == 0 && Name == "google") {
+                    Issuers.AddPair("accounts.google.com", Name);
+                    Issuers.AddPair("https://accounts.google.com", Name);
                 }
-                return issuers;
             }
 
-            const CString& Issuer(const CString &Application) const {
+            CString Issuer(const CString &Application, int Index = 0) const {
                 CheckApplication(Application);
-                if (issuer[Application].IsEmpty()) {
-                    issuer.AddPair(Application, GetIssuers(Application).First());
-                }
-                return issuer[Application].Value();
+                CStringList Issuers;
+                GetIssuers(Application, Issuers);
+                return Issuers[Index];
             }
 
-            const CString& Algorithm(const CString &Application) const {
+            CString Algorithm(const CString &Application) const {
                 CheckApplication(Application);
-                if (algorithm[Application].IsEmpty()) {
-                    algorithm.AddPair(Application, Params[Application]["algorithm"].AsString());
-                }
-                return algorithm[Application].Value();
+                return Params[Application]["algorithm"].AsString();
             }
 
-            const CString& ClientId(const CString &Application) const {
+            CString ClientId(const CString &Application) const {
                 CheckApplication(Application);
-                if (client_id[Application].IsEmpty()) {
-                    client_id.AddPair(Application, Params[Application]["client_id"].AsString());
-                }
-                return client_id[Application].Value();
+                return Params[Application]["client_id"].AsString();
             }
 
-            const CString& Secret(const CString &Application) const {
+            CString Secret(const CString &Application) const {
                 CheckApplication(Application);
-                if (client_secret[Application].IsEmpty()) {
-                    client_secret.AddPair(Application, Params[Application]["client_secret"].AsString());
-                }
-                return client_secret[Application].Value();
+                return Params[Application]["client_secret"].AsString();
             }
 
-            const CString& AuthURI(const CString &Application) const {
+            CString AuthURI(const CString &Application) const {
                 CheckApplication(Application);
-                if (auth_uri[Application].IsEmpty()) {
-                    auth_uri.AddPair(Application, Params[Application]["auth_uri"].AsString());
-                }
-                return auth_uri[Application].Value();
+                return Params[Application]["auth_uri"].AsString();
             }
 
-            const CString& TokenURI(const CString &Application) const {
+            CString TokenURI(const CString &Application) const {
                 CheckApplication(Application);
-                if (token_uri[Application].IsEmpty()) {
-                    token_uri.AddPair(Application, Params[Application]["token_uri"].AsString());
-                }
-                return token_uri[Application].Value();
+                return Params[Application]["token_uri"].AsString();
             }
 
-            const CStringList& RedirectURI(const CString &Application) const {
+            void RedirectURI(const CString &Application, CStringList &RedirectURIs) const {
                 CheckApplication(Application);
-                if (redirect_uris[Application].Value().Count() == 0) {
-                    const auto& RedirectURI = Params[Application]["redirect_uris"];
-                    if (RedirectURI.IsArray()) {
-                        for (int i = 0; i < RedirectURI.Count(); ++i) {
-                            redirect_uris[Application].Value().Add(RedirectURI[i].AsString());
-                        }
+                const auto& redirect_uris = Params[Application]["redirect_uris"];
+                if (redirect_uris.IsArray()) {
+                    for (int i = 0; i < redirect_uris.Count(); ++i) {
+                        RedirectURIs.Add(redirect_uris[i].AsString());
                     }
                 }
-                return redirect_uris[Application].Value();
             }
 
-            const CStringList& JavaScriptOrigins(const CString &Application) const {
+            void JavaScriptOrigins(const CString &Application, CStringList &JavascriptOrigins) const {
                 CheckApplication(Application);
-                if (redirect_uris[Application].Value().Count() == 0) {
-                    const auto& JavaScriptOrigins = Params[Application]["javascript_origins"];
-                    if (JavaScriptOrigins.IsArray()) {
-                        for (int i = 0; i < JavaScriptOrigins.Count(); ++i) {
-                            javascript_origins[Application].Value().Add(JavaScriptOrigins[i].AsString());
-                        }
+                const auto& javascript_origins = Params[Application]["javascript_origins"];
+                if (javascript_origins.IsArray()) {
+                    for (int i = 0; i < javascript_origins.Count(); ++i) {
+                        JavascriptOrigins.Add(javascript_origins[i].AsString());
                     }
                 }
-                return javascript_origins[Application].Value();
             }
 
-            const CString& CertURI(const CString &Application) const {
+            CString CertURI(const CString &Application) const {
                 CheckApplication(Application);
-                if (auth_provider_x509_cert_url[Application].IsEmpty()) {
-                    auth_provider_x509_cert_url.AddPair(Application, Params[Application]["auth_provider_x509_cert_url"].AsString());
-                }
-                return auth_provider_x509_cert_url[Application].Value();
+                return Params[Application]["auth_provider_x509_cert_url"].AsString();
             }
 
             CString PublicKey(const CString &KeyId) const {
@@ -265,26 +219,29 @@ namespace Delphi {
             inline void GetIssuers(const CProviders &Providers, const CString &Application, CStringList &Issuers) {
                 CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
-                    Issuers << em.Current().Value().GetIssuers(Application);
+                    em.Current().Value().GetIssuers(Application, Issuers);
                 }
             }
 
             inline void GetClients(const CProviders &Providers, CStringList &Clients) {
                 CProviders::ConstEnumerator em(Providers);
                 while (em.MoveNext()) {
-                    Clients << em.Current().Value().GetClients();
+                    em.Current().Value().GetClients(Clients);
                 }
             }
 
             inline int ProviderByClientId(const CProviders &Providers, const CString &ClientId, CString &Application) {
+                CStringList Clients;
                 CProviders::ConstEnumerator em(Providers);
-                while (em.MoveNext()) {
-                    Application = em.Current().Value().GetClients()[ClientId];
-                    if (!Application.IsEmpty()) {
-                        return em.Index();
-                    }
+                Application.Clear();
+                while (em.MoveNext() && Application.IsEmpty()) {
+                    Clients.Clear();
+                    em.Current().Value().GetClients(Clients);
+                    Application = Clients[ClientId];
                 }
-                return -1;
+                if (em.Index() == em.Count())
+                    return -1;
+                return em.Index();
             }
 
             inline CString GetPublicKey(const CProviders &Providers, const CString &KeyId) {
