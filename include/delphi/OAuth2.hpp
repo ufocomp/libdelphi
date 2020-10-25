@@ -234,14 +234,14 @@ namespace Delphi {
                 CStringList Clients;
                 CProviders::ConstEnumerator em(Providers);
                 Application.Clear();
-                while (em.MoveNext() && Application.IsEmpty()) {
-                    Clients.Clear();
+                while (em.MoveNext()) {
                     em.Current().Value().GetClients(Clients);
                     Application = Clients[ClientId];
+                    if (!Application.IsEmpty())
+                        return em.Index();
+                    Clients.Clear();
                 }
-                if (em.Index() == em.Count())
-                    return -1;
-                return em.Index();
+                return -1;
             }
 
             inline CString GetPublicKey(const CProviders &Providers, const CString &KeyId) {
