@@ -1841,7 +1841,7 @@ namespace Delphi {
                     }
                     return false;
                 case string:
-                    if (IsLetter(AInput) || (AInput == '0') || IsDigit(AInput)) {
+                    if (IsLetter(AInput) || IsDigit(AInput)) {
                         CurrentMember().String().Append(AInput);
                         m_State = string;
                         return -1;
@@ -1871,7 +1871,7 @@ namespace Delphi {
                         CreateValue(jvtString);
                         m_State = value_string_start;
                         return -1;
-                    } else if ((AInput == '-') || (AInput == '0') || IsDigit(AInput)) {
+                    } else if ((AInput == '-') || IsDigit(AInput)) {
                         CreateValue(jvtNumber);
                         CurrentValue().Data().Append(AInput);
                         m_State = value_digit;
@@ -1977,7 +1977,7 @@ namespace Delphi {
                         else
                             m_State = value_start;
                         return -1;
-                    } else if ((AInput == '.') || (AInput == '0') || IsDigit(AInput) || (AInput == 'e') || (AInput == 'E') || (AInput == '+') || (AInput == '-')) {
+                    } else if ((AInput == '.') || IsDigit(AInput) || (AInput == 'e') || (AInput == 'E') || (AInput == '+') || (AInput == '-')) {
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (IsWS(AInput)) {
@@ -2057,7 +2057,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSONParser::IsLetter(u_char c) {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_');
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '-');
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2072,12 +2072,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSONParser::IsDigit(u_char c) {
-            return c >= '1' && c <= '9';
+            return c >= '0' && c <= '9';
         }
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSONParser::IsWS(u_char c) {
-            return (c == ' ') || (c == '\t') || (c == '\n')  || (c == '\r');
+            return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
         }
         //--------------------------------------------------------------------------------------------------------------
 
