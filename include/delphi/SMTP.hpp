@@ -31,11 +31,6 @@ namespace Delphi {
 
     namespace SMTP {
 
-        class CSMTPMessage;
-
-        typedef std::function<void (const CSMTPMessage &Message)> COnSMTPMessageEvent;
-        typedef std::function<void (const CSMTPMessage &Message, const CString &Error)> COnSMTPMessageErrorEvent;
-
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CSMTPConfig -----------------------------------------------------------------------------------------------
@@ -80,88 +75,6 @@ namespace Delphi {
             const CString &Password() const { return m_Password; };
 
             CSMTPConfig& operator= (const CSMTPConfig &Value) {
-                if (this != &Value) {
-                    Assign(Value);
-                }
-                return *this;
-            };
-
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CSMTPMessage ----------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CSMTPClient;
-        class CSMTPMessageManager;
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CSMTPMessage: public CObject {
-            friend CSMTPClient;
-
-        private:
-
-            CString m_MsgId;
-            CString m_MessageId;
-
-            CString m_From;
-            CStringList m_To;
-
-            CString m_Subject;
-            CStringList m_Body;
-
-            bool m_Submitted;
-
-            COnSMTPMessageEvent m_OnDone;
-            COnSMTPMessageErrorEvent m_OnFail;
-
-        protected:
-
-            void DoDone();
-            void DoFail(const CString &Error);
-
-        public:
-
-            CSMTPMessage();
-
-            ~CSMTPMessage() override = default;
-
-            void Assign(const CSMTPMessage& Message);
-
-            void Clear();
-
-            bool Submitted() const { return m_Submitted; }
-
-            CString &MsgId() { return m_MsgId; };
-            const CString &MsgId() const { return m_MsgId; };
-
-            CString &MessageId() { return m_MessageId; };
-            const CString &MessageId() const { return m_MessageId; };
-
-            CString &From() { return m_From; };
-            const CString &From() const { return m_From; };
-
-            CStringList &To() { return m_To; };
-            const CStringList &To() const { return m_To; };
-
-            CString &Subject() { return m_Subject; };
-            const CString &Subject() const { return m_Subject; };
-
-            CStringList &Body() { return m_Body; };
-            const CStringList &Body() const { return m_Body; };
-
-            static CString EncodingSubject(const CString &Subject, const CString &CharSet = "utf-8");
-            static CStringList SplitText(const CString &Text, size_t LineSize = 76);
-
-            const COnSMTPMessageEvent &OnDone() const { return m_OnDone; }
-            void OnDone(COnSMTPMessageEvent && Value) { m_OnDone = Value; }
-
-            const COnSMTPMessageErrorEvent &OnFail() const { return m_OnFail; }
-            void OnFail(COnSMTPMessageErrorEvent && Value) { m_OnFail = Value; }
-
-            CSMTPMessage& operator= (const CSMTPMessage &Value) {
                 if (this != &Value) {
                     Assign(Value);
                 }
@@ -349,15 +262,12 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef TList<CSMTPMessage> CSMTPMessages;
-        //--------------------------------------------------------------------------------------------------------------
-
         class CSMTPClient: public CAsyncClient {
         private:
 
             CSMTPConfig m_Config;
 
-            CSMTPMessages m_Messages;
+            CMessages m_Messages;
 
             int m_MessageIndex;
             int m_ToIndex;
@@ -404,18 +314,18 @@ namespace Delphi {
 
             ~CSMTPClient() override = default;
 
-            CSMTPMessage &NewMessage();
+            CMessage &NewMessage();
 
             void SendMail();
 
             CSMTPConfig &Config() { return m_Config; }
             const CSMTPConfig &Config() const { return m_Config; }
 
-            CSMTPMessages &Messages() { return m_Messages; }
-            const CSMTPMessages &Messages() const { return m_Messages; }
+            CMessages &Messages() { return m_Messages; }
+            const CMessages &Messages() const { return m_Messages; }
 
-            CSMTPMessage &CurrentMessage() { return m_Messages[m_MessageIndex]; }
-            const CSMTPMessage &CurrentMessage() const { return m_Messages[m_MessageIndex]; }
+            CMessage &CurrentMessage() { return m_Messages[m_MessageIndex]; }
+            const CMessage &CurrentMessage() const { return m_Messages[m_MessageIndex]; }
 
             int IndexOfMsgId(const CString &MsgId) const;
             int IndexOfMessageId(const CString &MessageId) const;

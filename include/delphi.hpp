@@ -232,7 +232,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.1.4")
+#define DELPHI_LIB_VERSION      _T("2.1.5")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -291,6 +291,10 @@ inline void chMB(LPCSTR szMsg);
 
 #  ifndef DELPHI_HTTP_HPP
 #    include "delphi/HTTP.hpp"
+#  endif
+
+#  ifndef DELPHI_MESSAGE_HPP
+#    include "delphi/Message.hpp"
 #  endif
 
 #  ifndef DELPHI_SMTP_HPP
