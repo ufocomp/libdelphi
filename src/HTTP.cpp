@@ -2265,6 +2265,7 @@ namespace Delphi {
         bool CHTTPServerConnection::ParseInput() {
             bool Result = false;
             if (Connected()) {
+                UpdateClock();
                 CMemoryStream Stream(ReadAsync());
                 Result = Stream.Size() > 0;
                 if (Result) {
