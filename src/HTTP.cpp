@@ -294,14 +294,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPRequest::Clear() {
-            Method = "GET";
-            URI = "/";
-            VMajor = 1;
-            VMinor = 1;
+            VMajor = 0;
+            VMinor = 0;
+            ContentLength = 0;
+            Method.Clear();
+            URI.Clear();
             Params.Clear();
             Headers.Clear();
             Content.Clear();
-            ContentLength = 0;
             Location.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2271,11 +2271,9 @@ namespace Delphi {
                     InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
-                            Tag(clock());
                             ParseHTTP(&Stream);
                             break;
                         case pWebSocket:
-                            Tag(clock());
                             ParseWebSocket(&Stream);
                             break;
                     }
@@ -2320,10 +2318,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
-            DoReply();
-
             if (ASendNow) {
                 WriteAsync();
+                DoReply();
+
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2476,12 +2474,10 @@ namespace Delphi {
 
                     switch (ParseResult) {
                         case 0:
-                            Tag(clock());
                             m_ConnectionStatus = csReplyError;
                             break;
 
                         case 1:
-                            Tag(clock());
                             m_ConnectionStatus = csReplyOk;
                             DoReply();
                             break;
@@ -2726,6 +2722,7 @@ namespace Delphi {
                     if (LConnection->ConnectionStatus() == csReplyReady) {
 
                         LConnection->ConnectionStatus(csReplySent);
+                        DoAccessLog(LConnection);
                         LConnection->Clear();
 
                         if (LConnection->CloseConnection()) {

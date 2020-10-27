@@ -441,7 +441,7 @@ namespace Delphi {
 
             LPCSTR ErrorField(int FieldCode);
 
-            const COnPQResultEvent &OnStatus() { return m_OnStatus; }
+            const COnPQResultEvent &OnStatus() const { return m_OnStatus; }
             void OnStatus(COnPQResultEvent && Value) { m_OnStatus = Value; }
 
         };
@@ -511,16 +511,16 @@ namespace Delphi {
 
             CPQResult *Results(int Index) { return GetResult(Index); };
 
-            const COnPQQueryExecutedEvent &OnExecuted() { return m_OnExecuted; }
+            const COnPQQueryExecutedEvent &OnExecuted() const { return m_OnExecuted; }
             void OnExecute(COnPQQueryExecutedEvent && Value) { m_OnExecuted = Value; }
 
-            const COnPQQueryExecutedEvent &OnSendQuery() { return m_OnSendQuery; }
+            const COnPQQueryExecutedEvent &OnSendQuery() const { return m_OnSendQuery; }
             void OnSendQuery(COnPQQueryExecutedEvent && Value) { m_OnSendQuery = Value; }
 
-            const COnPQResultEvent &OnResultStatus() { return m_OnResultStatus; }
+            const COnPQResultEvent &OnResultStatus() const { return m_OnResultStatus; }
             void OnResultStatus(COnPQResultEvent && Value) { m_OnResultStatus = Value; }
 
-            const COnPQExecResultEvent &OnResult() { return m_OnResult; }
+            const COnPQExecResultEvent &OnResult() const { return m_OnResult; }
             void OnResult(COnPQExecResultEvent && Value) { m_OnResult = Value; }
 
         };
@@ -574,10 +574,10 @@ namespace Delphi {
             CPollConnection *PollConnection() { return m_PollConnection; };
             void PollConnection(CPollConnection *Value) { m_PollConnection = Value; };
 
-            const COnPQPollQueryExecutedEvent &OnPollExecuted() { return m_OnExecuted; }
+            const COnPQPollQueryExecutedEvent &OnPollExecuted() const { return m_OnExecuted; }
             void OnPollExecuted(COnPQPollQueryExecutedEvent && Value) { m_OnExecuted = Value; }
 
-            const COnPQPollQueryExceptionEvent &OnException() { return m_OnException; }
+            const COnPQPollQueryExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnPQPollQueryExceptionEvent && Value) { m_OnException = Value; }
         };
 
@@ -644,25 +644,25 @@ namespace Delphi {
 
             CPQConnectPollEvent();
 
-            const COnPQConnectionReceiverEvent &OnReceiver() { return m_OnReceiver; }
+            const COnPQConnectionReceiverEvent &OnReceiver() const { return m_OnReceiver; }
             void OnReceiver(COnPQConnectionReceiverEvent && Value) { m_OnReceiver = Value; }
 
-            const COnPQConnectionProcessorEvent &OnProcessor() { return m_OnProcessor; }
+            const COnPQConnectionProcessorEvent &OnProcessor() const { return m_OnProcessor; }
             void OnProcessor(COnPQConnectionProcessorEvent && Value) { m_OnProcessor = Value; }
 
-            const COnPQConnectionEvent &OnError() { return m_OnError; }
+            const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
 
-            const COnPQConnectionEvent &OnStatus() { return m_OnStatus; }
+            const COnPQConnectionEvent &OnStatus() const { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }
 
-            const COnPQConnectionEvent &OnPollingStatus() { return m_OnPollingStatus; }
+            const COnPQConnectionEvent &OnPollingStatus() const { return m_OnPollingStatus; }
             void OnPollingStatus(COnPQConnectionEvent && Value) { m_OnPollingStatus = Value; }
 
-            const COnPQConnectionExceptionEvent &OnConnectException() { return m_OnConnectException; }
+            const COnPQConnectionExceptionEvent &OnConnectException() const { return m_OnConnectException; }
             void OnConnectException(COnPQConnectionExceptionEvent && Value) { m_OnConnectException = Value; }
 
-            const COnPQServerExceptionEvent &OnServerException() { return m_OnServerException; }
+            const COnPQServerExceptionEvent &OnServerException() const { return m_OnServerException; }
             void OnServerException(COnPQServerExceptionEvent && Value) { m_OnServerException = Value; }
 
         };

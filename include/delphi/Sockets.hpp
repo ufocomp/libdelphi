@@ -726,6 +726,8 @@ namespace Delphi {
 
         protected:
 
+            clock_t m_Created;
+
             bool m_FreeIOHandler;
             void SetIOHandler(CIOHandler *AValue, bool AFree);
 
@@ -748,6 +750,8 @@ namespace Delphi {
 
             bool OEM() const { return m_OEM; }
             void OEM(bool Value) { m_OEM = Value; }
+
+            clock_t Created() const { return m_Created; };
 
             bool Connected();
 

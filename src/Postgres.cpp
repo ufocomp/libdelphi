@@ -880,7 +880,7 @@ namespace Delphi {
                 }
             }
 
-            if (m_pConnection->Flush() && !m_pConnection->IsBusy()) {
+            if (m_pConnection->Flush()) {
                 Result = PQgetResult(m_pConnection->Handle());
                 while (Result) {
                     LResult = new CPQResult(this, Result);

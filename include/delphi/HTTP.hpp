@@ -520,22 +520,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         struct CHTTPRequest {
+        public:
 
-            CString Method;
+            CString Method{};
 
-            CString URI;
+            CString URI{};
 
-            int VMajor;
-            int VMinor;
+            int VMajor = 0;
+            int VMinor = 0;
 
             /// The headers to be included in the request.
-            CHeaders Headers;
+            CHeaders Headers{};
 
             /// The uri parameters to be included in the request.
-            CStringList Params;
+            CStringList Params{};
 
             /// The Cookies to be included in the request.
-            CStringList Cookies;
+            CStringList Cookies{};
 
             /// The content length to be sent in the request.
             size_t ContentLength = 0;
@@ -551,15 +552,15 @@ namespace Delphi {
             } ContentType = html;
 
             /// The content to be sent in the request.
-            CString Content;
+            CString Content{};
 
             /// The form data to be included in the request.
-            CStringList FormData;
+            CStringList FormData{};
 
             /// The value of the "User-Agent" header.
-            CString UserAgent;
+            CString UserAgent{};
 
-            bool CloseConnection = false;
+            bool CloseConnection = true;
 
             /// The Location interface represents a location (URL) as an object.
             CLocation Location;

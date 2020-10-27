@@ -1322,6 +1322,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CTCPConnection::CTCPConnection(CPollManager *AManager): CPollConnection(this, AManager) {
+            m_Created = clock();
+
             m_pIOHandler = nullptr;
             m_pSocket = nullptr;
 

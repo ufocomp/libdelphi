@@ -338,12 +338,10 @@ namespace Delphi {
 
                     switch (ParseResult) {
                         case 0:
-                            Tag(clock());
                             m_ConnectionStatus = csReplyError;
                             break;
 
                         case 1:
-                            Tag(clock());
                             m_ConnectionStatus = csReplyOk;
                             DoReply();
                             break;
