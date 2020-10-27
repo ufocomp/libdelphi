@@ -293,6 +293,10 @@ inline void chMB(LPCSTR szMsg);
 #    include "delphi/HTTP.hpp"
 #  endif
 
+#  ifndef DELPHI_MESSAGE_HPP
+#    include "delphi/Message.hpp"
+#  endif
+
 #  ifndef DELPHI_SMTP_HPP
 #    include "delphi/SMTP.hpp"
 #  endif

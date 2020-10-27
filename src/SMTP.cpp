@@ -23,14 +23,13 @@ Author:
 
 #include "delphi.hpp"
 #include "delphi/SMTP.hpp"
+//----------------------------------------------------------------------------------------------------------------------
 
 extern "C++" {
 
 namespace Delphi {
 
     namespace SMTP {
-
-        #define SMTP_LINEFEED "\r\n"
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -117,83 +116,6 @@ namespace Delphi {
         void CSMTPCommand::ToBuffers(CMemoryStream *AStream) const {
             m_Data.SaveToStream(AStream);
             AStream->Write(_T("\r\n"), 2);
-        }
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CSMTPMessage ----------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSMTPMessage::CSMTPMessage(): CObject() {
-            m_Body.LineBreak(SMTP_LINEFEED);
-            m_Body.NameValueSeparator(':');
-            m_Body.Delimiter('\n');
-
-            m_Submitted = false;
-
-            m_OnDone = nullptr;
-            m_OnFail = nullptr;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPMessage::Assign(const CSMTPMessage &Message) {
-            m_MessageId = Message.m_MessageId;
-            m_From = Message.m_From;
-            m_To = Message.m_To;
-            m_Subject = Message.m_Subject;
-            m_Body = Message.m_Body;
-
-            m_Submitted = Message.m_Submitted;
-
-            m_OnDone = Message.m_OnDone;
-            m_OnFail = Message.m_OnFail;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPMessage::Clear() {
-            m_MessageId.Clear();
-            m_From.Clear();
-            m_To.Clear();
-            m_Subject.Clear();
-            m_Body.Clear();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CString CSMTPMessage::EncodingSubject(const CString &Subject, const CString &CharSet) {
-            CString Result;
-            Result << "=?";
-            Result << CharSet;
-            Result << "?B?";
-            Result << base64_encode(Subject);
-            Result << "?=";
-            return Result;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CStringList CSMTPMessage::SplitText(const CString &Text, size_t LineSize) {
-            CStringList Result;
-            size_t Pos = 0;
-            size_t Size = Text.Size();
-            while (Pos < Size) {
-                Result.Add(Text.SubString(Pos, Size - Pos < LineSize ? Size - Pos : LineSize));
-                Pos += LineSize;
-            }
-            return Result;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPMessage::DoDone() {
-            if (m_OnDone != nullptr) {
-                m_OnDone(*this);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPMessage::DoFail(const CString &Error) {
-            if (m_OnFail != nullptr) {
-                m_OnFail(*this, Error);
-            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -672,8 +594,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSMTPMessage &CSMTPClient::NewMessage() {
-            m_Messages.Add(CSMTPMessage());
+        CMessage &CSMTPClient::NewMessage() {
+            m_Messages.Add(CMessage());
             return m_Messages.Last();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -824,7 +746,7 @@ namespace Delphi {
                 const auto& Line = LCommand.LastMessage();
                 size_t Pos = Line.Find("id=");
                 LMessage.MessageId() = LCommand.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
-                LMessage.m_Submitted = true;
+                LMessage.Submitted(true);
             } else {
                 LCommand.ErrorMessage() = LCommand.LastMessage();
             }
@@ -837,9 +759,9 @@ namespace Delphi {
             const auto& LCommand = LConnection->Command();
             auto &LMessage = CurrentMessage();
             if (LMessage.Submitted()) {
-                LMessage.DoDone();
+                LMessage.Done();
             } else {
-                LMessage.DoFail(LCommand.ErrorMessage());
+                LMessage.Fail(LCommand.ErrorMessage());
             }
             SendNext();
         }

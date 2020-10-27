@@ -62,7 +62,7 @@ namespace Delphi {
                 if (Application.IsEmpty())
                     throw COAuth2Error(_T("Application value cannot be empty."));
 
-                if (!Params.HasOwnProperty(Application))
+                if (!ApplicationExists(Application))
                     throw COAuth2Error(_T("Not found application \"%s\" in parameters value."), Application.c_str());
             }
 
@@ -98,6 +98,10 @@ namespace Delphi {
 
             const CJSONObject &Applications() const {
                 return Params.Object();
+            }
+
+            bool ApplicationExists(const CString& Application) const {
+                return Params.HasOwnProperty(Application);
             }
 
             void GetClients(CStringList &Clients) const {
