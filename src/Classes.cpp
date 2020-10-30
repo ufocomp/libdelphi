@@ -1921,12 +1921,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CObject *CStrings::GetObject(int Index) {
+        CObject *CStrings::GetObject(int Index) const {
             return nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CObject *CStrings::GetObject(int Index) const {
+        CObject *CStrings::GetObject(const CString &Name) const {
+            int Index = IndexOfName(Name);
+            if (Index != -1)
+                return GetObject(Index);
+            return nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CObject *CStrings::GetObject(CStrings::reference Name) const {
+            int Index = IndexOfName(Name);
+            if (Index != -1)
+                return GetObject(Index);
             return nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2456,14 +2467,6 @@ namespace Delphi {
                 throw ExceptionFrm(SListIndexError, Index);
 
             m_pList[Index]->Object = AObject;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CObject *CStringList::GetObject(int Index) {
-            if ((Index < 0) || (Index >= m_nCount))
-                throw ExceptionFrm(SListIndexError, Index);
-
-            return m_pList[Index]->Object;
         }
         //--------------------------------------------------------------------------------------------------------------
 

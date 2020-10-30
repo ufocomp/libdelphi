@@ -1173,8 +1173,9 @@ namespace Delphi {
             virtual const CString &Get(int Index) const abstract;
             virtual int GetCapacity() const noexcept;
             virtual int GetCount() const noexcept abstract;
-            virtual CObject* GetObject(int Index);
             virtual CObject* GetObject(int Index) const;
+            virtual CObject* GetObject(const CString& Name) const;
+            virtual CObject* GetObject(reference Name) const;
             virtual void Put(int Index, const CString &S);
             virtual void Put(int Index, reference Str);
             virtual void PutObject(int Index, CObject* AObject);
@@ -1231,7 +1232,7 @@ namespace Delphi {
             virtual void SaveToStream(CStream* Stream) const;
             virtual void SetTextStr(LPCTSTR Text, size_t Size);
 
-            int Capacity() { return GetCapacity(); };
+            int Capacity() const noexcept { return GetCapacity(); };
             void Capacity(int NewCapacity) { SetCapacity(NewCapacity); };
 
             int Count() const noexcept { return GetCount(); };
@@ -1243,19 +1244,23 @@ namespace Delphi {
 
             CString Names(int Index) const { return GetName(Index); };
 
-            CObject *Objects(int Index) { return GetObject(Index); };
             CObject *Objects(int Index) const { return GetObject(Index); };
+            CObject *Objects(const CString &Name) const { return GetObject(Name); };
+            CObject *Objects(reference Name) const { return GetObject(Name); };
+
             void Objects(int Index, CObject *Value) { return PutObject(Index, Value); };
+
             TCHAR QuoteChar() const { return GetQuoteChar(); }
             void QuoteChar(TCHAR Value) { SetQuoteChar(Value); };
 
+            CString Values(int Index) const { return GetValueFromIndex(Index); };
             CString Values(const CString &Name) const { return GetValue(Name); };
-            CString Values(reference Name) const { return GetValue(Name); };
 
             void Values(const CString &Name, const CString &Value) { SetValue(Name, Value); };
-            //void Values(reference Name, reference Value) { SetValue(Name, Value); };
+            void Values(reference Name, reference Value) { SetValue(Name, Value); };
 
             CString ValueFromIndex(int Index) const { return GetValueFromIndex(Index); };
+
             void ValueFromIndex(int Index, const CString &Value) { SetValueFromIndex(Index, Value); };
             void ValueFromIndex(int Index, reference Value) { SetValueFromIndex(Index, Value); };
 
@@ -1340,7 +1345,7 @@ namespace Delphi {
 
         typedef struct StringItem {
             CString     String;
-            CObject    *Object;
+            CObject    *Object = nullptr;
         } CStringItem, *PStringItem;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1384,7 +1389,6 @@ namespace Delphi {
 
             int GetCount() const noexcept override { return m_nCount; }
 
-            CObject* GetObject(int Index) override;
             CObject* GetObject(int Index) const override;
             void PutObject(int Index, CObject* AObject) override;
 
