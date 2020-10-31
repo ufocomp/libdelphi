@@ -61,14 +61,14 @@ namespace Delphi {
             
             bool IsEmpty() { return m_Value.IsEmpty(); }
 
-            CString &Name() {return m_Name; }
-            const CString &Name() const {return m_Name; }
+            CString &Name() { return m_Name; }
+            const CString &Name() const { return m_Name; }
 
-            ClassValue &Value() {return m_Value; }
-            const ClassValue &Value() const {return m_Value; }
+            ClassValue &Value() { return m_Value; }
+            const ClassValue &Value() const { return m_Value; }
 
-            CStringList &Data() {return m_Data; }
-            const CStringList &Data() const {return m_Data; }
+            CStringList &Data() { return m_Data; }
+            const CStringList &Data() const { return m_Data; }
 
             inline bool operator!=(const TPair &Pair) { return m_Name != Pair.Name; }
             inline bool operator==(const TPair &Pair) { return m_Name == Pair.Name; }
@@ -119,6 +119,15 @@ namespace Delphi {
 
             int GetCount() const {
                 return m_pList.GetCount();
+            }
+
+            ClassValue &GetValue(const CString &Name) {
+                int Index = IndexOfName(Name);
+                if (Index != -1) {
+                    ClassPair &Pair = Get(Index);
+                    return Pair.Value();
+                }
+                return m_Default.Value();
             }
 
             const ClassValue &GetValue(const CString &Name) const {
@@ -243,13 +252,18 @@ namespace Delphi {
             ClassPair &Default() { return m_Default; }
             const ClassPair &Default() const { return m_Default; }
 
+            ClassValue &Values(const CString &Name) { return GetValue(Name); }
             const ClassValue &Values(const CString &Name) const { return GetValue(Name); }
+
             void Values(const CString &Name, const ClassValue &Value) { SetValue(Name, Value); }
 
             ClassPair &Items(int Index) { return Get(Index); }
             const ClassPair &Items(int Index) const { return Get(Index); }
 
             void Items(int Index, const ClassPair &Pair) { Put(Index, Pair); }
+
+            ClassPair &Pairs(const CString &Name) { return Get(IndexOfName(Name)); }
+            const ClassPair &Pairs(const CString &Name) const { return Get(IndexOfName(Name)); }
 
             TPairs &operator=(const TPairs &Value) {
                 if (this != &Value)
@@ -263,11 +277,11 @@ namespace Delphi {
                 return *this;
             };
 
-            ClassPair &operator[](int Index) { return Get(Index); }
-            const ClassPair &operator[](int Index) const { return Get(Index); }
+            ClassPair &operator[](int Index) { return Items(Index); }
+            const ClassPair &operator[](int Index) const { return Items(Index); }
 
-            ClassPair &operator[](const CString &Name) { return Items(IndexOfName(Name)); }
-            const ClassPair &operator[](const CString &Name) const { return Items(IndexOfName(Name)); }
+            ClassValue &operator[](const CString &Name) { return Values(Name); }
+            const ClassValue &operator[](const CString &Name) const { return Values(Name); }
 
         };
 

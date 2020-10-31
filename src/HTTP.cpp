@@ -281,7 +281,7 @@ namespace Delphi {
             StringArrayToStream(AStream, MiscStrings::crlf);
 
             for (int i = 0; i < Headers.Count(); ++i) {
-                CHeader &H = Headers[i];
+                const auto &H = Headers[i];
                 H.Name().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::separator);
                 H.Value().SaveToStream(AStream);
@@ -449,9 +449,9 @@ namespace Delphi {
 
         bool CHTTPRequest::BuildLocation() {
             CString Protocol;
-            const auto& Host = Headers.Values(_T("Host"));
+            const auto& Host = Headers[_T("Host")];
             if (Host.Find(':') == CString::npos) {
-                Protocol = Headers.Values(_T("X-Forwarded-Proto"));
+                Protocol = Headers[_T("X-Forwarded-Proto")];
                 if (!Protocol.IsEmpty())
                     Protocol << "://";
             }
@@ -464,7 +464,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPRequest::BuildCookies() {
-            const auto& Cookie = Headers.Values(_T("Cookie"));
+            const auto& Cookie = Headers[_T("Cookie")];
             if (!Cookie.empty()) {
                 SplitColumns(Cookie, Cookies, ';');
             }
@@ -958,12 +958,12 @@ namespace Delphi {
 
                             ARequest->BuildCookies();
 
-                            const auto& contentLength = ARequest->Headers.Values(_T("Content-Length"));
+                            const auto& contentLength = ARequest->Headers[_T("Content-Length")];
                             if (!contentLength.IsEmpty()) {
                                 Context.ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
                             }
 
-                            const auto& contentType = ARequest->Headers.Values(_T("Content-Type"));
+                            const auto& contentType = ARequest->Headers[_T("Content-Type")];
                             if (contentType.Find("application/x-www-form-urlencoded") != CString::npos) {
                                 ARequest->ContentLength = Context.ContentLength;
                                 Context.State = Request::form_data_start;
@@ -1072,7 +1072,7 @@ namespace Delphi {
                 return 0;
 
             try {
-                const CHeader& contentType = ARequest->Headers["content-type"];
+                const auto& contentType = ARequest->Headers.Pairs("content-type");
                 if (contentType.Value().Find("multipart/form-data") == CString::npos)
                     return 0;
 
@@ -1115,7 +1115,7 @@ namespace Delphi {
                         FormData.Add(CFormDataItem());
                         CFormDataItem& DataItem = FormData.Last();
 
-                        const CHeader& contentDisposition = Request.Headers["content-disposition"];
+                        const auto& contentDisposition = Request.Headers.Pairs("content-disposition");
 
                         DataItem.Name = contentDisposition.Data()["name"];
                         DataItem.File = contentDisposition.Data()["filename"];
@@ -1382,7 +1382,7 @@ namespace Delphi {
             StringArrayToStream(AStream, MiscStrings::crlf);
 
             for (int i = 0; i < Headers.Count(); ++i) {
-                CHeader &H = Headers[i];
+                const auto &H = Headers[i];
                 H.Name().SaveToStream(AStream);
                 StringArrayToStream(AStream, MiscStrings::separator);
                 H.Value().SaveToStream(AStream);
@@ -1729,7 +1729,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPReply::AddUnauthorized(CHTTPReply *AReply, bool ABearer, LPCTSTR AError, LPCTSTR AMessage) {
-            auto& LAuthenticate = AReply->Headers.Values(_T("WWW-Authenticate"));
+            const auto& LAuthenticate = AReply->Headers[_T("WWW-Authenticate")];
             if (LAuthenticate.IsEmpty()) {
                 CString Basic(_T("Basic realm=\"Access denied\", charset=\"UTF-8\""));
 
@@ -1976,8 +1976,8 @@ namespace Delphi {
                         Context.ContentLength = BufferSize - 1;
 
                         if (AReply->Headers.Count() > 0) {
-                            const auto& contentLength = AReply->Headers.Values(_T("Content-Length"));
-                            const auto& transferEncoding = AReply->Headers.Values(_T("Transfer-Encoding"));
+                            const auto& contentLength = AReply->Headers[_T("Content-Length")];
+                            const auto& transferEncoding = AReply->Headers[_T("Transfer-Encoding")];
 
                             if (!contentLength.IsEmpty()) {
                                 Context.ContentLength = strtoul(contentLength.c_str(), nullptr, 0);
@@ -2298,7 +2298,7 @@ namespace Delphi {
         void CHTTPServerConnection::SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType, bool ASendNow) {
 
             if (AStatus == CHTTPReply::ok) {
-                const CString &Value = GetRequest()->Headers.Values(_T("Connection")).Lower();
+                const CString &Value = GetRequest()->Headers[_T("Connection")].Lower();
                 if (!Value.IsEmpty()) {
                     if (Value == _T("keep-alive") || Value == _T("upgrade"))
                         CloseConnection(false);
