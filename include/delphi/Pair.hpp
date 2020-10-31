@@ -161,6 +161,10 @@ namespace Delphi {
                 Assign(Value);
             }
 
+            TPairs(TPairs &&Value) {
+                Assign(Value);
+            }
+
             ~TPairs() override {
                 Clear();
             }

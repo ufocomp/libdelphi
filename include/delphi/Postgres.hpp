@@ -185,28 +185,28 @@ namespace Delphi {
 
             ~CPQConnectionEvent() override = default;
 
-            const COnPQConnectionReceiverEvent &OnReceiver() { return m_OnReceiver; }
+            const COnPQConnectionReceiverEvent &OnReceiver() const { return m_OnReceiver; }
             void OnReceiver(COnPQConnectionReceiverEvent && Value) { m_OnReceiver = Value; }
 
-            const COnPQConnectionProcessorEvent &OnProcessor() { return m_OnProcessor; }
+            const COnPQConnectionProcessorEvent &OnProcessor() const { return m_OnProcessor; }
             void OnProcessor(COnPQConnectionProcessorEvent && Value) { m_OnProcessor = Value; }
 
-            const COnPQConnectionChangeSocketEvent &OnChangeSocket() { return m_OnChangeSocket; }
+            const COnPQConnectionChangeSocketEvent &OnChangeSocket() const { return m_OnChangeSocket; }
             void OnChangeSocket(COnPQConnectionChangeSocketEvent && Value) { m_OnChangeSocket = Value; }
 
-            const COnPQConnectionEvent &OnError() { return m_OnError; }
+            const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
 
-            const COnPQConnectionEvent &OnStatus() { return m_OnStatus; }
+            const COnPQConnectionEvent &OnStatus() const { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }
 
-            const COnPQConnectionEvent &OnPollingStatus() { return m_OnPollingStatus; }
+            const COnPQConnectionEvent &OnPollingStatus() const { return m_OnPollingStatus; }
             void OnPollingStatus(COnPQConnectionEvent && Value) { m_OnPollingStatus = Value; }
 
-            const COnPQConnectionEvent &OnConnected() { return m_OnConnected; }
+            const COnPQConnectionEvent &OnConnected() const { return m_OnConnected; }
             void OnConnected(COnPQConnectionEvent && Value) { m_OnConnected = Value; }
 
-            const COnPQConnectionEvent &OnDisconnected() { return m_OnDisconnected; }
+            const COnPQConnectionEvent &OnDisconnected() const { return m_OnDisconnected; }
             void OnDisconnected(COnPQConnectionEvent && Value) { m_OnDisconnected = Value; }
 
         };
@@ -547,7 +547,7 @@ namespace Delphi {
 
             CPQConnectPoll *m_pServer;
 
-            CPollConnection *m_PollConnection;
+            CPollConnection *m_pPollConnection;
 
             COnPQPollQueryExecutedEvent m_OnExecuted;
 
@@ -571,8 +571,8 @@ namespace Delphi {
 
             CPQConnectPoll *Server() { return m_pServer; };
 
-            CPollConnection *PollConnection() { return m_PollConnection; };
-            void PollConnection(CPollConnection *Value) { m_PollConnection = Value; };
+            CPollConnection *PollConnection() { return m_pPollConnection; };
+            void PollConnection(CPollConnection *Value) { m_pPollConnection = Value; };
 
             const COnPQPollQueryExecutedEvent &OnPollExecuted() const { return m_OnExecuted; }
             void OnPollExecuted(COnPQPollQueryExecutedEvent && Value) { m_OnExecuted = Value; }

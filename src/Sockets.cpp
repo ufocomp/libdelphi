@@ -1298,7 +1298,7 @@ namespace Delphi {
                 CCollectionItem(AManager) {
             m_pEventHandler = nullptr;
             m_pOwner = AOwner;
-            m_AutoFree = false;
+            m_AutoFree = true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3482,6 +3482,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CEPoll::CEPoll() {
+            m_Timer = 0;
             m_pEventHandlers = nullptr;
             m_pPollStack = new CPollStack();
             m_FreeEventHandlers = true;
@@ -3489,6 +3490,7 @@ namespace Delphi {
             m_OnEventHandlerException = nullptr;
 
             CreateEventHandlers();
+            UpdateTimer();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3553,6 +3555,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CEPoll::UpdateTimer() {
+            if (m_pPollStack->TimeOut() != INFINITE) {
+                m_Timer = Now() + (CDateTime) m_pPollStack->TimeOut() / MSecsPerDay;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CEPoll::CheckHandler(CPollEventHandler *AHandler) {
             if (AHandler->Stopped()) {
                 delete AHandler;
@@ -3560,110 +3569,117 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CEPoll::Wait() {
+        void CEPoll::PackEventHandlers() {
+            for (int i = m_pEventHandlers->Count() - 1; i >= 0; i--) {
+                CheckHandler(m_pEventHandlers->Handlers(i));
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
 
-            int LEvents, err, i;
-            uint32_t EEvents;
+        void CEPoll::Wait() {
 
-            CPollEventHandler *LHandler = nullptr;
-            CPollEvent *LPollEvent = nullptr;
+            int events, err;
+            uint32_t uEvents;
 
-            LEvents = m_pPollStack->Wait();
+            CPollEventHandler *pHandler = nullptr;
+            CPollEvent *pPollEvent = nullptr;
 
-            err = (LEvents == -1) ? errno : 0;
+            events = m_pPollStack->Wait();
+
+            err = (events == -1) ? errno : 0;
 
             if (err) {
                 throw EOSError(err, _T("epoll: call waits for events failure: "));
             }
 
-            if (LEvents == 0) {
+            for (int i = 0; i < events; ++i) {
 
-                if (m_pPollStack->TimeOut() != INFINITE) {
+                pPollEvent = m_pPollStack->Events(i);
 
-                    for (int I = 0; I < m_pEventHandlers->Count(); ++I) {
-                        LHandler = m_pEventHandlers->Handlers(I);
-                        if (LHandler->EventType() == etIO) {
-                            if (LHandler->OnTimeOutEvent() != nullptr) {
-                                LHandler->DoTimeOutEvent();
-                            } else {
-                                DoTimeOut(LHandler);
-                            }
-                        }
-                    }
+                pHandler = static_cast<CPollEventHandler *> (pPollEvent->data.ptr);
+                uEvents = pPollEvent->events;
 
-                    return true;
-                }
-
-                throw EOSError(err, _T("epoll_wait() returned no events without timeout"));
-            }
-
-            for (i = 0; i < LEvents; ++i) {
-
-                LPollEvent = m_pPollStack->Events(i);
-
-                LHandler = (CPollEventHandler *) LPollEvent->data.ptr;
-                EEvents = LPollEvent->events;
-
-                if (EEvents & (EPOLLERR|EPOLLHUP)) {
+                if (uEvents & (EPOLLERR | EPOLLHUP)) {
                     /*
                      * if the error events were returned, add EPOLLIN and EPOLLOUT
                      * to handle the events at least in one active handler
                      */
 
-                    EEvents |= EPOLLIN|EPOLLOUT;
+                    uEvents |= EPOLLIN | EPOLLOUT;
                 }
 
-                if (LHandler->EventType() == etAccept) {
+                if (pHandler->EventType() == etAccept) {
 
-                    if (EEvents & EPOLLIN) {
-                        if (LHandler->OnReadEvent() != nullptr) {
-                            LHandler->DoReadEvent();
+                    if (uEvents & EPOLLIN) {
+                        if (pHandler->OnReadEvent() != nullptr) {
+                            pHandler->DoReadEvent();
                         } else {
-                            DoAccept(LHandler);
+                            DoAccept(pHandler);
                         }
                     }
 
-                } else if (LHandler->EventType() == etConnect) {
+                } else if (pHandler->EventType() == etConnect) {
 
-                    if (EEvents & EPOLLOUT) {
-                        if (LHandler->OnConnectEvent() != nullptr) {
-                            LHandler->DoConnectEvent();
+                    if (uEvents & EPOLLOUT) {
+                        if (pHandler->OnConnectEvent() != nullptr) {
+                            pHandler->DoConnectEvent();
                         } else {
-                            DoConnect(LHandler);
+                            DoConnect(pHandler);
                         }
                     }
 
-                } else if (LHandler->EventType() == etIO) {
+                } else if (pHandler->EventType() == etIO) {
 
-                    if (EEvents & EPOLLIN) {
-                        if (LHandler->OnReadEvent() != nullptr) {
-                            LHandler->DoReadEvent();
+                    if (uEvents & EPOLLIN) {
+                        if (pHandler->OnReadEvent() != nullptr) {
+                            pHandler->DoReadEvent();
                         } else {
-                            DoRead(LHandler);
+                            DoRead(pHandler);
                         }
                     }
 
-                    if (EEvents & EPOLLOUT) {
-                        if (LHandler->OnWriteEvent() != nullptr) {
-                            LHandler->DoWriteEvent();
+                    if (uEvents & EPOLLOUT) {
+                        if (pHandler->OnWriteEvent() != nullptr) {
+                            pHandler->DoWriteEvent();
                         } else {
-                            DoWrite(LHandler);
+                            DoWrite(pHandler);
                         }
                     }
 
-                } else if (LHandler->EventType() == etTimer) {
+                } else if (pHandler->EventType() == etTimer) {
 
-                    if (EEvents & EPOLLIN) {
-                        if (LHandler->OnTimerEvent() != nullptr) {
-                            LHandler->DoTimerEvent();
+                    if (uEvents & EPOLLIN) {
+                        if (pHandler->OnTimerEvent() != nullptr) {
+                            pHandler->DoTimerEvent();
                         }
                     }
                 }
 
-                CheckHandler(LHandler);
+                if (pHandler->EventType() != etTimer) {
+                    UpdateTimer();
+                }
+
+                if ((events == 0) || (m_Timer != 0 && Now() >= m_Timer)) {
+
+                    if (m_pPollStack->TimeOut() != INFINITE) {
+                        for (int I = 0; I < m_pEventHandlers->Count(); ++I) {
+                            pHandler = m_pEventHandlers->Handlers(I);
+                            if (pHandler->EventType() == etIO) {
+                                if (pHandler->OnTimeOutEvent() != nullptr) {
+                                    pHandler->DoTimeOutEvent();
+                                } else {
+                                    DoTimeOut(pHandler);
+                                }
+                            }
+                        }
+
+                        PackEventHandlers();
+                        UpdateTimer();
+                    } else {
+                        throw EOSError(err, _T("epoll_wait() returned no events without timeout"));
+                    }
+                }
             }
-
-            return true;
         }
         //--------------------------------------------------------------------------------------------------------------
 

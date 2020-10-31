@@ -1515,23 +1515,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPReply::AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue) {
-            Headers.Add(CHeader());
-            Headers.Last().Name() = lpszName;
-            Headers.Last().Value() = lpszValue;
+            Headers.Add(CHeader(lpszName, lpszValue));
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPReply::AddHeader(LPCTSTR lpszName, const CString &Value) {
-            Headers.Add(CHeader());
-            Headers.Last().Name() = lpszName;
-            Headers.Last().Value() = Value;
+            Headers.Add(CHeader(lpszName, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPReply::AddHeader(const CString &Name, const CString &Value) {
-            Headers.Add(CHeader());
-            Headers.Last().Name() = Name;
-            Headers.Last().Value() = Value;
+            Headers.Add(CHeader(Name, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2633,76 +2627,79 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
-                if (LConnection->ConnectionStatus() >= csRequestOk) {
+                if (pConnection->ConnectionStatus() >= csRequestOk) {
+                    if (pConnection->Protocol() == pHTTP) {
+                        if (pConnection->ConnectionStatus() == csRequestOk) {
+                            pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
+                            pConnection->CloseConnection(true);
+                        }
 
-                    if (LConnection->ConnectionStatus() == csRequestOk) {
-                        if (LConnection->Protocol() == pHTTP)
-                            LConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
-                        LConnection->CloseConnection(true);
+                        if (pConnection->ConnectionStatus() >= csReplySent)
+                            pConnection->CloseConnection(true);
+
+                        if (pConnection->CloseConnection())
+                            pConnection->Disconnect();
                     }
-
-                    if (LConnection->CloseConnection())
-                        LConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoAccept(CPollEventHandler *AHandler) {
-            CIOHandlerSocket *LIOHandler = nullptr;
-            CPollEventHandler *LEventHandler = nullptr;
-            CHTTPServerConnection *LConnection = nullptr;
+            CIOHandlerSocket *pIOHandler = nullptr;
+            CPollEventHandler *pEventHandler = nullptr;
+            CHTTPServerConnection *pConnection = nullptr;
 
             try {
-                LIOHandler = (CIOHandlerSocket *) CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
+                pIOHandler = (CIOHandlerSocket *) CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
 
-                if (Assigned(LIOHandler)) {
-                    LConnection = new CHTTPServerConnection(this);
+                if (Assigned(pIOHandler)) {
+                    pConnection = new CHTTPServerConnection(this);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
-                    LConnection->OnReply([this](auto && Sender) { DoReply(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnReply([this](auto && Sender) { DoReply(Sender); });
 #else
-                    LConnection->OnDisconnected(std::bind(&CHTTPServer::DoDisconnected, this, _1));
-                    LConnection->OnReply(std::bind(&CHTTPServer::DoReply, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CHTTPServer::DoDisconnected, this, _1));
+                    pConnection->OnReply(std::bind(&CHTTPServer::DoReply, this, _1));
 #endif
-                    LConnection->IOHandler(LIOHandler);
+                    pConnection->IOHandler(pIOHandler);
 
-                    LIOHandler->AfterAccept();
+                    pIOHandler->AfterAccept();
 
-                    LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
-                    LEventHandler->Binding(LConnection);
-                    LEventHandler->Start(etIO);
+                    pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
+                    pEventHandler->Binding(pConnection);
+                    pEventHandler->Start(etIO);
 
-                    DoConnected(LConnection);
+                    DoConnected(pConnection);
                 } else {
                     throw ETCPServerError(_T("TCP Server Error..."));
                 }
             } catch (Delphi::Exception::Exception &E) {
-                delete LConnection;
+                delete pConnection;
                 DoListenException(E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoRead(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
-                if (LConnection->ParseInput()) {
-                    switch (LConnection->ConnectionStatus()) {
+                if (pConnection->ParseInput()) {
+                    switch (pConnection->ConnectionStatus()) {
                         case csRequestError:
-                            LConnection->CloseConnection(true);
-                            if (LConnection->Protocol() == pHTTP)
-                                LConnection->SendStockReply(CHTTPReply::bad_request);
-                            LConnection->Clear();
+                            pConnection->CloseConnection(true);
+                            if (pConnection->Protocol() == pHTTP)
+                                pConnection->SendStockReply(CHTTPReply::bad_request);
+                            pConnection->Clear();
                             break;
 
                         case csRequestOk:
-                            DoExecute(LConnection);
+                            DoExecute(pConnection);
                             break;
 
                         default:
@@ -2710,30 +2707,30 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoWrite(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
-                if (LConnection->WriteAsync()) {
-                    if (LConnection->ConnectionStatus() == csReplyReady) {
+                if (pConnection->WriteAsync()) {
+                    if (pConnection->ConnectionStatus() == csReplyReady) {
 
-                        LConnection->ConnectionStatus(csReplySent);
-                        DoAccessLog(LConnection);
-                        LConnection->Clear();
+                        pConnection->ConnectionStatus(csReplySent);
+                        DoAccessLog(pConnection);
+                        pConnection->Clear();
 
-                        if (LConnection->CloseConnection()) {
-                            LConnection->Disconnect();
+                        if (pConnection->CloseConnection()) {
+                            pConnection->Disconnect();
                         }
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2741,25 +2738,25 @@ namespace Delphi {
         bool CHTTPServer::DoCommand(CTCPConnection *AConnection) {
             CCommandHandler *pHandler;
 
-            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
-            auto LRequest = LConnection->Request();
+            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
+            auto pRequest = pConnection->Request();
 
             bool Result = CommandHandlers()->Count() > 0;
 
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LRequest->Method);
+                DoBeforeCommandHandler(AConnection, pRequest->Method);
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
                         pHandler = CommandHandlers()->Commands(Index);
                         if (pHandler->Enabled()) {
-                            if (pHandler->Check(LRequest->Method, AConnection))
+                            if (pHandler->Check(pRequest->Method, AConnection))
                                 break;
                         }
                     }
 
                     if (Index == CommandHandlers()->Count())
-                        DoNoCommandHandler(LRequest->Method, AConnection);
+                        DoNoCommandHandler(pRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }
@@ -2799,57 +2796,57 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto LConnection = new CHTTPClientConnection(this);
-            LConnection->IOHandler(AIOHandler);
-            LConnection->AutoFree(true);
-            AHandler->Binding(LConnection);
+            auto pConnection = new CHTTPClientConnection(this);
+            pConnection->IOHandler(AIOHandler);
+            pConnection->AutoFree(true);
+            AHandler->Binding(pConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoConnect(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
 
-            if (LConnection == nullptr) {
+            if (pConnection == nullptr) {
                 AHandler->Stop();
                 return;
             }
 
             try {
-                auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
+                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
 
-                if (LIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
-                    LConnection->OnDisconnected(std::bind(&CHTTPClient::DoDisconnected, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CHTTPClient::DoDisconnected, this, _1));
 #endif
-                    DoConnected(LConnection);
-                    DoRequest(LConnection);
+                    DoConnected(pConnection);
+                    DoRequest(pConnection);
 
                     AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                AHandler->Stop();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoRead(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
             try {
-                if (LConnection->ParseInput()) {
-                    switch (LConnection->ConnectionStatus()) {
+                if (pConnection->ParseInput()) {
+                    switch (pConnection->ConnectionStatus()) {
                         case csReplyError:
-                            LConnection->Clear();
+                            pConnection->Clear();
                             break;
 
                         case csReplyOk:
-                            DoExecute(LConnection);
-                            LConnection->Clear();
+                            DoExecute(pConnection);
+                            pConnection->Clear();
 
-                            if (LConnection->CloseConnection()) {
-                                LConnection->Disconnect();
+                            if (pConnection->CloseConnection()) {
+                                pConnection->Disconnect();
                             }
 
                             break;
@@ -2859,23 +2856,23 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoWrite(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
             try {
-                if (LConnection->WriteAsync()) {
-                    if (LConnection->ConnectionStatus() == csRequestReady) {
-                        LConnection->ConnectionStatus(csRequestSent);
+                if (pConnection->WriteAsync()) {
+                    if (pConnection->ConnectionStatus() == csRequestReady) {
+                        pConnection->ConnectionStatus(csRequestSent);
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2883,25 +2880,25 @@ namespace Delphi {
         bool CHTTPClient::DoCommand(CTCPConnection *AConnection) {
             CCommandHandler *pHandler;
 
-            auto LConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
-            auto LRequest = LConnection->Request();
+            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
+            auto pRequest = pConnection->Request();
 
             bool Result = CommandHandlers()->Count() > 0;
 
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LRequest->Method);
+                DoBeforeCommandHandler(AConnection, pRequest->Method);
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
                         pHandler = CommandHandlers()->Commands(Index);
                         if (pHandler->Enabled()) {
-                            if (pHandler->Check(LRequest->Method, AConnection))
+                            if (pHandler->Check(pRequest->Method, AConnection))
                                 break;
                         }
                     }
 
                     if (Index == CommandHandlers()->Count())
-                        DoNoCommandHandler(LRequest->Method, AConnection);
+                        DoNoCommandHandler(pRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }
@@ -2985,45 +2982,45 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPProxy::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto LConnection = new CHTTPClientConnection(this);
-            LConnection->IOHandler(AIOHandler);
-            LConnection->AutoFree(true);
-            AHandler->Binding(LConnection);
+            auto pConnection = new CHTTPClientConnection(this);
+            pConnection->IOHandler(AIOHandler);
+            pConnection->AutoFree(true);
+            AHandler->Binding(pConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPProxy::DoConnect(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
 
-            if (LConnection == nullptr) {
+            if (pConnection == nullptr) {
                 AHandler->Stop();
                 return;
             }
 
             try {
-                auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
+                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
 
-                if (LIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
-                    LConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
 #endif
-                    DoConnected(LConnection);
-                    DoRequest(LConnection);
+                    DoConnected(pConnection);
+                    DoRequest(pConnection);
 
                     AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                AHandler->Stop();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPProxy::DoRequest(CHTTPClientConnection *AConnection) {
-            auto LRequest = AConnection->Request();
-            *LRequest = *m_Request;
+            auto pRequest = AConnection->Request();
+            *pRequest = *m_Request;
             AConnection->SendRequest(true);
         }
         //--------------------------------------------------------------------------------------------------------------

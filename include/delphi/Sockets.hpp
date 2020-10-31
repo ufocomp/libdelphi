@@ -726,7 +726,7 @@ namespace Delphi {
 
         protected:
 
-            clock_t m_Clock;
+            CDateTime m_Clock;
 
             bool m_FreeIOHandler;
             void SetIOHandler(CIOHandler *AValue, bool AFree);
@@ -751,8 +751,8 @@ namespace Delphi {
             bool OEM() const { return m_OEM; }
             void OEM(bool Value) { m_OEM = Value; }
 
-            clock_t Clock() const { return m_Clock; };
-            void UpdateClock() { m_Clock = clock(); };
+            CDateTime Clock() const { return m_Clock; };
+            void UpdateClock() { m_Clock = Now(); };
 
             bool Connected();
 
@@ -1979,10 +1979,15 @@ namespace Delphi {
             bool m_FreeEventHandlers;
             bool m_FreePollStack;
 
+            CDateTime m_Timer;
+
             void FreePollStack();
 
             void CreateEventHandlers();
             void FreeEventHandlers();
+            void PackEventHandlers();
+
+            void UpdateTimer();
 
         protected:
 
@@ -2021,7 +2026,7 @@ namespace Delphi {
             int TimeOut() { return GetTimeOut(); };
             void TimeOut(int Value) { SetTimeOut(Value); };
 
-            bool Wait();
+            void Wait();
 
             static void CheckHandler(CPollEventHandler *AHandler);
 
