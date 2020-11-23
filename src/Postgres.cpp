@@ -1148,7 +1148,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            SetTimerInterval(5 * 1000);
+            //SetTimerInterval(5 * 1000);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1418,9 +1418,12 @@ namespace Delphi {
 
         void CPQConnectPoll::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = GetConnection(AHandler);
-            if (Assigned(pConnection))
-                DoError(pConnection);
-            AHandler->Stop();
+            if (Assigned(pConnection)) {
+                if (!pConnection->Connected()) {
+                    DoError(pConnection);
+                    AHandler->Stop();
+                }
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
