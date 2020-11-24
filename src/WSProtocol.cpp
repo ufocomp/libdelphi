@@ -118,7 +118,7 @@ namespace Delphi {
             const auto& Payload = Message.Payload.ToString();
             const size_t Size = Message.Size() + Payload.Size();
 
-            String.MaxFormatSize(64 + Size);
+            String.MaxFormatSize(256 + Size);
 
             switch (Message.MessageTypeId) {
                 case mtOpen:
@@ -275,6 +275,7 @@ namespace Delphi {
 
         CSession::CSession(CHTTPServerConnection *AConnection, CSessionManager *AManager) : CCollectionItem(AManager) {
             m_UpdateCount = 0;
+            m_Authorized = false;
             m_pConnection = AConnection;
             m_pMessages = new CMessageManager(this);
             AddToConnection(AConnection);

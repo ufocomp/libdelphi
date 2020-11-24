@@ -179,6 +179,8 @@ namespace Delphi {
 
             int m_UpdateCount;
 
+            bool m_Authorized;
+
             void AddToConnection(CHTTPServerConnection *AConnection);
             void DeleteFromConnection(CHTTPServerConnection *AConnection);
 
@@ -218,6 +220,9 @@ namespace Delphi {
 
             CString &Agent() { return m_Agent; };
             const CString &Agent() const { return m_Agent; };
+
+            bool Authorized() const { return m_Authorized; };
+            void Authorized(bool Value) { m_Authorized = Value; };
 
             static CSession *FindOfConnection(CHTTPServerConnection *AConnection);
 
