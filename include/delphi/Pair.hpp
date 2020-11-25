@@ -256,6 +256,9 @@ namespace Delphi {
             ClassPair &Default() { return m_Default; }
             const ClassPair &Default() const { return m_Default; }
 
+            ClassValue &DefaultValue() { return m_Default.Value(); }
+            const ClassValue &DefaultValue() const { return m_Default.Value(); }
+
             ClassValue &Values(const CString &Name) { return GetValue(Name); }
             const ClassValue &Values(const CString &Name) const { return GetValue(Name); }
 
