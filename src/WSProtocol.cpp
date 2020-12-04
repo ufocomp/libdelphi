@@ -154,7 +154,7 @@ namespace Delphi {
                     String.Format(R"({"t":4,"u":"%s","c":%d,"m":"%s"})",
                                   UniqueId.c_str(),
                                   Message.ErrorCode,
-                                  Message.ErrorMessage.c_str()
+                                  Delphi::Json::EncodeJsonString(Message.ErrorMessage).c_str()
                     );
                     break;
             }
