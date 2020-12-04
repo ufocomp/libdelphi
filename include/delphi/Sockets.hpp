@@ -354,6 +354,8 @@ namespace Delphi {
 
             void PackReadSize(size_t Value) { SetPackReadSize(Value); }
 
+            size_t ReadSize() const { return m_ReadSize; }
+
         }; // CManagedBuffer
 
         //--------------------------------------------------------------------------------------------------------------
