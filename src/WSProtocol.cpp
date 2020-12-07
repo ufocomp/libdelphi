@@ -235,23 +235,23 @@ namespace Delphi {
         CMessageHandler *CMessageManager::Add(COnMessageHandlerEvent &&Handler, const CString &Action,
                 const CJSON &Payload) {
             
-            auto LHandler = new CMessageHandler(this, static_cast<COnMessageHandlerEvent &&>(Handler));
-            auto LConnection = m_pSession->Connection();
+            auto pHandler = new CMessageHandler(this, static_cast<COnMessageHandlerEvent &&>(Handler));
+            auto pConnection = m_pSession->Connection();
 
-            LHandler->Action() = Action;
+            pHandler->Action() = Action;
 
             CString LResult;
 
-            CWSProtocol::Call(LHandler->UniqueId(), Action, Payload, LResult);
+            CWSProtocol::Call(pHandler->UniqueId(), Action, Payload, LResult);
 
-            auto LWSReply = LConnection->WSReply();
+            auto pWSReply = pConnection->WSReply();
 
-            LWSReply->Clear();
-            LWSReply->SetPayload(LResult);
+            pWSReply->Clear();
+            pWSReply->SetPayload(LResult);
 
-            LConnection->SendWebSocket(true);
+            pConnection->SendWebSocket(true);
 
-            return LHandler;
+            return pHandler;
         }
         //--------------------------------------------------------------------------------------------------------------
 

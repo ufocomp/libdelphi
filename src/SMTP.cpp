@@ -329,163 +329,163 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::InitializeCommandHandlers() {
-            CCommandHandler *LCommand;
+            CCommandHandler *pCommand;
 
             CommandHandlers()->ParseParamsDefault(false);
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("CONNECT");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("CONNECT");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoCONNECT(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoCONNECT(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoCONNECT, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoCONNECT, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("HELLO");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("HELLO");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoHELLO(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoHELLO(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoHELLO, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoHELLO, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("STARTTLS");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("STARTTLS");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoSTARTTLS(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoSTARTTLS(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoSTARTTLS, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoSTARTTLS, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("AUTH");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("AUTH");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoAUTH(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoAUTH(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoAUTH, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoAUTH, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("FROM");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("FROM");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoFROM(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoFROM(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoFROM, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoFROM, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("TO");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("TO");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoTO(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoTO(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoTO, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoTO, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("DATA");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("DATA");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoDATA(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoDATA(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoDATA, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoDATA, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("CONTENT");
-            LCommand->Disconnect(false);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("CONTENT");
+            pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoCONTENT(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoCONTENT(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoCONTENT, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoCONTENT, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            LCommand = CommandHandlers()->Add();
-            LCommand->Command() = _T("QUIT");
-            LCommand->Disconnect(true);
+            pCommand = CommandHandlers()->Add();
+            pCommand->Command() = _T("QUIT");
+            pCommand->Disconnect(true);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            LCommand->OnCommand([this](auto && ACommand) { DoQUIT(ACommand); });
-            LCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
+            pCommand->OnCommand([this](auto && ACommand) { DoQUIT(ACommand); });
+            pCommand->OnException([this](auto && AConnection, auto && E) { DoException(AConnection, E); });
 #else
-            LCommand->OnCommand(std::bind(&CSMTPClient::DoQUIT, this, _1));
-            LCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
+            pCommand->OnCommand(std::bind(&CSMTPClient::DoQUIT, this, _1));
+            pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto LConnection = new CSMTPConnection(this);
-            LConnection->IOHandler(AIOHandler);
-            LConnection->AutoFree(true);
-            AHandler->Binding(LConnection);
+            auto pConnection = new CSMTPConnection(this);
+            pConnection->IOHandler(AIOHandler);
+            pConnection->AutoFree(true);
+            AHandler->Binding(pConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoConnect(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
 
-            if (LConnection == nullptr) {
+            if (pConnection == nullptr) {
                 AHandler->Stop();
                 return;
             }
 
             try {
-                auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
+                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
 
-                if (LIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnRequest([this](auto && Sender) { DoRequest(Sender); });
-                    LConnection->OnReply([this](auto && Sender) { DoReply(Sender); });
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnRequest([this](auto && Sender) { DoRequest(Sender); });
+                    pConnection->OnReply([this](auto && Sender) { DoReply(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
-                    LConnection->OnRequest(std::bind(&CSMTPClient::DoRequest, this, _1));
-                    LConnection->OnReply(std::bind(&CSMTPClient::DoReply, this, _1));
-                    LConnection->OnDisconnected(std::bind(&CSMTPClient::DoDisconnected, this, _1));
+                    pConnection->OnRequest(std::bind(&CSMTPClient::DoRequest, this, _1));
+                    pConnection->OnReply(std::bind(&CSMTPClient::DoReply, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CSMTPClient::DoDisconnected, this, _1));
 #endif
-                    DoConnected(LConnection);
+                    DoConnected(pConnection);
 
                     AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
+                DoException(pConnection, E);
                 AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoRead(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
             try {
-                if (LConnection->ParseInput()) {
-                    switch (LConnection->ConnectionStatus()) {
+                if (pConnection->ParseInput()) {
+                    switch (pConnection->ConnectionStatus()) {
                         case csReplyError:
-                            LConnection->Clear();
-                            LConnection->Disconnect();
+                            pConnection->Clear();
+                            pConnection->Disconnect();
                             break;
 
                         case csReplyOk:
-                            DoExecute(LConnection);
+                            DoExecute(pConnection);
                             break;
 
                         default:
@@ -493,44 +493,44 @@ namespace Delphi {
                     }
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoWrite(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CSMTPConnection *> (AHandler->Binding());
             try {
-                switch (LConnection->ConnectionStatus()) {
+                switch (pConnection->ConnectionStatus()) {
                     case Socket::csConnected:
                         DoRead(AHandler);
                         break;
 
                     case csRequestError:
-                        LConnection->Clear();
-                        LConnection->Disconnect();
+                        pConnection->Clear();
+                        pConnection->Disconnect();
                         break;
 
                     case csRequestReady:
-                        if (LConnection->SendCommand()) {
-                            LConnection->ConnectionStatus(csWaitReply);
+                        if (pConnection->SendCommand()) {
+                            pConnection->ConnectionStatus(csWaitReply);
                         } else {
-                            LConnection->ConnectionStatus(csRequestSent);
+                            pConnection->ConnectionStatus(csRequestSent);
                         }
                         break;
 
                     case csRequestSent:
-                        if (LConnection->WriteAsync()) {
-                            LConnection->ConnectionStatus(csWaitReply);
+                        if (pConnection->WriteAsync()) {
+                            pConnection->ConnectionStatus(csWaitReply);
                         }
                         break;
                     default:
                         break;
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -538,24 +538,24 @@ namespace Delphi {
         bool CSMTPClient::DoCommand(CTCPConnection *AConnection) {
             CCommandHandler *Handler;
 
-            auto LConnection = dynamic_cast<CSMTPConnection *> (AConnection);
-            const auto& LCommand = LConnection->Command();
+            auto pConnection = dynamic_cast<CSMTPConnection *> (AConnection);
+            const auto& command = pConnection->Command();
 
             bool Result = CommandHandlers()->Count() > 0;
 
             if (Result) {
-                DoBeforeCommandHandler(AConnection, LCommand.Command());
+                DoBeforeCommandHandler(AConnection, command.Command());
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
                         Handler = CommandHandlers()->Commands(Index);
                         if (Handler->Enabled()) {
-                            if (Handler->Check(LCommand.Command(), AConnection))
+                            if (Handler->Check(command.Command(), AConnection))
                                 break;
                         }
                     }
                     if (Index == CommandHandlers()->Count())
-                        DoNoCommandHandler(LCommand.Command(), AConnection);
+                        DoNoCommandHandler(command.Command(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
                 }
@@ -620,26 +620,26 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoCONNECT(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 220) {
-                LConnection->NewCommand("HELLO", CString().Format("EHLO %s", LConnection->Socket()->Binding()->IP()));
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 220) {
+                pConnection->NewCommand("HELLO", CString().Format("EHLO %s", pConnection->Socket()->Binding()->IP()));
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->CloseConnection(true);
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->CloseConnection(true);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoHELLO(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 250) {
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 250) {
                 int Index = 0;
-                while (Index < LCommand.Reply().Count() && LCommand.Reply()[Index].Find("STARTTLS") == -1)
+                while (Index < command.Reply().Count() && command.Reply()[Index].Find("STARTTLS") == -1)
                     Index++;
 
-                if (Index == LCommand.Reply().Count()) {
+                if (Index == command.Reply().Count()) {
                     CString LPlain;
 
                     LPlain.Write("\0", 1);
@@ -647,121 +647,121 @@ namespace Delphi {
                     LPlain.Write("\0", 1);
                     LPlain << m_Config.Password();
 
-                    LConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(LPlain));
+                    pConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(LPlain));
                 } else {
 #ifdef WITH_SSL
-                    LConnection->NewCommand("STARTTLS");
+                    pConnection->NewCommand("STARTTLS");
 #else
                     throw Delphi::Exception::ESocketError("WARNING: TLS/SSL not supported in this build (Need WITH_SSL: ON).");
 #endif
                 }
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoSTARTTLS(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 220) {
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 220) {
 #ifdef WITH_SSL
-                auto Socket = LConnection->Socket()->Binding();
+                auto Socket = pConnection->Socket()->Binding();
                 if (Assigned(Socket)) {
                     Socket->SSLMethod(sslClient);
                     Socket->AllocateSSL();
                     Socket->ConnectSSL();
                 }
 #endif
-                LConnection->NewCommand("HELLO", CString().Format("EHLO %s", LConnection->Socket()->Binding()->IP()));
+                pConnection->NewCommand("HELLO", CString().Format("EHLO %s", pConnection->Socket()->Binding()->IP()));
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoAUTH(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 235) {
-                const auto &LMessage = CurrentMessage();
-                LConnection->NewCommand("FROM", CString().Format("MAIL FROM: <%s>", LMessage.From().c_str()));
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 235) {
+                const auto &message = CurrentMessage();
+                pConnection->NewCommand("FROM", CString().Format("MAIL FROM: <%s>", message.From().c_str()));
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoFROM(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 250) {
-                const auto &LMessage = CurrentMessage();
-                LConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", LMessage.To()[m_ToIndex++].c_str()));
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 250) {
+                const auto &message = CurrentMessage();
+                pConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", message.To()[m_ToIndex++].c_str()));
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoTO(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 250 || LCommand.LastCode() == 251) {
-                const auto &LMessage = CurrentMessage();
-                if (m_ToIndex < LMessage.To().Count()) {
-                    LConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", LMessage.To()[m_ToIndex++].c_str()));
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 250 || command.LastCode() == 251) {
+                const auto &message = CurrentMessage();
+                if (m_ToIndex < message.To().Count()) {
+                    pConnection->NewCommand("TO", CString().Format("RCPT TO: <%s>", message.To()[m_ToIndex++].c_str()));
                 } else {
-                    LConnection->NewCommand("DATA");
+                    pConnection->NewCommand("DATA");
                 }
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoDATA(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 250 || LCommand.LastCode() == 354) {
-                const auto &LMessage = CurrentMessage();
-                LConnection->NewCommand("CONTENT", LMessage.Body().Text() + "\r\n.");
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 250 || command.LastCode() == 354) {
+                const auto &message = CurrentMessage();
+                pConnection->NewCommand("CONTENT", message.Body().Text() + "\r\n.");
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
-                LConnection->NewCommand("QUIT");
+                command.ErrorMessage() = command.LastMessage();
+                pConnection->NewCommand("QUIT");
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoCONTENT(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            auto& LCommand = LConnection->Command();
-            if (LCommand.LastCode() == 250) {
-                auto &LMessage = CurrentMessage();
-                const auto& Line = LCommand.LastMessage();
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto& command = pConnection->Command();
+            if (command.LastCode() == 250) {
+                auto &message = CurrentMessage();
+                const auto& Line = command.LastMessage();
                 size_t Pos = Line.Find("id=");
-                LMessage.MessageId() = LCommand.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
-                LMessage.Submitted(true);
+                message.MessageId() = command.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
+                message.Submitted(true);
             } else {
-                LCommand.ErrorMessage() = LCommand.LastMessage();
+                command.ErrorMessage() = command.LastMessage();
             }
-            LConnection->NewCommand("QUIT");
+            pConnection->NewCommand("QUIT");
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPClient::DoQUIT(CCommand *ACommand) {
-            auto LConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
-            const auto& LCommand = LConnection->Command();
-            auto &LMessage = CurrentMessage();
-            if (LMessage.Submitted()) {
-                LMessage.Done();
+            auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            const auto& command = pConnection->Command();
+            auto &message = CurrentMessage();
+            if (message.Submitted()) {
+                message.Done();
             } else {
-                LMessage.Fail(LCommand.ErrorMessage());
+                message.Fail(command.ErrorMessage());
             }
             SendNext();
         }

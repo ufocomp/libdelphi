@@ -609,6 +609,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        PGcancel *CPQConnection::GetCancel() {
+            return PQgetCancel(m_pHandle);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnection::Disconnect() {
             if (m_Connected) {
                 DoDisconnected(this);
@@ -661,8 +666,7 @@ namespace Delphi {
             m_WorkQuery = AQuery;
             m_WorkQuery->Connection(this);
             m_WorkQuery->SendQuery();
-            if (!m_WorkQuery->CheckResult())
-                m_ConnectionStatus = qsBusy;
+            m_ConnectionStatus = qsBusy;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -878,24 +882,24 @@ namespace Delphi {
                     m_pConnection->ConsumeInput();
                     Message.Clear();
                 }
-            }
-
-            if (m_pConnection->Flush()) {
-                Result = PQgetResult(m_pConnection->Handle());
-                while (Result) {
-                    pResult = new CPQResult(this, Result);
-#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    pResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
-#else
-                    pResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
-#endif
-                    DoResult(pResult, pResult->ResultStatus());
+            } else {
+                if (m_pConnection->Flush()) {
                     Result = PQgetResult(m_pConnection->Handle());
+                    while (Result) {
+                        pResult = new CPQResult(this, Result);
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                        pResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
+#else
+                        pResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
+#endif
+                        DoResult(pResult, pResult->ResultStatus());
+                        Result = PQgetResult(m_pConnection->Handle());
+                    }
+
+                    DoExecuted();
+
+                    return true;
                 }
-
-                DoExecuted();
-
-                return true;
             }
 
             return false;
@@ -919,6 +923,16 @@ namespace Delphi {
             DoSendQuery();
 
             m_pConnection->Flush();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CPQQuery::CancelQuery(CString &Error) {
+            const auto cancel = m_pConnection->GetCancel();
+            Error.Clear();
+            Error.SetLength(512);
+            const auto result = PQcancel(cancel, Error.Data(), Error.Size());
+            PQfreeCancel(cancel);
+            return result == 1;
         }
         //--------------------------------------------------------------------------------------------------------------
 

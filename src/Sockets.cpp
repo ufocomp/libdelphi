@@ -625,7 +625,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketComponent::CSocketComponent() {
+        CSocketComponent::CSocketComponent(): m_WorkInfos{} {
             AddSocket();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2064,16 +2064,16 @@ namespace Delphi {
         CIOHandlerSocket *CServerIOHandler::Accept(CSocket ASocket, int AFlags) {
             CIOHandlerSocket *Result = nullptr;
 
-            auto LIOHandler = new CIOHandlerSocket();
+            auto pIOHandler = new CIOHandlerSocket();
 #ifdef WITH_SSL
-            LIOHandler->Open(sslNotUsed);
+            pIOHandler->Open(sslNotUsed);
 #else
-            LIOHandler->Open();
+            pIOHandler->Open();
 #endif
-            if (LIOHandler->Binding()->Accept(ASocket, AFlags))
-                return LIOHandler;
+            if (pIOHandler->Binding()->Accept(ASocket, AFlags))
+                return pIOHandler;
             else {
-                FreeAndNil(LIOHandler);
+                FreeAndNil(pIOHandler);
                 Result = nullptr;
             }
 
@@ -2621,33 +2621,33 @@ namespace Delphi {
 
         void CListenerThread::Execute() {
 
-            CIOHandler *LIOHandler = nullptr;
-            CTCPServerConnection *LPeer = nullptr;
-            CPeerThread *LThread = nullptr;
+            CIOHandler *pIOHandler = nullptr;
+            CTCPServerConnection *pPeer = nullptr;
+            CPeerThread *pThread = nullptr;
 
             while (!Terminated()) {
                 try {
                     if (Assigned(m_pServer)) {
-                        LThread = nullptr;
-                        LPeer = new CTCPServerConnection(m_pServer);
-                        LIOHandler = Server()->IOHandler()->Accept(Binding()->Handle(), 0); // SOCK_NONBLOCK
+                        pThread = nullptr;
+                        pPeer = new CTCPServerConnection(m_pServer);
+                        pIOHandler = Server()->IOHandler()->Accept(Binding()->Handle(), 0); // SOCK_NONBLOCK
 
-                        if (LIOHandler == nullptr) {
-                            FreeAndNil(LPeer);
+                        if (pIOHandler == nullptr) {
+                            FreeAndNil(pPeer);
                             Terminate();
                         } else {
-                            LThread = Server()->ThreadMgr()->GetThread();
-                            LThread->m_pConnection = LPeer;
-                            LThread->m_pConnection->IOHandler(LIOHandler);
+                            pThread = Server()->ThreadMgr()->GetThread();
+                            pThread->m_pConnection = pPeer;
+                            pThread->m_pConnection->IOHandler(pIOHandler);
 
-                            m_pServer->Threads()->Add(LThread);
-                            LThread->Start();
+                            m_pServer->Threads()->Add(pThread);
+                            pThread->Start();
                         }
                     }
                 }
                 catch (Delphi::Exception::Exception &E) {
-                    if (Assigned(LThread))
-                        FreeAndNil(LThread);
+                    if (Assigned(pThread))
+                        FreeAndNil(pThread);
                     m_pServer->DoListenException(E);
                 }
             }
@@ -2907,14 +2907,14 @@ namespace Delphi {
 
         int CTCPServer::IndexOfThreadId(pid_t dwThreadId) {
             int Index = 0;
-            CList *LThreads;
+            CList *pThreads;
 
             if (Assigned(Threads())) {
-                LThreads = Threads()->LockList();
+                pThreads = Threads()->LockList();
                 try {
-                    while ((Index < LThreads->Count()) && (static_cast<CPeerThread *> (LThreads->Items(Index))->ThreadId() != dwThreadId))
+                    while ((Index < pThreads->Count()) && (static_cast<CPeerThread *> (pThreads->Items(Index))->ThreadId() != dwThreadId))
                         Index++;
-                    if ( Index == LThreads->Count() )
+                    if ( Index == pThreads->Count() )
                         Index = -1;
                 } catch (...) {
                 }
@@ -2928,21 +2928,21 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPeerThread *CTCPServer::FindThread(pid_t dwThreadId) {
-            CPeerThread *LThread = nullptr;
-            CList *LThreads;
+            CPeerThread *pThread = nullptr;
+            CList *pThreads;
 
             int Index = IndexOfThreadId(dwThreadId);
 
             if (Index != -1 && Assigned(Threads())) {
-                LThreads = Threads()->LockList();
+                pThreads = Threads()->LockList();
                 try {
-                    LThread = static_cast<CPeerThread *> (LThreads->Items(Index));
+                    pThread = static_cast<CPeerThread *> (pThreads->Items(Index));
                 } catch (...) {
                 }
                 Threads()->UnlockList();
             }
 
-            return LThread;
+            return pThread;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2950,14 +2950,14 @@ namespace Delphi {
             useconds_t LSleepTime = 250;
             useconds_t LTerminateWaitTime = 5000;
 
-            CList *LThreads;
+            CList *pThreads;
             bool LTimedOut;
 
             if (Assigned(Threads())) {
-                LThreads = Threads()->LockList();
+                pThreads = Threads()->LockList();
                 try {
-                    for (int i = 0; i < LThreads->Count(); ++i )
-                        static_cast<CPeerThread *>(LThreads->Items(i))->Connection()->DisconnectSocket();
+                    for (int i = 0; i < pThreads->Count(); ++i )
+                        static_cast<CPeerThread *>(pThreads->Items(i))->Connection()->DisconnectSocket();
                 } catch (...) {
                 }
                 Threads()->UnlockList();
@@ -2977,19 +2977,18 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPServer::TerminateListenerThreads() {
-            CListenerThread *LListenerThread;
-            CList *LListenerThreads;
+            CListenerThread *pListenerThread;
+            CList *pListenerThreads;
 
             if (Assigned(m_pListenerThreads)) {
-                LListenerThreads = m_pListenerThreads->LockList();
+                pListenerThreads = m_pListenerThreads->LockList();
                 try {
-                    for (int i = 0; i < LListenerThreads->Count(); ++i )
-                    {
-                        LListenerThread = (CListenerThread *) LListenerThreads->Items(i);
-                        LListenerThread->Terminate();
-                        LListenerThread->Binding()->CloseSocket(false);
-                        LListenerThread->WaitFor();
-                        delete LListenerThread;
+                    for (int i = 0; i < pListenerThreads->Count(); ++i ) {
+                        pListenerThread = (CListenerThread *) pListenerThreads->Items(i);
+                        pListenerThread->Terminate();
+                        pListenerThread->Binding()->CloseSocket(false);
+                        pListenerThread->WaitFor();
+                        delete pListenerThread;
                     }
                 } catch (...) {
                 }
@@ -3001,17 +3000,17 @@ namespace Delphi {
         bool CTCPServer::DoExecute(CTCPConnection *AConnection) {
             int i;
             bool Result = false;
-            CMemoryStream *LStream = nullptr;
+
+            CMemoryStream LStream;
 
             if (CommandHandlers()->Count() > 0) {
                 Result = true;
 
                 if (AConnection->Connected()) {
-                    LStream = new CMemoryStream();
-                    LStream->SetSize(MaxLineLengthDefault);
-                    LStream->SetSize(AConnection->ReadLn((char *) LStream->Memory()));
+                    LStream.SetSize(MaxLineLengthDefault);
+                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
 
-                    if (LStream->Size() > 0 && LStream->Size() < MaxLineLengthDefault) {
+                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
 #ifdef _UNICODE
                         wchar_t *WLine = new wchar_t[LStream->Size() + 1];
 
@@ -3019,16 +3018,15 @@ namespace Delphi {
                         {
                             DoBeforeCommandHandler(AThread, WLine);
 #else
-                        DoBeforeCommandHandler(AConnection, (char *) LStream->Memory());
+                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
 #endif
                         try {
                             for (i = 0; i < CommandHandlers()->Count(); ++i) {
                                 if (CommandHandlers()->Commands(i)->Enabled()) {
 #ifdef _UNICODE
-                                    if (CommandHandlers()->Items(i)->Check(WLine, LStream->Size(), AThread))
+                                    if (CommandHandlers()->Items(i)->Check(WLine, LStream.Size(), AThread))
 #else
-                                    if (CommandHandlers()->Commands(i)->Check((char *) LStream->Memory(),
-                                                                              LStream->Size(), AConnection))
+                                    if (CommandHandlers()->Commands(i)->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
 #endif
                                         break;
                                 }
@@ -3038,7 +3036,7 @@ namespace Delphi {
 #ifdef _UNICODE
                                 DoNoCommandHandler(WLine, AThread);
 #else
-                                DoNoCommandHandler((char *) LStream->Memory(), AConnection);
+                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
 #endif
                         }
                         catch (...) {
@@ -3052,8 +3050,6 @@ namespace Delphi {
 #endif
                     }
                 }
-
-                delete LStream;
             } else {
                 if (m_OnExecute != nullptr) {
                     m_OnExecute(AConnection);
@@ -3359,13 +3355,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollEventHandler *CPollEventHandlers::FindHandlerBySocket(CSocket ASocket) {
-            CPollEventHandler *LHandler = nullptr;
+            CPollEventHandler *pHandler = nullptr;
             for (int I = 0; I < Count(); ++I) {
-                LHandler = Handlers(I);
-                if (LHandler->Socket() == ASocket)
-                    return LHandler;
+                pHandler = Handlers(I);
+                if (pHandler->Socket() == ASocket)
+                    return pHandler;
             }
-            return LHandler;
+            return pHandler;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3727,35 +3723,35 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPollClient::DoTimeOut(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                LConnection->Disconnect();
+                pConnection->Disconnect();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
+                DoException(pConnection, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPollClient::DoRead(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                DoExecute(LConnection);
+                DoExecute(pConnection);
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPollClient::DoWrite(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                LConnection->CheckForDisconnect(true);
-                LConnection->FreeWriteBuffer();
-                LConnection->FlushOutputBuffer();
+                pConnection->CheckForDisconnect(true);
+                pConnection->FreeWriteBuffer();
+                pConnection->FlushOutputBuffer();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
 
@@ -3889,39 +3885,39 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CAsyncClient::ConnectStart() {
-            auto LIOHandler = new CIOHandlerSocket();
+            auto pIOHandler = new CIOHandlerSocket();
 #ifdef WITH_SSL
-            LIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
+            pIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
 #else
-            LIOHandler->Open();
+            pIOHandler->Open();
 #endif
-            LIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
-            LIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+            pIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, O_NONBLOCK);
+            pIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
-            auto LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
+            auto pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
 
             if (ExternalPollStack()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                LEventHandler->OnTimeOutEvent([this](auto && AHandler) { DoTimeOut(AHandler); });
-                LEventHandler->OnConnectEvent([this](auto && AHandler) { DoConnect(AHandler); });
-                LEventHandler->OnReadEvent([this](auto && AHandler) { DoRead(AHandler); });
-                LEventHandler->OnWriteEvent([this](auto && AHandler) { DoWrite(AHandler); });
+                pEventHandler->OnTimeOutEvent([this](auto && AHandler) { DoTimeOut(AHandler); });
+                pEventHandler->OnConnectEvent([this](auto && AHandler) { DoConnect(AHandler); });
+                pEventHandler->OnReadEvent([this](auto && AHandler) { DoRead(AHandler); });
+                pEventHandler->OnWriteEvent([this](auto && AHandler) { DoWrite(AHandler); });
 #else
-                LEventHandler->OnTimeOutEvent(std::bind(&CAsyncClient::DoTimeOut, this, _1));
-                LEventHandler->OnConnectEvent(std::bind(&CAsyncClient::DoConnect, this, _1));
-                LEventHandler->OnReadEvent(std::bind(&CAsyncClient::DoRead, this, _1));
-                LEventHandler->OnWriteEvent(std::bind(&CAsyncClient::DoWrite, this, _1));
+                pEventHandler->OnTimeOutEvent(std::bind(&CAsyncClient::DoTimeOut, this, _1));
+                pEventHandler->OnConnectEvent(std::bind(&CAsyncClient::DoConnect, this, _1));
+                pEventHandler->OnReadEvent(std::bind(&CAsyncClient::DoRead, this, _1));
+                pEventHandler->OnWriteEvent(std::bind(&CAsyncClient::DoWrite, this, _1));
 #endif
             }
 
-            LEventHandler->Start(etConnect);
+            pEventHandler->Start(etConnect);
 
-            int ErrorCode = LIOHandler->Binding()->Connect(AF_INET, m_Host.c_str(), m_Port);
+            int ErrorCode = pIOHandler->Binding()->Connect(AF_INET, m_Host.c_str(), m_Port);
 
-            DoConnectStart(LIOHandler, LEventHandler);
+            DoConnectStart(pIOHandler, pEventHandler);
 
             if (ErrorCode == 0)
-                DoConnect(LEventHandler);
+                DoConnect(pEventHandler);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3980,13 +3976,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CUDPAsyncServer::InitializeBindings() {
-            CSocketHandle* LBinding = Bindings()->Add();
+            CSocketHandle* pBinding = Bindings()->Add();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CUDPAsyncServer::SetActiveLevel(CActiveLevel AValue) {
 
-            CPollEventHandler *LEventHandler = nullptr;
+            CPollEventHandler *pEventHandler = nullptr;
 
             if (m_ActiveLevel != AValue ) {
 
@@ -4009,8 +4005,8 @@ namespace Delphi {
                         }
 
                         if (AValue == alActive) {
-                            LEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
-                            LEventHandler->Start(etIO);
+                            pEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
+                            pEventHandler->Start(etIO);
                         }
                     }
 
@@ -4144,7 +4140,7 @@ namespace Delphi {
 
         void CTCPAsyncServer::SetActiveLevel(CActiveLevel AValue) {
 
-            CPollEventHandler *LEventHandler = nullptr;
+            CPollEventHandler *pEventHandler = nullptr;
 
             if (m_ActiveLevel != AValue ) {
 
@@ -4170,8 +4166,8 @@ namespace Delphi {
                         }
 
                         if (AValue == alActive) {
-                            LEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
-                            LEventHandler->Start(etAccept);
+                            pEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
+                            pEventHandler->Start(etAccept);
                         }
                     }
 
@@ -4196,69 +4192,69 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncServer::DoTimeOut(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                LConnection->Disconnect();
+                pConnection->Disconnect();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncServer::DoRead(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                DoExecute(LConnection);
+                DoExecute(pConnection);
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncServer::DoWrite(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
             try {
-                LConnection->CheckForDisconnect(true);
-                LConnection->FreeWriteBuffer();
-                LConnection->FlushOutputBuffer();
+                pConnection->CheckForDisconnect(true);
+                pConnection->FreeWriteBuffer();
+                pConnection->FlushOutputBuffer();
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
-                LConnection->Disconnect();
+                DoException(pConnection, E);
+                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncServer::DoAccept(CPollEventHandler *AHandler) {
-            CIOHandlerSocket *LIOHandler = nullptr;
-            CPollEventHandler *LEventHandler = nullptr;
-            CTCPServerConnection *LConnection = nullptr;
+            CIOHandlerSocket *pIOHandler = nullptr;
+            CPollEventHandler *pEventHandler = nullptr;
+            CTCPServerConnection *pConnection = nullptr;
 
             try {
-                LIOHandler = (CIOHandlerSocket *) IOHandler()->Accept(AHandler->Socket(), SOCK_NONBLOCK);
+                pIOHandler = (CIOHandlerSocket *) IOHandler()->Accept(AHandler->Socket(), SOCK_NONBLOCK);
 
-                if (Assigned(LIOHandler)) {
-                    LConnection = new CTCPServerConnection(this);
+                if (Assigned(pIOHandler)) {
+                    pConnection = new CTCPServerConnection(this);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
-                    LConnection->OnDisconnected(std::bind(&CTCPAsyncServer::DoDisconnected, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CTCPAsyncServer::DoDisconnected, this, _1));
 #endif
-                    LConnection->IOHandler(LIOHandler);
+                    pConnection->IOHandler(pIOHandler);
 
-                    LIOHandler->AfterAccept();
+                    pIOHandler->AfterAccept();
 
-                    LEventHandler = m_pEventHandlers->Add(LIOHandler->Binding()->Handle());
-                    LEventHandler->Binding(LConnection);
-                    LEventHandler->Start(etIO);
+                    pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
+                    pEventHandler->Binding(pConnection);
+                    pEventHandler->Start(etIO);
 
-                    DoConnected(LConnection);
+                    DoConnected(pConnection);
                 } else {
                     throw ETCPServerError(_T("TCP Server Error..."));
                 }
             } catch (Delphi::Exception::Exception &E) {
-                delete LConnection;
+                delete pConnection;
                 DoListenException(E);
             }
         }
@@ -4281,35 +4277,35 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto LConnection = new CTCPClientConnection(this);
-            LConnection->IOHandler(AIOHandler);
-            LConnection->AutoFree(true);
-            AHandler->Binding(LConnection);
+            auto pConnection = new CTCPClientConnection(this);
+            pConnection->IOHandler(AIOHandler);
+            pConnection->AutoFree(true);
+            AHandler->Binding(pConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPAsyncClient::DoConnect(CPollEventHandler *AHandler) {
-            auto LConnection = dynamic_cast<CTCPClientConnection *> (AHandler->Binding());
+            auto pConnection = dynamic_cast<CTCPClientConnection *> (AHandler->Binding());
 
-            if (LConnection == nullptr) {
+            if (pConnection == nullptr) {
                 AHandler->Stop();
                 return;
             }
 
             try {
-                auto LIOHandler = (CIOHandlerSocket *) LConnection->IOHandler();
+                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
 
-                if (LIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    LConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+                    pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
-                    LConnection->OnDisconnected(std::bind(&CTCPAsyncClient::DoDisconnected, this, _1));
+                    pConnection->OnDisconnected(std::bind(&CTCPAsyncClient::DoDisconnected, this, _1));
 #endif
                     AHandler->Start(etIO);
-                    DoConnected(LConnection);
+                    DoConnected(pConnection);
                 }
             } catch (Delphi::Exception::Exception &E) {
-                DoException(LConnection, E);
+                DoException(pConnection, E);
                 AHandler->Stop();
             }
         }

@@ -308,6 +308,8 @@ namespace Delphi {
 
             PGnotify *Notify();
 
+            PGcancel *GetCancel();
+
             void Disconnect() override;
 
             bool Connected() { return GetConnected(); }
@@ -504,6 +506,7 @@ namespace Delphi {
             int ResultCount() { return inherited::Count(); };
 
             void SendQuery();
+            bool CancelQuery(CString &Error);
 
             CStringList& SQL() { return m_SQL; }
 
