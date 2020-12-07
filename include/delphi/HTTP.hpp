@@ -1066,8 +1066,6 @@ namespace Delphi {
 
             CHTTPProtocol m_Protocol;
 
-            bool m_CloseConnection;
-
             CNotifyEvent m_OnWaitRequest;
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
@@ -1106,9 +1104,6 @@ namespace Delphi {
             CWebSocket *WSReply() { return GetWSReply(); }
 
             CHTTPProtocol Protocol() const { return m_Protocol; }
-
-            bool CloseConnection() const { return m_CloseConnection; }
-            void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }

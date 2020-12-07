@@ -2126,7 +2126,6 @@ namespace Delphi {
             m_Protocol = pHTTP;
             m_State = Request::method_start;
             m_ContentLength = 0;
-            m_CloseConnection = true;
             m_ConnectionStatus = csConnected;
             m_Request = nullptr;
             m_Reply = nullptr;

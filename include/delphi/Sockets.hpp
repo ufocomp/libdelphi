@@ -657,6 +657,7 @@ namespace Delphi {
         protected:
 
             bool m_AutoFree;
+            bool m_CloseConnection;
 
             void ClosePoll();
 
@@ -676,6 +677,9 @@ namespace Delphi {
 
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
+
+            bool CloseConnection() const { return m_CloseConnection; }
+            void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
         }; // CPollConnection
 

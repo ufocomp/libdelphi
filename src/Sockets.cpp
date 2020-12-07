@@ -1298,6 +1298,7 @@ namespace Delphi {
                 CCollectionItem(AManager) {
             m_pEventHandler = nullptr;
             m_pOwner = AOwner;
+            m_CloseConnection = true;
             m_AutoFree = true;
         }
         //--------------------------------------------------------------------------------------------------------------
