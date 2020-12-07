@@ -2680,17 +2680,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCommandHandler::Check(LPCTSTR AData, size_t ASize, CTCPConnection *AConnection) {
-            CString LCommand;
-            LCommand.Write(AData, ASize);
-            return Check(LCommand, AConnection);
+            CString sCommand;
+            sCommand.Write(AData, ASize);
+            return Check(sCommand, AConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCommandHandler::Check(const CString &Data, CTCPConnection *AConnection) {
             bool Result = false;
 
-            CString LCommand;
-            CString LUnparsedParams;
+            CString sCommand;
+            CString sUnparsedParams;
 
             try {
                 Result = m_Command == Data;
@@ -2702,21 +2702,21 @@ namespace Delphi {
                         return false;
 
                     if (CmdDelimiter() != 0) {
-                        LCommand = Data;
-                        Result = (LCommand[Len] == m_CmdDelimiter);
+                        sCommand = Data;
+                        Result = (sCommand[Len] == m_CmdDelimiter);
                         if (Result) {
-                            LUnparsedParams = LCommand.SubString(Len);
-                            LCommand.SetLength(Len);
-                            LCommand.Truncate();
-                            Result = m_Command == LCommand;
+                            sUnparsedParams = sCommand.SubString(Len);
+                            sCommand.SetLength(Len);
+                            sCommand.Truncate();
+                            Result = m_Command == sCommand;
                         }
                     } else {
                         // Dont strip any part of the params out.. - just remove the command purely on length and no delimiter
-                        LCommand = Data;
-                        LUnparsedParams = LCommand.SubString(Len);
-                        LCommand.SetLength(Len);
-                        LCommand.Truncate();
-                        Result = m_Command == LCommand;
+                        sCommand = Data;
+                        sUnparsedParams = sCommand.SubString(Len);
+                        sCommand.SetLength(Len);
+                        sCommand.Truncate();
+                        Result = m_Command == sCommand;
                     }
                 }
 
@@ -2725,11 +2725,11 @@ namespace Delphi {
 
                     pCommand->m_pConnection = AConnection;
                     pCommand->m_RawLine = Data;
-                    pCommand->m_UnparsedParams = LUnparsedParams;
+                    pCommand->m_UnparsedParams = sUnparsedParams;
 
                     if (ParseParams()) {
                         pCommand->m_Params.Clear();
-                        SplitColumns(LUnparsedParams, pCommand->m_Params, m_ParamDelimiter);
+                        SplitColumns(sUnparsedParams, pCommand->m_Params, m_ParamDelimiter);
                     }
 
                     pCommand->PerformReply(true);
