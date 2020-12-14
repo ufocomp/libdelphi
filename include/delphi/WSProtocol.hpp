@@ -40,10 +40,10 @@ namespace Delphi {
         enum CWSMessageType { mtOpen = 0, mtClose, mtCall, mtCallResult, mtCallError };
 
         typedef struct CWSMessage {
-            CWSMessageType MessageTypeId;
+            CWSMessageType MessageTypeId = mtOpen;
             CString UniqueId;
             CString Action;
-            int ErrorCode;
+            int ErrorCode = -1;
             CString ErrorMessage;
             CJSON Payload;
 
