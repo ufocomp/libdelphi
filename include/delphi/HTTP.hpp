@@ -358,6 +358,15 @@ namespace Delphi {
                 Token = Value.Token;
             }
 
+            void Clear() {
+                Schema = asUnknown;
+                Username.Clear();
+                Password.Clear();
+                Type = atUnknown;
+                TokenType = attUnknown;
+                Token.Clear();
+            }
+
             void Parse(const CString& String) {
                 if (String.IsEmpty())
                     throw CAuthorizationError("Data has not be empty.");
