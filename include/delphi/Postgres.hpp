@@ -552,6 +552,8 @@ namespace Delphi {
 
             CPollConnection *m_pPollConnection;
 
+            CStringList m_Data;
+
             COnPQPollQueryExecutedEvent m_OnExecuted;
 
             COnPQPollQueryExceptionEvent m_OnException;
@@ -573,6 +575,9 @@ namespace Delphi {
             void RemoveFromQueue();
 
             CPQConnectPoll *Server() { return m_pServer; };
+
+            CStringList &Data() { return m_Data; }
+            const CStringList &Data() const { return m_Data; }
 
             CPollConnection *PollConnection() { return m_pPollConnection; };
             void PollConnection(CPollConnection *Value) { m_pPollConnection = Value; };
