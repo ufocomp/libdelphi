@@ -530,24 +530,24 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Encode(CMemoryStream *Stream) {
-            unsigned char Input;
+            unsigned char ch;
             m_Payload->Position(0);
             for (size_t i = 0; i < m_Payload->Size(); i++) {
-                m_Payload->Read(&Input, 1);
-                Input = Input ^ m_Frame.MaskingKey[i % 4];
-                Stream->Write(&Input, 1);
+                m_Payload->Read(&ch, 1);
+                ch = ch ^ m_Frame.MaskingKey[i % 4];
+                Stream->Write(&ch, 1);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Decode(CMemoryStream *Stream) {
-            unsigned char Input;
-            auto Position = Stream->Position();
+            unsigned char ch;
+            const auto pos = Stream->Position();
             m_Payload->Position(m_Size);
-            for (size_t i = Position; i < Stream->Size(); i++) {
-                Stream->Read(&Input, 1);
-                Input = Input ^ m_Frame.MaskingKey[(m_Payload->Position()) % 4];
-                m_Payload->Write(&Input, 1);
+            for (size_t i = pos; i < Stream->Size(); i++) {
+                Stream->Read(&ch, 1);
+                ch = ch ^ m_Frame.MaskingKey[(m_Payload->Position()) % 4];
+                m_Payload->Write(&ch, 1);
                 m_Size++;
             }
         }
@@ -557,14 +557,14 @@ namespace Delphi {
             if (m_Frame.Mask == WS_MASK) {
                 Decode(Stream);
             } else {
-                auto PayloadSize = Stream->Size() - Stream->Position();
-                if (PayloadSize != 0) {
-                    auto Position = m_Size;
-                    m_Size += PayloadSize;
+                const auto size = Stream->Size() - Stream->Position();
+                if (size != 0) {
+                    const auto pos = m_Size;
+                    m_Size += size;
                     if (m_Size > m_Payload->Size())
                         m_Payload->Size(m_Size);
-                    const auto Count = Stream->Read(Pointer((size_t) m_Payload->Memory() + Position), PayloadSize);
-                    m_Payload->Position(Position + Count);
+                    const auto count = Stream->Read(Pointer((size_t) m_Payload->Memory() + pos), size);
+                    m_Payload->Position(pos + count);
                 }
             }
         }
@@ -574,14 +574,22 @@ namespace Delphi {
             const unsigned char octet = m_Frame.Mask | m_Frame.Length;
             Stream->Write(&octet, sizeof(octet));
 
+            union {
+                uint16_t val;
+                uint8_t  arr[2];
+            } len16 = {0};
+
+            union {
+                uint64_t val;
+                uint8_t  arr[8];
+            } len64 = {0};
+
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                unsigned short Length16 = m_Payload->Size();
-                Length16 = be16toh(Length16);
-                Stream->Write(&Length16, sizeof(Length16));
-            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_63) {
-                unsigned long long Length63 = m_Payload->Size();
-                Length63 = be64toh(Length63);
-                Stream->Write(&Length63, sizeof(Length63));
+                len16.val = be16toh(m_Payload->Size());
+                Stream->Write(len16.arr, sizeof(len16));
+            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
+                len64.val = be64toh(m_Payload->Size());
+                Stream->Write(len64.arr, sizeof(len64));
             }
 
             if (m_Frame.Mask == WS_MASK) {
@@ -606,7 +614,17 @@ namespace Delphi {
             if (Stream->Size() < 2)
                 return;
 
-            size_t PayloadSize = 0;
+            union {
+                uint16_t val;
+                uint8_t  arr[2];
+            } len16 = {0};
+
+            union {
+                uint64_t val;
+                uint8_t  arr[8];
+            } len64 = {0};
+
+            uint64_t size = 0;
 
             unsigned char frame[2] = {0, 0};
             Stream->Read(frame, sizeof(frame));
@@ -618,23 +636,21 @@ namespace Delphi {
             m_Frame.Length = frame[1] & 0x7Fu;
 
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                unsigned short Length16 = 0;
-                Stream->Read(&Length16, sizeof(Length16));
-                PayloadSize = htobe16(Length16);
-            } else  if (m_Frame.Length == WS_PAYLOAD_LENGTH_63) {
-                unsigned long long Length63 = 0;
-                Stream->Read(&Length63, sizeof(Length63));
-                PayloadSize = htobe64(Length63);
+                Stream->Read(len16.arr, sizeof(len16));
+                size = htobe16(len16.val);
+            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
+                Stream->Read(len64.arr, sizeof(len64));
+                size = htobe64(len64.val);
             } else {
-                PayloadSize = m_Frame.Length;
+                size = m_Frame.Length;
             }
 
             if (m_Frame.Mask == WS_MASK) {
                 Stream->Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
             }
 
-            m_Payload->SetSize(PayloadSize);
-            SecureZeroMemory(m_Payload->Memory(), PayloadSize);
+            m_Payload->SetSize(size);
+            SecureZeroMemory(m_Payload->Memory(), size);
             PayloadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -648,7 +664,7 @@ namespace Delphi {
             } else if (Stream->Size() <= 0xFFFF) {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_16;
             } else {
-                m_Frame.Length = WS_PAYLOAD_LENGTH_63;
+                m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
             m_Payload->LoadFromStream(Stream);
@@ -664,7 +680,7 @@ namespace Delphi {
             } else if (String.Size() <= 0xFFFF) {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_16;
             } else {
-                m_Frame.Length = WS_PAYLOAD_LENGTH_63;
+                m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
             m_Payload->Position(0);
@@ -2215,16 +2231,16 @@ namespace Delphi {
 
         void CHTTPServerConnection::ParseWebSocket(CMemoryStream *Stream) {
 
-            auto LWSRequest = GetWSRequest();
+            auto pWSRequest = GetWSRequest();
 
-            CWebSocketParser::Parse(LWSRequest, Stream);
+            CWebSocketParser::Parse(pWSRequest, Stream);
 
-            switch (LWSRequest->Frame().Opcode) {
+            switch (pWSRequest->Frame().Opcode) {
                 case WS_OPCODE_CONTINUATION:
                 case WS_OPCODE_TEXT:
                 case WS_OPCODE_BINARY:
 
-                    if (LWSRequest->Size() < LWSRequest->Payload()->Size()) {
+                    if (pWSRequest->Size() < pWSRequest->Payload()->Size()) {
                         m_ConnectionStatus = csWaitRequest;
                         DoWaitRequest();
                     } else {

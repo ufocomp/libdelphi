@@ -40,7 +40,7 @@ Author:
 #define WS_OPCODE_PONG          0x0Au
 
 #define WS_PAYLOAD_LENGTH_16    126u
-#define WS_PAYLOAD_LENGTH_63    127u
+#define WS_PAYLOAD_LENGTH_64    127u
 
 #ifndef WWWServerName
 #define WWWServerName DefaultServerName
