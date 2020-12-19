@@ -390,6 +390,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnection::SetListener(bool Value) {
+            if (m_Listener != Value) {
+                m_Listener = Value;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnection::CheckSocket(bool AsyncMode) {
             CSocket oldSocket, newSocket;
             newSocket = PQSocket();
@@ -639,7 +646,8 @@ namespace Delphi {
                 m_Connected = false;
             }
             if (m_TryConnect) {
-                ClosePoll();
+                if (PQSocket() != INVALID_SOCKET)
+                    ClosePoll();
                 Finish();
                 m_TryConnect = false;
             }
@@ -1188,7 +1196,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            SetTimerInterval(50);
+            //SetTimerInterval(5000);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1199,7 +1207,7 @@ namespace Delphi {
 
         void CPQConnectPoll::StopAll() {
             m_pEventHandlers->Clear();
-            SetTimerInterval(0);
+            //SetTimerInterval(0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1509,11 +1517,7 @@ namespace Delphi {
                         break;
 
                     case qsReady:
-                        // Connection closed gracefully
-                        m_ConnInfo.PingValid(false);
-
-                        pConnection->ConnectionStatus(qsError);
-                        pConnection->Disconnect();
+                        pConnection->CheckNotify();
                         break;
 
                     case qsBusy:
@@ -1522,15 +1526,15 @@ namespace Delphi {
                         pConnection->CheckNotify();
                         break;
 
-                    default:
+                    case qsError:
+                        // Connection closed gracefully
                         m_ConnInfo.PingValid(false);
+                        pConnection->Disconnect();
                         break;
                 }
             } catch (Delphi::Exception::Exception &E) {
                 pConnection->ConnectionStatus(qsError);
                 DoConnectException(pConnection, E);
-                m_ConnInfo.PingValid(false);
-                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1573,15 +1577,15 @@ namespace Delphi {
                         pConnection->CheckNotify();
                         break;
 
-                    default:
+                    case qsError:
+                        // Connection closed gracefully
                         m_ConnInfo.PingValid(false);
+                        pConnection->Disconnect();
                         break;
                 }
             } catch (Delphi::Exception::Exception &E) {
                 pConnection->ConnectionStatus(qsError);
                 DoConnectException(pConnection, E);
-                m_ConnInfo.PingValid(false);
-                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------

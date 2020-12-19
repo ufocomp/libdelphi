@@ -248,6 +248,8 @@ namespace Delphi {
 
             void SetProcessor();
 
+            void SetListener(bool Value);
+
         protected:
 
             void Clear();
@@ -328,7 +330,7 @@ namespace Delphi {
             bool Connected() { return GetConnected(); }
 
             bool Listener() const { return m_Listener; }
-            void Listener(bool Value) { m_Listener = Value; }
+            void Listener(bool Value) { SetListener(Value); }
 
             CDateTime AntiFreeze() const { return m_AntiFreeze; }
 
