@@ -1188,7 +1188,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            //SetTimerInterval(50);
+            SetTimerInterval(50);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1199,7 +1199,7 @@ namespace Delphi {
 
         void CPQConnectPoll::StopAll() {
             m_pEventHandlers->Clear();
-            //SetTimerInterval(0);
+            SetTimerInterval(0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
