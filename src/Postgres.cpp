@@ -909,7 +909,7 @@ namespace Delphi {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
                     pQueryResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
 #else
-                    pResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
+                    pQueryResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
 #endif
                     DoResult(pQueryResult, pQueryResult->ResultStatus());
                 }
