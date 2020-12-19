@@ -273,6 +273,8 @@ namespace Delphi {
 
             m_OnChangeSocket = nullptr;
 
+            m_OnNotify = nullptr;
+
             m_OnError = nullptr;
             m_OnStatus = nullptr;
             m_OnPollingStatus = nullptr;
@@ -285,6 +287,13 @@ namespace Delphi {
         void CPQConnectionEvent::DoChangeSocket(CPQConnection *APQConnection, CSocket AOldSocket) {
             if (m_OnChangeSocket != nullptr) {
                 m_OnChangeSocket(APQConnection, AOldSocket);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectionEvent::DoNotify(CPQConnection *APQConnection, PGnotify *ANotify) {
+            if (m_OnNotify != nullptr) {
+                m_OnNotify(APQConnection, ANotify);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -333,6 +342,7 @@ namespace Delphi {
             m_Socket = INVALID_SOCKET;
             m_TryConnect = false;
             m_Connected = false;
+            m_Listener = false;
             m_Status = CONNECTION_BAD;
             m_PollingStatus = PGRES_POLLING_WRITING;
             m_AntiFreeze = Now();
@@ -456,6 +466,8 @@ namespace Delphi {
                     return "Wait for any pending message and consume them.";
                 case CONNECTION_GSS_STARTUP:
                     return "Negotiating GSSAPI.";
+                case CONNECTION_CHECK_TARGET:
+                    return "Check if we have a proper target connection";
             }
 
             return nullptr;
@@ -611,6 +623,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        PGresult *CPQConnection::GetResult() {
+            return PQgetResult(m_pHandle);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         PGcancel *CPQConnection::GetCancel() {
             return PQgetCancel(m_pHandle);
         }
@@ -658,9 +675,24 @@ namespace Delphi {
 
         bool CPQPollConnection::CheckResult() {
             if (m_WorkQuery == nullptr)
-                throw EPollServerError(_T("Send Query is null!"));
-
+                return false;
             return m_WorkQuery->CheckResult();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CPQPollConnection::CheckNotify() {
+            PGnotify *pNotify;
+            int nNotifies = 0;
+
+            ConsumeInput();
+            while ((pNotify = Notify()) != nullptr) {
+                DoNotify(this, pNotify);
+                PQfreemem(pNotify);
+                nNotifies++;
+                ConsumeInput();
+            }
+
+            return nNotifies;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -867,37 +899,19 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CPQQuery::CheckResult() {
-            CPQResult *pResult;
-            PGresult *Result;
-            PGnotify *Notify;
-            int nNotifies = 0;
+            CPQResult *pQueryResult;
+            PGresult *pResult;
 
             m_pConnection->ConsumeInput();
-
-            if (m_pConnection->IsBusy()) {
-                CString Message;
-                while ((Notify = m_pConnection->Notify()) != nullptr) {
-                    Message.Format("ASYNC NOTIFY of '%s' received from backend PID %d\n", Notify->relname,
-                                   Notify->be_pid);
-                    m_pConnection->CallProcessor(Message.c_str());
-                    PQfreemem(Notify);
-                    nNotifies++;
-                    m_pConnection->ConsumeInput();
-                    Message.Clear();
-                }
-            }
-
-            if (m_pConnection->Flush()) {
-                Result = PQgetResult(m_pConnection->Handle());
-                while (Result) {
-                    pResult = new CPQResult(this, Result);
+            if (m_pConnection->Flush() /*&& !m_pConnection->IsBusy()*/) {
+                while ((pResult = m_pConnection->GetResult()) != nullptr) {
+                    pQueryResult = new CPQResult(this, pResult);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-                    pResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
+                    pQueryResult->OnStatus([this](auto &&AResult) { DoResultStatus(AResult); });
 #else
                     pResult->OnStatus(std::bind(&CPQQuery::DoResultStatus, this, _1));
 #endif
-                    DoResult(pResult, pResult->ResultStatus());
-                    Result = PQgetResult(m_pConnection->Handle());
+                    DoResult(pQueryResult, pQueryResult->ResultStatus());
                 }
 
                 DoExecuted();
@@ -1066,6 +1080,8 @@ namespace Delphi {
             m_OnReceiver = nullptr;
             m_OnProcessor = nullptr;
 
+            m_OnNotify = nullptr;
+
             m_OnError = nullptr;
             m_OnStatus = nullptr;
             m_OnPollingStatus = nullptr;
@@ -1085,6 +1101,13 @@ namespace Delphi {
         void CPQConnectPollEvent::DoProcessor(CPQConnection *AConnection, LPCSTR AMessage) {
             if (m_OnProcessor != nullptr) {
                 m_OnProcessor(AConnection, AMessage);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectPollEvent::DoNotify(CPQConnection *AConnection, PGnotify *ANotify) {
+            if (m_OnNotify != nullptr) {
+                m_OnNotify(AConnection, ANotify);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1165,7 +1188,7 @@ namespace Delphi {
                 if (!NewConnection())
                     break;
             }
-            //SetTimerInterval(5 * 1000);
+            //SetTimerInterval(50);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1176,6 +1199,7 @@ namespace Delphi {
 
         void CPQConnectPoll::StopAll() {
             m_pEventHandlers->Clear();
+            //SetTimerInterval(0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1301,6 +1325,10 @@ namespace Delphi {
                     pConnection->OnProcessor([this](auto && AConnection, auto && AMessage) { DoProcessor(AConnection, AMessage); });
                 }
 
+                if (m_OnNotify != nullptr) {
+                    pConnection->OnNotify([this](auto && AConnection, auto && ANotify) { DoNotify(AConnection, ANotify); });
+                }
+
                 if (m_OnError != nullptr) {
                     pConnection->OnError([this](auto && AConnection) { DoError(AConnection); });
                 }
@@ -1329,6 +1357,14 @@ namespace Delphi {
 
                 if (m_OnProcessor != nullptr) {
                     pConnection->OnProcessor(std::bind(&CPQConnectPoll::DoProcessor, this, _1, _2));
+                }
+
+                if (m_OnNotify != nullptr) {
+                    pConnection->OnNotify(std::bind(&CPQConnectPoll::DoNotify, this, _1, _2));
+                }
+
+                if (m_OnError != nullptr) {
+                    pConnection->OnError(std::bind(&CPQConnectPoll::DoError, this, _1));
                 }
 
                 if (m_OnStatus != nullptr) {
@@ -1421,6 +1457,9 @@ namespace Delphi {
                 if (pEventHandler->EventType() == etIO) {
                     pConnection = GetConnection(pEventHandler);
                     if (Assigned(pConnection)) {
+                        if (pConnection->Listener())
+                            pConnection->CheckNotify();
+/*
                         Status = PQstatus(pConnection->Handle());
                         if (((Status == CONNECTION_STARTED || Status == CONNECTION_MADE) && (Now() - pConnection->AntiFreeze() >= (CDateTime) 10 / SecsPerDay))) {
                             DoError(pConnection);
@@ -1434,6 +1473,7 @@ namespace Delphi {
                                 }
                             }
                         }
+*/
                     }
                 }
             }
@@ -1479,6 +1519,7 @@ namespace Delphi {
                     case qsBusy:
                         if (pConnection->CheckResult())
                             pConnection->QueryStop();
+                        pConnection->CheckNotify();
                         break;
 
                     default:
@@ -1519,7 +1560,7 @@ namespace Delphi {
                     case qsReady:
                         pConnection->Flush();
 
-                        if (m_pQueue->Count() == 0 && m_pPollManager->Count() > (int) m_SizeMax) {
+                        if ((m_pQueue->Count() == 0) && !pConnection->Listener() && (m_pPollManager->Count() > (int) m_SizeMax)) {
                             pConnection->Disconnect();
                         }
 
@@ -1529,6 +1570,7 @@ namespace Delphi {
                     case qsBusy:
                         if (pConnection->CheckResult())
                             pConnection->QueryStop();
+                        pConnection->CheckNotify();
                         break;
 
                     default:

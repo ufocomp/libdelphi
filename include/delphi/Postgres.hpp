@@ -150,6 +150,8 @@ namespace Delphi {
 
         typedef std::function<void (CPQConnection *AConnection)> COnPQConnectionEvent;
         typedef std::function<void (CPQConnection *AConnection, CSocket AOldSocket)> COnPQConnectionChangeSocketEvent;
+
+        typedef std::function<void (CPQConnection *AConnection, PGnotify *ANotify)> COnPQConnectionNotifyEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQConnectionEvent: public CPollConnection {
@@ -157,10 +159,12 @@ namespace Delphi {
 
         private:
 
+            COnPQConnectionChangeSocketEvent m_OnChangeSocket;
+
             COnPQConnectionReceiverEvent m_OnReceiver;
             COnPQConnectionProcessorEvent m_OnProcessor;
 
-            COnPQConnectionChangeSocketEvent m_OnChangeSocket;
+            COnPQConnectionNotifyEvent m_OnNotify;
 
             COnPQConnectionEvent m_OnError;
             COnPQConnectionEvent m_OnStatus;
@@ -171,13 +175,15 @@ namespace Delphi {
 
         protected:
 
+            void DoChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
+
+            void DoNotify(CPQConnection *AConnection, PGnotify *ANotify);
+
             void DoError(CPQConnection *AConnection);
             void DoStatus(CPQConnection *AConnection);
             void DoPollingStatus(CPQConnection *AConnection);
             void DoConnected(CPQConnection *AConnection);
             void DoDisconnected(CPQConnection *AConnection);
-
-            void DoChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
 
         public:
 
@@ -185,14 +191,17 @@ namespace Delphi {
 
             ~CPQConnectionEvent() override = default;
 
+            const COnPQConnectionChangeSocketEvent &OnChangeSocket() const { return m_OnChangeSocket; }
+            void OnChangeSocket(COnPQConnectionChangeSocketEvent && Value) { m_OnChangeSocket = Value; }
+
             const COnPQConnectionReceiverEvent &OnReceiver() const { return m_OnReceiver; }
             void OnReceiver(COnPQConnectionReceiverEvent && Value) { m_OnReceiver = Value; }
 
             const COnPQConnectionProcessorEvent &OnProcessor() const { return m_OnProcessor; }
             void OnProcessor(COnPQConnectionProcessorEvent && Value) { m_OnProcessor = Value; }
 
-            const COnPQConnectionChangeSocketEvent &OnChangeSocket() const { return m_OnChangeSocket; }
-            void OnChangeSocket(COnPQConnectionChangeSocketEvent && Value) { m_OnChangeSocket = Value; }
+            const COnPQConnectionNotifyEvent &OnNotify() const { return m_OnNotify; }
+            void OnNotify(COnPQConnectionNotifyEvent && Value) { m_OnNotify = Value; }
 
             const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
@@ -227,6 +236,7 @@ namespace Delphi {
 
             bool m_TryConnect;
             bool m_Connected;
+            bool m_Listener;
 
             CDateTime m_AntiFreeze;
 
@@ -308,13 +318,17 @@ namespace Delphi {
 
             PGnotify *Notify();
 
+            PGresult *GetResult();
             PGcancel *GetCancel();
+
+            PGconn *Handle() { return m_pHandle; }
 
             void Disconnect() override;
 
             bool Connected() { return GetConnected(); }
 
-            PGconn *Handle() { return m_pHandle; }
+            bool Listener() const { return m_Listener; }
+            void Listener(bool Value) { m_Listener = Value; }
 
             CDateTime AntiFreeze() const { return m_AntiFreeze; }
 
@@ -353,6 +367,8 @@ namespace Delphi {
             CPQQuery *WorkQuery() const { return m_WorkQuery; }
 
             bool CheckResult();
+            int CheckNotify();
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -631,6 +647,8 @@ namespace Delphi {
             COnPQConnectionReceiverEvent m_OnReceiver;
             COnPQConnectionProcessorEvent m_OnProcessor;
 
+            COnPQConnectionNotifyEvent m_OnNotify;
+
             COnPQConnectionEvent m_OnError;
             COnPQConnectionEvent m_OnStatus;
             COnPQConnectionEvent m_OnPollingStatus;
@@ -640,6 +658,8 @@ namespace Delphi {
 
             virtual void DoReceiver(CPQConnection *AConnection, const PGresult *AResult);
             virtual void DoProcessor(CPQConnection *AConnection, LPCSTR AMessage);
+
+            virtual void DoNotify(CPQConnection *AConnection, PGnotify *ANotify);
 
             virtual void DoError(CPQConnection *AConnection);
             virtual void DoStatus(CPQConnection *AConnection);
@@ -657,6 +677,9 @@ namespace Delphi {
 
             const COnPQConnectionProcessorEvent &OnProcessor() const { return m_OnProcessor; }
             void OnProcessor(COnPQConnectionProcessorEvent && Value) { m_OnProcessor = Value; }
+
+            const COnPQConnectionNotifyEvent &OnNotify() const { return m_OnNotify; }
+            void OnNotify(COnPQConnectionNotifyEvent && Value) { m_OnNotify = Value; }
 
             const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
