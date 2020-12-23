@@ -711,11 +711,11 @@ namespace Delphi {
 
         private:
 
-            CPQPollQueryManager *m_pPollQueryManager;
+            CQueue *m_pQueue;
 
             CPollManager *m_pPollManager;
 
-            CQueue *m_pQueue;
+            CPQPollQueryManager *m_pPollQueryManager;
 
             CEPollTimer *m_pTimer;
 
@@ -729,7 +729,9 @@ namespace Delphi {
 
             CPollEventHandler *NewEventHandler(CPQConnection *AConnection);
 
-            static CPQPollConnection *GetConnection(CPollEventHandler *AHandler);
+            CPQPollConnection *GetConnection(int Index) const;
+
+            static CPQPollConnection *GetHandlerConnection(CPollEventHandler *AHandler);
 
             void OnChangeSocket(CPQConnection *AConnection, CSocket AOldSocket);
 
@@ -778,15 +780,17 @@ namespace Delphi {
             bool Active() const { return m_Active; };
             void Active(bool Value) { SetActive(Value); };
 
-            CQueue *Queue() { return m_pQueue; };
-
-            CPQPollQueryManager *PollQueryManager() { return m_pPollQueryManager; };
+            CQueue *Queue() const { return m_pQueue; };
+            CPollManager *PollManager() const { return m_pPollManager; };
+            CPQPollQueryManager *PollQueryManager() const { return m_pPollQueryManager; };
 
             size_t SizeMin() const { return m_SizeMin; }
             void SizeMin(size_t Value) { m_SizeMin = Value; }
 
             size_t SizeMax() const { return m_SizeMax; }
             void SizeMax(size_t Value) { m_SizeMax = Value; }
+
+            CPQPollConnection *Connections(int Index) const { return GetConnection(Index); };
 
         };
 

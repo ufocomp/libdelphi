@@ -1163,10 +1163,9 @@ namespace Delphi {
             m_SizeMin = ASizeMin;
             m_SizeMax = ASizeMax;
 
-            m_pQueue = new CQueue;
-
+            m_pQueue = new CQueue();
             m_pPollQueryManager = new CPQPollQueryManager();
-            m_pPollManager = new CPollManager;
+            m_pPollManager = new CPollManager();
 
             m_OnEventHandlerException = nullptr;
         }
@@ -1186,7 +1185,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollConnection *CPQConnectPoll::GetConnection(CPollEventHandler *AHandler) {
+        CPQPollConnection *CPQConnectPoll::GetConnection(int Index) const {
+            return dynamic_cast<CPQPollConnection *> (m_pPollManager->Items(Index));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CPQPollConnection *CPQConnectPoll::GetHandlerConnection(CPollEventHandler *AHandler) {
             return dynamic_cast<CPQPollConnection *> (AHandler->Binding());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1412,11 +1416,10 @@ namespace Delphi {
             for (int i = 0; i < m_pEventHandlers->Count(); ++i) {
                 pHandler = m_pEventHandlers->Handlers(i);
 
-                const auto eventType = pHandler->EventType();
-                if (!(eventType == etIO || eventType == etDelete))
+                if (pHandler->EventType() != etIO)
                     continue;
 
-                pConnection = GetConnection(pHandler);
+                pConnection = GetHandlerConnection(pHandler);
                 if (pConnection == nullptr)
                     continue;
 
@@ -1437,6 +1440,13 @@ namespace Delphi {
                         pConnection->ResetStart();
                         pConnection->ResetPoll();
                     }
+                }
+            }
+
+            for (int i = m_pEventHandlers->Count() - 1; i >= 0; --i) {
+                pHandler = m_pEventHandlers->Handlers(i);
+                if (pHandler->EventType() == etDelete) {
+                    Stop(i);
                 }
             }
 
@@ -1463,7 +1473,7 @@ namespace Delphi {
             for (int i = 0; i < m_pEventHandlers->Count(); ++i) {
                 pEventHandler = m_pEventHandlers->Handlers(i);
                 if (pEventHandler->EventType() == etIO) {
-                    pConnection = GetConnection(pEventHandler);
+                    pConnection = GetHandlerConnection(pEventHandler);
                     if (Assigned(pConnection)) {
                         if (pConnection->Listener())
                             pConnection->CheckNotify();
@@ -1489,7 +1499,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoTimeOut(CPollEventHandler *AHandler) {
-            auto pConnection = GetConnection(AHandler);
+            auto pConnection = GetHandlerConnection(AHandler);
             if (Assigned(pConnection)) {
                 if (!pConnection->Connected()) {
                     DoError(pConnection);
@@ -1505,7 +1515,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoRead(CPollEventHandler *AHandler) {
-            auto pConnection = GetConnection(AHandler);
+            auto pConnection = GetHandlerConnection(AHandler);
             try {
                 switch (pConnection->ConnectionStatus()) {
                     case qsConnect:
@@ -1529,7 +1539,10 @@ namespace Delphi {
                     case qsError:
                         // Connection closed gracefully
                         m_ConnInfo.PingValid(false);
-                        pConnection->Disconnect();
+                        AHandler->Binding(nullptr);
+                        delete pConnection;
+                        AHandler->Start(etNull);
+                        AHandler->Stop();
                         break;
                 }
             } catch (Delphi::Exception::Exception &E) {
@@ -1540,7 +1553,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoWrite(CPollEventHandler *AHandler) {
-            auto pConnection = GetConnection(AHandler);
+            auto pConnection = GetHandlerConnection(AHandler);
             try {
                 switch (pConnection->ConnectionStatus()) {
                     case qsConnect:
@@ -1580,7 +1593,10 @@ namespace Delphi {
                     case qsError:
                         // Connection closed gracefully
                         m_ConnInfo.PingValid(false);
-                        pConnection->Disconnect();
+                        AHandler->Binding(nullptr);
+                        delete pConnection;
+                        AHandler->Start(etNull);
+                        AHandler->Stop();
                         break;
                 }
             } catch (Delphi::Exception::Exception &E) {

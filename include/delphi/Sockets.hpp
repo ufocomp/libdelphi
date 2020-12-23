@@ -1837,29 +1837,29 @@ namespace Delphi {
 
             uint32_t Events() const { return m_Events; }
 
-            CPollConnection *Binding() { return m_pBinding; }
+            CPollConnection *Binding() const { return m_pBinding; }
             void Binding(CPollConnection *Value) { SetBinding(Value); }
 
             void Start(CPollEventType AEventType = etIO);
             void Stop();
 
-            bool Stopped() { return m_EventType == etDelete; };
+            bool Stopped() const { return m_EventType == etDelete; };
 
-            CPollEventType EventType() { return m_EventType; }
+            CPollEventType EventType() const { return m_EventType; }
 
-            const COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
+            const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
 
-            const COnPollEventHandlerEvent &OnTimeOutEvent() { return m_OnTimeOutEvent; }
+            const COnPollEventHandlerEvent &OnTimeOutEvent() const { return m_OnTimeOutEvent; }
             void OnTimeOutEvent(COnPollEventHandlerEvent && Value) { m_OnTimeOutEvent = Value; }
 
-            const COnPollEventHandlerEvent &OnConnectEvent() { return m_OnConnectEvent; }
+            const COnPollEventHandlerEvent &OnConnectEvent() const { return m_OnConnectEvent; }
             void OnConnectEvent(COnPollEventHandlerEvent && Value) { m_OnConnectEvent = Value; }
 
-            const COnPollEventHandlerEvent &OnReadEvent() { return m_OnReadEvent; }
+            const COnPollEventHandlerEvent &OnReadEvent() const { return m_OnReadEvent; }
             void OnReadEvent(COnPollEventHandlerEvent && Value) { m_OnReadEvent = Value; }
 
-            const COnPollEventHandlerEvent &OnWriteEvent() { return m_OnWriteEvent; }
+            const COnPollEventHandlerEvent &OnWriteEvent() const { return m_OnWriteEvent; }
             void OnWriteEvent(COnPollEventHandlerEvent && Value) { m_OnWriteEvent = Value; }
         };
 
@@ -1913,7 +1913,7 @@ namespace Delphi {
 
             CPollEventHandler *operator[] (int Index) const override { return Handlers(Index); };
 
-            const COnPollEventHandlerExceptionEvent& OnException() { return m_OnException; }
+            const COnPollEventHandlerExceptionEvent& OnException() const { return m_OnException; }
             void OnException(COnPollEventHandlerExceptionEvent && Value) { m_OnException = Value; }
 
         }; // CPollEventHandlers
@@ -1964,7 +1964,7 @@ namespace Delphi {
             CPollEventHandler *AllocateTimer(CPollEventHandlers *AEventHandlers, long int Value, long int Interval = 0, int Flags = 0);
             void SetTimer(long int Value, long int Interval = 0, int Flags = 0);
 
-            const COnPollEventHandlerEvent &OnTimer() { return m_OnTimer; }
+            const COnPollEventHandlerEvent &OnTimer() const { return m_OnTimer; }
             void OnTimer(COnPollEventHandlerEvent && Value) { m_OnTimer = Value; }
 
         }; // CFileStream
@@ -2039,7 +2039,7 @@ namespace Delphi {
             CPollEventHandlers *EventHandlers() const { return m_pEventHandlers; }
             void EventHandlers(CPollEventHandlers *Value) { SetEventHandlers(Value); }
 
-            const COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
+            const COnPollEventHandlerExceptionEvent &OnEventHandlerException() const { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
 
         };
@@ -2203,7 +2203,7 @@ namespace Delphi {
             bool UsedSSL() const { return m_UsedSSL; }
             void UsedSSL(bool Value) { m_UsedSSL = Value; }
 #endif
-            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
+            CCommandHandlers *CommandHandlers() const { return m_pCommandHandlers; }
             void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
 
             CStringList& Data() { return m_Data; }
@@ -2261,10 +2261,10 @@ namespace Delphi {
             CSimpleBuffer &OutputBuffer() { return m_OutputBuffer; }
             const CSimpleBuffer &OutputBuffer() const { return m_OutputBuffer; }
 
-            const COnUDPServerReadEvent &OnRead() { return m_OnRead; }
+            const COnUDPServerReadEvent &OnRead() const { return m_OnRead; }
             void OnRead(COnUDPServerReadEvent && Value) { m_OnRead = Value; }
 
-            const COnUDPServerWriteEvent &OnWrite() { return m_OnWrite; }
+            const COnUDPServerWriteEvent &OnWrite() const { return m_OnWrite; }
             void OnWrite(COnUDPServerWriteEvent && Value) { m_OnWrite = Value; }
 
         };
