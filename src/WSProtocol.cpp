@@ -104,7 +104,7 @@ namespace Delphi {
                 Message.ErrorMessage = Json["m"].AsString();
 
                 const auto& payload  = Json["p"];
-                if (payload.ValueType() == jvtObject)
+                if (payload.ValueType() == jvtObject || payload.ValueType() == jvtArray)
                     Message.Payload  = payload.ToString();
             }
 
