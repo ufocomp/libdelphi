@@ -1501,7 +1501,7 @@ namespace Delphi {
         void CPQConnectPoll::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = GetHandlerConnection(AHandler);
             if (Assigned(pConnection)) {
-                if (!pConnection->Connected()) {
+                if (PQstatus(pConnection->Handle()) != CONNECTION_OK) {
                     DoError(pConnection);
                     AHandler->Stop();
                 }
