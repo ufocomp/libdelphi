@@ -614,6 +614,8 @@ namespace Delphi {
             if (Stream->Size() < 2)
                 return;
 
+            Clear();
+
             union {
                 uint16_t val;
                 uint8_t  arr[2];
@@ -1201,8 +1203,6 @@ namespace Delphi {
 
         void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream *AStream) {
             if (ARequest->Size() == ARequest->Payload()->Size()) {
-                if (ARequest->Size() != 0)
-                    ARequest->Clear();
                 ARequest->LoadFromStream(AStream);
             } else {
                 ARequest->PayloadFromStream(AStream);
