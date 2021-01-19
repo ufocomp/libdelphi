@@ -211,8 +211,6 @@ namespace Delphi {
 
             CConnectionStatus m_ConnectionStatus;
 
-            bool m_CloseConnection;
-
             CNotifyEvent m_OnWaitReply;
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
@@ -238,9 +236,6 @@ namespace Delphi {
 
             CSMTPCommand &Command() { return m_Command; }
             const CSMTPCommand &Command() const { return m_Command; }
-
-            bool CloseConnection() const { return m_CloseConnection; };
-            void CloseConnection(bool Value) { m_CloseConnection = Value; };
 
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; };
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };

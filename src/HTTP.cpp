@@ -431,17 +431,17 @@ namespace Delphi {
         CHTTPRequest *CHTTPRequest::Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin,
                 LPCTSTR APassword) {
 
-            CString LPassphrase, LAuthorization;
+            CString sPassphrase, sAuthorization;
 
-            LPassphrase = ALogin;
-            LPassphrase << ":";
-            LPassphrase << APassword;
+            sPassphrase = ALogin;
+            sPassphrase << ":";
+            sPassphrase << APassword;
 
-            LAuthorization = AMethod;
-            LAuthorization << " ";
-            LAuthorization << base64_encode(LPassphrase);
+            sAuthorization = AMethod;
+            sAuthorization << " ";
+            sAuthorization << base64_encode(sPassphrase);
 
-            ARequest->AddHeader("Authorization", LAuthorization);
+            ARequest->AddHeader("Authorization", sAuthorization);
 
             return ARequest;
         }
@@ -478,19 +478,19 @@ namespace Delphi {
 
         CWebSocket::CWebSocket() {
             m_Size = 0;
-            m_Payload = new CMemoryStream();
+            m_pPayload = new CMemoryStream();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CWebSocket::~CWebSocket() {
-            FreeAndNil(m_Payload);
+            FreeAndNil(m_pPayload);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Clear() {
             m_Size = 0;
             m_Frame.Clear();
-            m_Payload->Clear();
+            m_pPayload->Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -531,9 +531,9 @@ namespace Delphi {
 
         void CWebSocket::Encode(CMemoryStream *Stream) {
             unsigned char ch;
-            m_Payload->Position(0);
-            for (size_t i = 0; i < m_Payload->Size(); i++) {
-                m_Payload->Read(&ch, 1);
+            m_pPayload->Position(0);
+            for (size_t i = 0; i < m_pPayload->Size(); i++) {
+                m_pPayload->Read(&ch, 1);
                 ch = ch ^ m_Frame.MaskingKey[i % 4];
                 Stream->Write(&ch, 1);
             }
@@ -543,11 +543,11 @@ namespace Delphi {
         void CWebSocket::Decode(CMemoryStream *Stream) {
             unsigned char ch;
             const auto pos = Stream->Position();
-            m_Payload->Position(m_Size);
+            m_pPayload->Position(m_Size);
             for (size_t i = pos; i < Stream->Size(); i++) {
                 Stream->Read(&ch, 1);
-                ch = ch ^ m_Frame.MaskingKey[(m_Payload->Position()) % 4];
-                m_Payload->Write(&ch, 1);
+                ch = ch ^ m_Frame.MaskingKey[(m_pPayload->Position()) % 4];
+                m_pPayload->Write(&ch, 1);
                 m_Size++;
             }
         }
@@ -561,10 +561,10 @@ namespace Delphi {
                 if (size != 0) {
                     const auto pos = m_Size;
                     m_Size += size;
-                    if (m_Size > m_Payload->Size())
-                        m_Payload->Size(m_Size);
-                    const auto count = Stream->Read(Pointer((size_t) m_Payload->Memory() + pos), size);
-                    m_Payload->Position(pos + count);
+                    if (m_Size > m_pPayload->Size())
+                        m_pPayload->Size(m_Size);
+                    const auto count = Stream->Read(Pointer((size_t) m_pPayload->Memory() + pos), size);
+                    m_pPayload->Position(pos + count);
                 }
             }
         }
@@ -585,10 +585,10 @@ namespace Delphi {
             } len64 = {0};
 
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                len16.val = be16toh(m_Payload->Size());
+                len16.val = be16toh(m_pPayload->Size());
                 Stream->Write(len16.arr, sizeof(len16));
             } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
-                len64.val = be64toh(m_Payload->Size());
+                len64.val = be64toh(m_pPayload->Size());
                 Stream->Write(len64.arr, sizeof(len64));
             }
 
@@ -596,7 +596,7 @@ namespace Delphi {
                 Stream->Write(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
                 Encode(Stream);
             } else {
-                m_Payload->SaveToStream(Stream);
+                m_pPayload->SaveToStream(Stream);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -651,8 +651,8 @@ namespace Delphi {
                 Stream->Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
             }
 
-            m_Payload->SetSize(size);
-            SecureZeroMemory(m_Payload->Memory(), size);
+            m_pPayload->SetSize(size);
+            SecureZeroMemory(m_pPayload->Memory(), size);
             PayloadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -669,7 +669,7 @@ namespace Delphi {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
-            m_Payload->LoadFromStream(Stream);
+            m_pPayload->LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -685,10 +685,10 @@ namespace Delphi {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
-            m_Payload->Position(0);
-            m_Payload->SetSize(String.Size());
+            m_pPayload->Position(0);
+            m_pPayload->SetSize(String.Size());
 
-            String.SaveToStream(m_Payload);
+            String.SaveToStream(m_pPayload);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2328,9 +2328,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
+            DoReply();
+
             if (ASendNow) {
                 WriteAsync();
-                DoReply();
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2345,18 +2346,18 @@ namespace Delphi {
 
             CloseConnection(false);
 
-            auto LReply = GetReply();
+            auto pReply = GetReply();
 
-            LReply->Status = CHTTPReply::switching_protocols;
+            pReply->Status = CHTTPReply::switching_protocols;
 
-            LReply->AddHeader("Upgrade", "websocket");
-            LReply->AddHeader("Connection", "Upgrade");
+            pReply->AddHeader("Upgrade", "websocket");
+            pReply->AddHeader("Connection", "Upgrade");
 
             if (!Accept.IsEmpty())
-                LReply->AddHeader("Sec-WebSocket-Accept", base64_encode(Accept));
+                pReply->AddHeader("Sec-WebSocket-Accept", base64_encode(Accept));
 
             if (!Protocol.IsEmpty())
-                LReply->AddHeader("Sec-WebSocket-Protocol", Protocol);
+                pReply->AddHeader("Sec-WebSocket-Protocol", Protocol);
 
             SendReply();
         }
@@ -2368,9 +2369,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
+            DoReply();
+
             if (ASendNow) {
                 WriteAsync();
-                DoReply();
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2383,9 +2385,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
+            DoReply();
+
             if (ASendNow) {
                 WriteAsync();
-                DoReply();
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2398,9 +2401,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
+            DoReply();
+
             if (ASendNow) {
                 WriteAsync();
-                DoReply();
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2413,9 +2417,10 @@ namespace Delphi {
 
             m_ConnectionStatus = csReplyReady;
 
+            DoReply();
+
             if (ASendNow) {
                 WriteAsync();
-                DoReply();
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2477,12 +2482,12 @@ namespace Delphi {
         bool CHTTPClientConnection::ParseInput() {
             bool Result = false;
             if (Connected()) {
-                CMemoryStream LStream(ReadAsync());
-                Result = LStream.Size() > 0;
+                CMemoryStream Stream(ReadAsync());
+                Result = Stream.Size() > 0;
                 if (Result) {
-                    InputBuffer()->Extract(LStream.Memory(), LStream.Size());
+                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
 
-                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) LStream.Memory(), LStream.Size(), m_State, m_ContentLength, m_ChunkedLength);
+                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
                     const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
 
                     switch (ParseResult) {

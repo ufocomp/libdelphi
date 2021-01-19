@@ -672,7 +672,7 @@ namespace Delphi {
 
             CWebSocketFrame m_Frame;
 
-            CMemoryStream *m_Payload;
+            CMemoryStream *m_pPayload;
 
             size_t m_Size;
 
@@ -695,7 +695,7 @@ namespace Delphi {
             CWebSocketFrame &Frame() { return m_Frame; }
             const CWebSocketFrame &Frame() const { return m_Frame; }
 
-            CMemoryStream *Payload() { return m_Payload; };
+            CMemoryStream *Payload() { return m_pPayload; };
 
             void Close(CMemoryStream *Stream);
             void Ping(CMemoryStream *Stream);
@@ -713,7 +713,7 @@ namespace Delphi {
             }
 
             CWebSocket& operator>> (CString &String) {
-                String.LoadFromStream(m_Payload);
+                String.LoadFromStream(m_pPayload);
                 return *this;
             }
 
@@ -1162,8 +1162,6 @@ namespace Delphi {
 
             CConnectionStatus m_ConnectionStatus;
 
-            bool m_CloseConnection;
-
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
@@ -1189,9 +1187,6 @@ namespace Delphi {
             CHTTPRequest *Request() { return GetRequest(); }
 
             CHTTPReply *Reply() { return GetReply(); };
-
-            bool CloseConnection() const { return m_CloseConnection; };
-            void CloseConnection(bool Value) { m_CloseConnection = Value; };
 
             CConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };

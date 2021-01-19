@@ -58,29 +58,29 @@ namespace Delphi {
             if (ASize == 0)
                 return;
 
-            auto LData = new TCHAR[ASize + 2];
-            auto LParam = new TCHAR[ASize + 2];
+            auto data = new TCHAR[ASize + 2];
+            auto param = new TCHAR[ASize + 2];
 
             try {
-                ::SecureZeroMemory(LData, (ASize + 2) * sizeof(TCHAR));
-                ::SecureZeroMemory(LParam, (ASize + 2) * sizeof(TCHAR));
+                ::SecureZeroMemory(data, (ASize + 2) * sizeof(TCHAR));
+                ::SecureZeroMemory(param, (ASize + 2) * sizeof(TCHAR));
 
-                if (StringCchCopy(LData, ASize + 1, AData) == S_OK) {
-                    if (LData[ASize - 1] != ADelim) {
-                        LData[ASize] = ADelim;
-                        LData[ASize + 1] = 0;
+                if (StringCchCopy(data, ASize + 1, AData) == S_OK) {
+                    if (data[ASize - 1] != ADelim) {
+                        data[ASize] = ADelim;
+                        data[ASize + 1] = 0;
                     }
 
                     idx = 0;
                     for (size_t i = 0; i <= ASize; ++i) {
-                        if (LData[i] == ADelim) {
-                            chVERIFY(SUCCEEDED(StringCchLength(LParam, idx, &len)));
+                        if (data[i] == ADelim) {
+                            chVERIFY(SUCCEEDED(StringCchLength(param, idx, &len)));
                             idx = 0;
                             if (len != 0)
-                                AStrings->Add(LParam);
-                            ::SecureZeroMemory(LParam, (ASize + 2) * sizeof(TCHAR));
+                                AStrings->Add(param);
+                            ::SecureZeroMemory(param, (ASize + 2) * sizeof(TCHAR));
                         } else {
-                            LParam[idx++] = LData[i];
+                            param[idx++] = data[i];
                         }
                     }
                 }
@@ -89,8 +89,8 @@ namespace Delphi {
                 //
             }
 
-            delete[] LParam;
-            delete[] LData;
+            delete[] param;
+            delete[] data;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -264,7 +264,7 @@ namespace Delphi {
 
         int CStack::Bind(CSocket ASocket, sa_family_t AFamily, LPCSTR AIP, unsigned short APort) {
             SOCKADDR_IN name = {};
-            socklen_t namelen = sizeof(SOCKADDR_IN);
+            socklen_t nameLen = sizeof(SOCKADDR_IN);
 
             name.sin_family = AFamily;
 
@@ -275,7 +275,7 @@ namespace Delphi {
 
             name.sin_port = htons(APort);
 
-            return ::bind(ASocket, (LPSOCKADDR) &name, namelen);
+            return ::bind(ASocket, (LPSOCKADDR) &name, nameLen);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -286,13 +286,13 @@ namespace Delphi {
 
         int CStack::Connect(CSocket ASocket, sa_family_t AFamily, LPCSTR AIP, unsigned short APort) {
             SOCKADDR_IN name = {};
-            sa_family_t namelen = sizeof(SOCKADDR_IN);
+            sa_family_t nameLen = sizeof(SOCKADDR_IN);
 
             name.sin_family = AFamily;
             name.sin_addr.s_addr = inet_addr(AIP);
             name.sin_port = htons(APort);
 
-            return ::connect(ASocket, (LPSOCKADDR) &name, namelen);
+            return ::connect(ASocket, (LPSOCKADDR) &name, nameLen);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -470,9 +470,9 @@ namespace Delphi {
         void CStack::GetPeerName(CSocket ASocket, sa_family_t *AFamily, char *AIP, size_t ASize,
                 unsigned short *APort) {
             SOCKADDR name = {};
-            socklen_t namelen = sizeof(SOCKADDR);
+            socklen_t nameLen = sizeof(SOCKADDR);
 
-            if (!CheckForSocketError(::getpeername(ASocket, (LPSOCKADDR) &name, &namelen), egSystem)) {
+            if (!CheckForSocketError(::getpeername(ASocket, (LPSOCKADDR) &name, &nameLen), egSystem)) {
                 *AFamily = NToHS(((SOCKADDR_IN * ) & name)->sin_family);
                 chVERIFY(SUCCEEDED(StringCchCopyA(AIP, ASize, inet_ntoa(((SOCKADDR_IN *) &name)->sin_addr))));
                 *APort = NToHS(((SOCKADDR_IN * ) & name)->sin_port);
@@ -483,9 +483,9 @@ namespace Delphi {
         void CStack::GetSockName(CSocket ASocket, sa_family_t *AFamily, char *AIP, size_t ASize,
                 unsigned short *APort) {
             SOCKADDR name = {};
-            socklen_t namelen = sizeof(SOCKADDR);
+            socklen_t nameLen = sizeof(SOCKADDR);
 
-            if (!CheckForSocketError(::getsockname(ASocket, (LPSOCKADDR) & name, &namelen), egSystem)) {
+            if (!CheckForSocketError(::getsockname(ASocket, (LPSOCKADDR) & name, &nameLen), egSystem)) {
                 *AFamily = NToHS(((SOCKADDR_IN * ) & name)->sin_family);
                 chVERIFY(SUCCEEDED(StringCchCopyA(AIP, ASize, inet_ntoa(((SOCKADDR_IN * ) & name)->sin_addr))));
                 *APort = NToHS(((SOCKADDR_IN * ) & name)->sin_port);
@@ -562,14 +562,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStack::SetNonBloking(CSocket ASocket) {
-            int LFlags = fcntl(ASocket, F_GETFL, 0);
+            int flags = fcntl(ASocket, F_GETFL, 0);
 
-            if (LFlags == -1)
+            if (flags == -1)
                 throw EOSError(errno, _T("fcntl failed (F_GETFL): "));
 
-            if ((LFlags & O_NONBLOCK) == 0) {
-                LFlags |= O_NONBLOCK;
-                if (fcntl(ASocket, F_SETFL, LFlags) == -1)
+            if ((flags & O_NONBLOCK) == 0) {
+                flags |= O_NONBLOCK;
+                if (fcntl(ASocket, F_SETFL, flags) == -1)
                     throw EOSError(errno, _T("fcntl failed (F_SETFL): "));
             }
         }
@@ -1412,20 +1412,20 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CTCPConnection::CheckForDisconnect(bool ARaiseExceptionIfDisconnected) {
-            bool LDisconnected = false;
+            bool bDisconnected = false;
             if (ClosedGracefully() || (IOHandler() == nullptr)) {
                 if (IOHandler() != nullptr) {
                     if (IOHandler()->Connected())
                         DisconnectSocket();
-                    LDisconnected = true;
+                    bDisconnected = true;
                 }
             } else if (IOHandler() != nullptr)
-                LDisconnected = !IOHandler()->Connected();
+                bDisconnected = !IOHandler()->Connected();
 
-            if (LDisconnected)
+            if (bDisconnected)
                 if (ARaiseExceptionIfDisconnected)
                     throw ESocketError(_T("Connection closed gracefully."));
-            return !LDisconnected;
+            return !bDisconnected;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1511,10 +1511,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::WriteBuffer(void *ABuffer, size_t AByteCount, bool AWriteNow) {
-            CSimpleBuffer *LBuffer = nullptr;
+            CSimpleBuffer *pBuffer = nullptr;
 
-            ssize_t LByteCount;
-            size_t LPos;
+            ssize_t byteCount;
+            size_t pos;
 
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
@@ -1523,39 +1523,39 @@ namespace Delphi {
                     if ((m_pWriteBuffer == nullptr) || AWriteNow) {
 
                         if (m_pWriteBuffer == nullptr) {
-                            LBuffer = new CSimpleBuffer();
+                            pBuffer = new CSimpleBuffer();
                         } else
-                            LBuffer = m_pWriteBuffer;
+                            pBuffer = m_pWriteBuffer;
 
                         try {
-                            if (LBuffer->Size() == 0)
-                                LBuffer->WriteBuffer(ABuffer, AByteCount);
+                            if (pBuffer->Size() == 0)
+                                pBuffer->WriteBuffer(ABuffer, AByteCount);
 
-                            LPos = 0;
+                            pos = 0;
                             do {
-                                LByteCount = m_pIOHandler->Send(Pointer((size_t) LBuffer->Memory() + LPos), LBuffer->Size() - LPos);
+                                byteCount = m_pIOHandler->Send(Pointer((size_t) pBuffer->Memory() + pos), pBuffer->Size() - pos);
 #ifdef WITH_SSL
                                 if (m_pIOHandler->UsedSSL()) {
-                                    if (LByteCount <= 0) {
+                                    if (byteCount <= 0) {
                                         unsigned long LastError = GStack->GetSSLError();
                                         if (LastError == SSL_ERROR_WANT_WRITE)
                                             break;
                                     }
                                 }
 #endif
-                                CheckWriteResult(LByteCount);
-                                DoWork(wmWrite, LByteCount);
-                                LPos += LByteCount;
-                            } while (LPos < AByteCount);
+                                CheckWriteResult(byteCount);
+                                DoWork(wmWrite, byteCount);
+                                pos += byteCount;
+                            } while (pos < AByteCount);
                         } catch (...) {
-                            LBuffer->Clear();
-                            if (LBuffer != m_pWriteBuffer)
-                                delete LBuffer;
+                            pBuffer->Clear();
+                            if (pBuffer != m_pWriteBuffer)
+                                delete pBuffer;
                             throw;
                         }
-                        LBuffer->Clear();
-                        if (LBuffer != m_pWriteBuffer)
-                            delete LBuffer;
+                        pBuffer->Clear();
+                        if (pBuffer != m_pWriteBuffer)
+                            delete pBuffer;
                     } else {
                         m_pWriteBuffer->WriteBuffer(ABuffer, AByteCount);
                         if (m_WriteBufferThreshold > 0 && m_pWriteBuffer->Size() >= (size_t) m_WriteBufferThreshold)
@@ -1568,50 +1568,50 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         ssize_t CTCPConnection::WriteBufferAsync(void *ABuffer, size_t AByteCount) {
-            ssize_t LByteCount = 0;
+            ssize_t byteCount = 0;
 
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
                 if (Connected()) {
-                    LByteCount = m_pIOHandler->Send(ABuffer, AByteCount);
+                    byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 #ifdef WITH_SSL
                     if (m_pIOHandler->UsedSSL()) {
                         unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE };
-                        if (GStack->CheckForSSLError(LByteCount, Ignore, chARRAY(Ignore))) {
+                        if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
                             return 0;
                         }
                     } else {
 #endif
                         int Ignore[] = { EAGAIN, EWOULDBLOCK };
-                        if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
                             return 0;
 #ifdef WITH_SSL
                     }
 #endif
-                    CheckWriteResult(LByteCount);
+                    CheckWriteResult(byteCount);
                 } else
                     throw ESocketError(_T("Not Connected."));
             }
 
-            return LByteCount;
+            return byteCount;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         bool CTCPConnection::WriteAsync(ssize_t AByteCount) {
-            ssize_t LByteCount = AByteCount;
+            ssize_t byteCount = AByteCount;
 
             if (m_pOutputBuffer->Size() > 0) {
 
                 if (AByteCount == -1)
                     AByteCount = m_pOutputBuffer->Size();
 
-                LByteCount = WriteBufferAsync(m_pOutputBuffer->Memory(), (size_t) AByteCount);
+                byteCount = WriteBufferAsync(m_pOutputBuffer->Memory(), (size_t) AByteCount);
 
-                if (LByteCount > 0 )
-                    m_pOutputBuffer->Remove((size_t) LByteCount);
+                if (byteCount > 0 )
+                    m_pOutputBuffer->Remove((size_t) byteCount);
             }
 
-            return (LByteCount == AByteCount);
+            return (byteCount == AByteCount);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1662,7 +1662,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::Write(LPCSTR Format, ...) {
-            size_t Len = 0;
+            size_t len = 0;
 
             OpenWriteBuffer();
             m_pWriteBuffer->Size(GSendBufferSizeDefault);
@@ -1672,8 +1672,8 @@ namespace Delphi {
             chVERIFY(SUCCEEDED(StringCchVPrintfA((char *) m_pWriteBuffer->Memory(), m_pWriteBuffer->Size(), Format, args)));
             va_end(args);
 
-            chVERIFY(SUCCEEDED(StringCchLengthA((char *) m_pWriteBuffer->Memory(), m_pWriteBuffer->Size(), &Len)));
-            m_pWriteBuffer->Size(Len);
+            chVERIFY(SUCCEEDED(StringCchLengthA((char *) m_pWriteBuffer->Memory(), m_pWriteBuffer->Size(), &len)));
+            m_pWriteBuffer->Size(len);
 
             CloseWriteBuffer();
         }
@@ -1681,45 +1681,45 @@ namespace Delphi {
 
         void CTCPConnection::WriteStream(CStream *AStream, bool AAll, bool AWriteByteCount, const size_t ASize) {
 
-            CMemoryStream *LBuffer;
-            size_t LSize, LStreamEnd;
+            CMemoryStream *pStream;
+            size_t size, streamEnd;
 
             if (AAll)
                 AStream->Position(0);
 
             // This is copied to a local var because accessing .Size is very inefficient
             if (ASize == 0)
-                LStreamEnd = AStream->Size();
+                streamEnd = AStream->Size();
             else
-                LStreamEnd = ASize + AStream->Position();
+                streamEnd = ASize + AStream->Position();
 
-            LSize = LStreamEnd - AStream->Position();
+            size = streamEnd - AStream->Position();
             if (AWriteByteCount)
-                WriteInteger((int) LSize);
+                WriteInteger((int) size);
 
-            BeginWork(wmWrite, LSize);
+            BeginWork(wmWrite, size);
             try {
-                LBuffer = CMemoryStream::Create();
+                pStream = CMemoryStream::Create();
                 try {
-                    LBuffer->SetSize(m_SendBufferSize);
+                    pStream->SetSize(m_SendBufferSize);
                     while (true) {
-                        LSize = Min(LStreamEnd - AStream->Position(), m_SendBufferSize);
-                        if (LSize == 0)
+                        size = Min(streamEnd - AStream->Position(), m_SendBufferSize);
+                        if (size == 0)
                             break;
 
                         // Do not use ReadBuffer. Some source streams are real time and will not
                         // return as much data as we request. Kind of like recv()
                         // NOTE: We use .Size - size must be supported even if real time
-                        LSize = AStream->Read(LBuffer->Memory(), LSize);
-                        if (LSize == 0)
+                        size = AStream->Read(pStream->Memory(), size);
+                        if (size == 0)
                             throw Exception::Exception(_T("No data to read."));
-                        WriteBuffer(LBuffer->Memory(), LSize);
+                        WriteBuffer(pStream->Memory(), size);
                     }
                 } catch (...) {
-                    FreeAndNil(LBuffer);
+                    FreeAndNil(pStream);
                     throw;
                 }
-                FreeAndNil(LBuffer);
+                FreeAndNil(pStream);
             } catch (...) {
                 EndWork(wmWrite);
                 throw;
@@ -1754,12 +1754,12 @@ namespace Delphi {
 
         size_t CTCPConnection::ReadLn(char *AStr, char ATerminator, int ATimeout, int AMaxLineLength) {
 
-            size_t LInputBufferSize;
-            size_t LSize, LTermPos;
+            size_t inputBufferSize;
+            size_t size, termPos;
 
-            char LTerminator[2] = {};
+            char terminator[2] = {0, 0};
 
-            LTerminator[0] = ATerminator;
+            terminator[0] = ATerminator;
 
             if (AMaxLineLength == -1)
                 AMaxLineLength = (int) MaxLineLength();
@@ -1771,19 +1771,19 @@ namespace Delphi {
             m_ReadLnSplit = false;
             m_ReadLnTimedOut = false;
 
-            LTermPos = 0;
-            LSize = 0;
+            termPos = 0;
+            size = 0;
 
             do {
-                LInputBufferSize = InputBuffer()->Size();
-                if (LInputBufferSize > 0) {
-                    LTermPos = MemoryPos(LTerminator, ((char *) InputBuffer()->Memory()) + LSize, LInputBufferSize - LSize);
-                    if (LTermPos > 0)
-                        LTermPos = LTermPos + LSize;
-                    LSize = LInputBufferSize;
+                inputBufferSize = InputBuffer()->Size();
+                if (inputBufferSize > 0) {
+                    termPos = MemoryPos(terminator, ((char *) InputBuffer()->Memory()) + size, inputBufferSize - size);
+                    if (termPos > 0)
+                        termPos = termPos + size;
+                    size = inputBufferSize;
                 }
 
-                if ((LTermPos != 0) && ((LTermPos - 1) > AMaxLineLength) && (AMaxLineLength != 0)) {
+                if ((termPos != 0) && ((termPos - 1) > AMaxLineLength) && (AMaxLineLength != 0)) {
                     if (MaxLineAction() == maException)
                         throw ESocketError(_T("ReadLn Max Line Length Exceeded."));
                     else {
@@ -1791,8 +1791,8 @@ namespace Delphi {
                         return InputBuffer()->Extract(AStr, (size_t) AMaxLineLength);
                     }
                     // ReadFromStack blocks - do not call unless we need to
-                } else if (LTermPos == 0) {
-                    if ((LSize > AMaxLineLength) && (AMaxLineLength != 0)) {
+                } else if (termPos == 0) {
+                    if ((size > AMaxLineLength) && (AMaxLineLength != 0)) {
                         if (MaxLineAction() == maException)
                             throw ESocketError(_T("ReadLn Max Line Length Exceeded."));
                         else {
@@ -1808,73 +1808,63 @@ namespace Delphi {
                     if (ReadLnTimedOut())
                         return 0;
                 }
-            } while (LTermPos == 0);
+            } while (termPos == 0);
 
             // Extract actual data
-            LTermPos = InputBuffer()->Extract(AStr, (size_t) LTermPos) - 1;
-            if ((ATerminator == INT_LF) && (LTermPos > 0) && (AStr[LTermPos - 1] == INT_CR))
-                LTermPos--;
+            termPos = InputBuffer()->Extract(AStr, (size_t) termPos) - 1;
+            if ((ATerminator == INT_LF) && (termPos > 0) && (AStr[termPos - 1] == INT_CR))
+                termPos--;
 
-            AStr[LTermPos] = 0;
+            AStr[termPos] = 0;
 
-            return LTermPos;
+            return termPos;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         size_t CTCPConnection::ReadLnWait(char *AStr, size_t ABytes, int AFailCount) {
-            size_t RStr = 0;
-            size_t LStr = 0;
-            int LAttempts = 0;
+            size_t rStr = 0;
+            size_t lStr = 0;
+            int attempts = 0;
 
-            auto *LStream = new CMemoryStream();
-            LStream->SetSize(ABytes);
+            CMemoryStream Stream;
+            Stream.SetSize(ABytes);
 
-            while ((LStr == 0) && (LAttempts < AFailCount)) {
-                LAttempts++;
-                LStr = ReadLn((char *) LStream->Memory());
-                LStream->SetSize(RStr + LStr + 1);
-                LStream->ReadBuffer(AStr + RStr, Min(LStr, ABytes));
-                RStr += LStr;
+            while ((lStr == 0) && (attempts < AFailCount)) {
+                attempts++;
+                lStr = ReadLn((char *) Stream.Memory());
+                Stream.SetSize(rStr + lStr + 1);
+                Stream.ReadBuffer(AStr + rStr, Min(lStr, ABytes));
+                rStr += lStr;
             }
 
-            delete LStream;
-
-            return RStr;
+            return rStr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::ReadString(char *AStr, size_t ABytes) {
-            auto *LStream = new CMemoryStream();
-            LStream->SetSize(ABytes + 1);
+            CMemoryStream Stream;
+            Stream.SetSize(ABytes + 1);
 
             if (ABytes > 0)
-                ReadBuffer(LStream->Memory(), ABytes);
+                ReadBuffer(Stream.Memory(), ABytes);
 
-            LStream->ReadBuffer(AStr, ABytes);
+            Stream.ReadBuffer(AStr, ABytes);
             AStr[ABytes] = 0;
-
-            delete LStream;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::ReadStrings(CStrings *AValue, int AReadLinesCount) {
-            CMemoryStream *LStream = nullptr;
+            CMemoryStream Stream;
 
-            try {
-                LStream = new CMemoryStream();
-                LStream->SetSize(MaxLineLength());
+            Stream.SetSize(MaxLineLength());
 
-                if (AReadLinesCount <= 0)
-                    AReadLinesCount = ReadInteger();
+            if (AReadLinesCount <= 0)
+                AReadLinesCount = ReadInteger();
 
-                for (int i = 0; i < AReadLinesCount; ++i) {
-                    LStream->SetSize(ReadLn((char *) LStream->Memory()));
-                    AValue->Add((char *) LStream->Memory());
-                }
-            } catch (...) {
+            for (int i = 0; i < AReadLinesCount; ++i) {
+                Stream.SetSize(ReadLn((char *) Stream.Memory()));
+                AValue->Add((char *) Stream.Memory());
             }
-
-            delete LStream;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1920,7 +1910,7 @@ namespace Delphi {
 
         ssize_t CTCPConnection::ReadFromStack(bool ARaiseExceptionIfDisconnected, bool ARaiseExceptionOnTimeout) {
 
-            ssize_t LByteCount = 0;
+            ssize_t byteCount = 0;
             ssize_t Result = 0;
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
@@ -1929,11 +1919,11 @@ namespace Delphi {
                     if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
 
                         m_pRecvBuffer->Size(RecvBufferSize());
-                        LByteCount = m_pIOHandler->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                        byteCount = m_pIOHandler->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
 #ifdef WITH_SSL
                         if (m_pIOHandler->UsedSSL()) {
-                            if (LByteCount <= 0) {
-                                Result = LByteCount;
+                            if (byteCount <= 0) {
+                                Result = byteCount;
                                 unsigned long LastError = GStack->GetSSLError();
                                 if (LastError == SSL_CTRL_SESS_TIMEOUTS) {
                                     if (ARaiseExceptionOnTimeout)
@@ -1947,8 +1937,8 @@ namespace Delphi {
                             }
                         } else {
 #endif
-                            if (LByteCount == SOCKET_ERROR) {
-                                Result = LByteCount;
+                            if (byteCount == SOCKET_ERROR) {
+                                Result = byteCount;
                                 int LastError = GStack->GetLastError();
                                 if (LastError == ETIMEDOUT) {
                                     if (ARaiseExceptionOnTimeout)
@@ -1962,15 +1952,15 @@ namespace Delphi {
                         }
 #endif
                     } else {
-                        LByteCount = 0;
+                        byteCount = 0;
                         if (ARaiseExceptionIfDisconnected)
                             throw ESocketError(_T("Not Connected"));
                     }
 
-                    Result = CheckReadStack(LByteCount);
+                    Result = CheckReadStack(byteCount);
                     CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
-                } while ((LByteCount == 0) && Connected());
+                } while ((byteCount == 0) && Connected());
             } else {
                 if (ARaiseExceptionIfDisconnected)
                     throw ESocketError(_T("Not Connected"));
@@ -1981,36 +1971,36 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         ssize_t CTCPConnection::ReadAsync(bool ARaiseExceptionIfDisconnected) {
-            ssize_t LByteCount = 0;
-            ssize_t LByteRecv = 0;
+            ssize_t byteCount = 0;
+            ssize_t byteRecv = 0;
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
             if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
                 m_pRecvBuffer->Size(RecvBufferSize());
                 do {
-                    LByteRecv = IOHandler()->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                    byteRecv = IOHandler()->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
 #ifdef WITH_SSL
                     if (m_pIOHandler->UsedSSL()) {
                         unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ };
-                        if (GStack->CheckForSSLError(LByteRecv, Ignore, chARRAY(Ignore)))
-                            return LByteCount;
+                        if (GStack->CheckForSSLError(byteRecv, Ignore, chARRAY(Ignore)))
+                            return byteCount;
                     } else {
 #endif
                         int Ignore[] = { EAGAIN, EWOULDBLOCK };
-                        if (GStack->CheckForSocketError(LByteRecv, Ignore, chARRAY(Ignore), egSystem))
-                            return LByteCount;
+                        if (GStack->CheckForSocketError(byteRecv, Ignore, chARRAY(Ignore), egSystem))
+                            return byteCount;
 #ifdef WITH_SSL
                     }
 #endif
-                    LByteCount += CheckReadStack(LByteRecv);
-                } while (LByteRecv > 0);
+                    byteCount += CheckReadStack(byteRecv);
+                } while (byteRecv > 0);
             } else {
                 if (ARaiseExceptionIfDisconnected)
                     throw ESocketError(_T("Not Connected."));
             }
 
-            return LByteCount;
+            return byteCount;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2696,25 +2686,25 @@ namespace Delphi {
                 Result = m_Command == Data;
 
                 if (!Result) {
-                    size_t Len = m_Command.Length();
+                    size_t len = m_Command.Length();
 
-                    if (Len >= Data.Length())
+                    if (len >= Data.Length())
                         return false;
 
                     if (CmdDelimiter() != 0) {
                         sCommand = Data;
-                        Result = (sCommand[Len] == m_CmdDelimiter);
+                        Result = (sCommand[len] == m_CmdDelimiter);
                         if (Result) {
-                            sUnparsedParams = sCommand.SubString(Len);
-                            sCommand.SetLength(Len);
+                            sUnparsedParams = sCommand.SubString(len);
+                            sCommand.SetLength(len);
                             sCommand.Truncate();
                             Result = m_Command == sCommand;
                         }
                     } else {
                         // Dont strip any part of the params out.. - just remove the command purely on length and no delimiter
                         sCommand = Data;
-                        sUnparsedParams = sCommand.SubString(Len);
-                        sCommand.SetLength(Len);
+                        sUnparsedParams = sCommand.SubString(len);
+                        sCommand.SetLength(len);
                         sCommand.Truncate();
                         Result = m_Command == sCommand;
                     }
@@ -2947,8 +2937,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPServer::TerminateAllThreads() {
-            useconds_t LSleepTime = 250;
-            useconds_t LTerminateWaitTime = 5000;
+            useconds_t sleepTime = 250;
+            useconds_t terminateWaitTime = 5000;
 
             CList *pThreads;
             bool LTimedOut;
@@ -2963,8 +2953,8 @@ namespace Delphi {
                 Threads()->UnlockList();
 
                 LTimedOut = true;
-                for (useconds_t i = 1; i < (LTerminateWaitTime / LSleepTime); ++i) {
-                    usleep(LSleepTime);
+                for (useconds_t i = 1; i < (terminateWaitTime / sleepTime); ++i) {
+                    usleep(sleepTime);
                     if (Threads()->IsCountLessThan(1)) {
                         LTimedOut = false;
                         break;
@@ -3001,32 +2991,32 @@ namespace Delphi {
             int i;
             bool Result = false;
 
-            CMemoryStream LStream;
+            CMemoryStream Stream;
 
             if (CommandHandlers()->Count() > 0) {
                 Result = true;
 
                 if (AConnection->Connected()) {
-                    LStream.SetSize(MaxLineLengthDefault);
-                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
+                    Stream.SetSize(MaxLineLengthDefault);
+                    Stream.SetSize(AConnection->ReadLn((char *) Stream.Memory()));
 
-                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
+                    if (Stream.Size() > 0 && Stream.Size() < MaxLineLengthDefault) {
 #ifdef _UNICODE
-                        wchar_t *WLine = new wchar_t[LStream->Size() + 1];
+                        wchar_t *WLine = new wchar_t[Stream->Size() + 1];
 
-                        if ( CharToWide((char *) LStream->Memory(), WLine, LStream->Size() + 1) )
+                        if ( CharToWide((char *) Stream->Memory(), WLine, Stream->Size() + 1) )
                         {
                             DoBeforeCommandHandler(AThread, WLine);
 #else
-                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
+                        DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
 #endif
                         try {
                             for (i = 0; i < CommandHandlers()->Count(); ++i) {
                                 if (CommandHandlers()->Commands(i)->Enabled()) {
 #ifdef _UNICODE
-                                    if (CommandHandlers()->Items(i)->Check(WLine, LStream.Size(), AThread))
+                                    if (CommandHandlers()->Items(i)->Check(WLine, Stream.Size(), AThread))
 #else
-                                    if (CommandHandlers()->Commands(i)->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
+                                    if (CommandHandlers()->Commands(i)->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
 #endif
                                         break;
                                 }
@@ -3036,7 +3026,7 @@ namespace Delphi {
 #ifdef _UNICODE
                                 DoNoCommandHandler(WLine, AThread);
 #else
-                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
+                                DoNoCommandHandler((char *) Stream.Memory(), AConnection);
 #endif
                         }
                         catch (...) {
@@ -3803,24 +3793,24 @@ namespace Delphi {
             if (Result) {
                 if (AConnection->Connected()) {
 
-                    CMemoryStream LStream;
+                    CMemoryStream Stream;
 
-                    LStream.SetSize(MaxLineLengthDefault);
-                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
+                    Stream.SetSize(MaxLineLengthDefault);
+                    Stream.SetSize(AConnection->ReadLn((char *) Stream.Memory()));
 
-                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
-                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
+                    if (Stream.Size() > 0 && Stream.Size() < MaxLineLengthDefault) {
+                        DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
                         try {
                             int Index;
                             for (Index = 0; Index < m_pCommandHandlers->Count(); ++Index) {
                                 pHandler = m_pCommandHandlers->Commands(Index);
                                 if (pHandler->Enabled()) {
-                                    if (pHandler->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
+                                    if (pHandler->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
                                         break;
                                 }
                             }
                             if (Index == m_pCommandHandlers->Count())
-                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
+                                DoNoCommandHandler((char *) Stream.Memory(), AConnection);
                         } catch (Delphi::Exception::Exception &E) {
                             DoException(AConnection, E);
                         }
@@ -3929,24 +3919,24 @@ namespace Delphi {
             if (Result) {
                 if (AConnection->Connected()) {
 
-                    CMemoryStream LStream;
+                    CMemoryStream Stream;
 
-                    LStream.SetSize(MaxLineLengthDefault);
-                    LStream.SetSize(AConnection->ReadLn((char *) LStream.Memory()));
+                    Stream.    SetSize(MaxLineLengthDefault);
+                    Stream.SetSize(AConnection->ReadLn((char *) Stream.Memory()));
 
-                    if (LStream.Size() > 0 && LStream.Size() < MaxLineLengthDefault) {
-                        DoBeforeCommandHandler(AConnection, (char *) LStream.Memory());
+                    if (Stream.Size() > 0 && Stream.Size() < MaxLineLengthDefault) {
+                        DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
                         try {
                             int Index;
                             for (Index = 0; Index < m_pCommandHandlers->Count(); ++Index) {
                                 pHandler = m_pCommandHandlers->Commands(Index);
                                 if (pHandler->Enabled()) {
-                                    if (pHandler->Check((char *) LStream.Memory(), LStream.Size(), AConnection))
+                                    if (pHandler->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
                                         break;
                                 }
                             }
                             if (Index == m_pCommandHandlers->Count())
-                                DoNoCommandHandler((char *) LStream.Memory(), AConnection);
+                                DoNoCommandHandler((char *) Stream.Memory(), AConnection);
                         } catch (Delphi::Exception::Exception &E) {
                             DoException(AConnection, E);
                         }
@@ -4062,27 +4052,27 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         ssize_t CUDPAsyncServer::Receive(CSocketHandle *ASocketHandle) {
-            ssize_t LByteCount;
-            ssize_t LByteRecv = 0;
+            ssize_t byteCount;
+            ssize_t byteRecv = 0;
 
             if (ASocketHandle != nullptr && ASocketHandle->HandleAllocated()) {
-                CMemoryStream LStream;
+                CMemoryStream Stream;
                 do {
-                    LStream.SetSize(GRecvBufferSizeDefault);
-                    LByteCount = ASocketHandle->RecvFrom(LStream.Memory(), LStream.Size());
+                    Stream.SetSize(GRecvBufferSizeDefault);
+                    byteCount = ASocketHandle->RecvFrom(Stream.Memory(), Stream.Size());
 
                     int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                    if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                    if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
                         break;
 
-                    LStream.SetSize((size_t) LByteCount);
+                    Stream.SetSize((size_t) byteCount);
                     m_InputBuffer.Seek(0, soEnd);
-                    m_InputBuffer.WriteBuffer(LStream.Memory(), LStream.Size());
+                    m_InputBuffer.WriteBuffer(Stream.Memory(), Stream.Size());
 
-                    LByteRecv += LByteCount;
-                } while (LByteCount > 0);
+                    byteRecv += byteCount;
+                } while (byteCount > 0);
 
-                return LByteRecv;
+                return byteRecv;
             }
 
             return -1;
@@ -4090,23 +4080,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         ssize_t CUDPAsyncServer::Send(CSocketHandle *ASocketHandle) {
-            ssize_t LByteCount;
-            ssize_t LByteSend = 0;
+            ssize_t byteCount;
+            ssize_t byteSend = 0;
 
             if (ASocketHandle != nullptr && ASocketHandle->HandleAllocated()) {
                 while (m_OutputBuffer.Size() != 0) {
-                    LByteCount = ASocketHandle->SendTo(ASocketHandle->PeerIP(), ASocketHandle->PeerPort(),
+                    byteCount = ASocketHandle->SendTo(ASocketHandle->PeerIP(), ASocketHandle->PeerPort(),
                                                        m_OutputBuffer.Memory(), m_OutputBuffer.Size());
 
                     int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                    if (GStack->CheckForSocketError(LByteCount, Ignore, chARRAY(Ignore), egSystem))
+                    if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
                         break;
 
-                    m_OutputBuffer.Remove((size_t) LByteCount);
-                    LByteSend += LByteCount;
+                    m_OutputBuffer.Remove((size_t) byteCount);
+                    byteSend += byteCount;
                 }
 
-                return LByteSend;
+                return byteSend;
             }
 
             return -1;
