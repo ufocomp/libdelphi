@@ -542,9 +542,8 @@ namespace Delphi {
 
         void CWebSocket::Decode(CMemoryStream *Stream) {
             unsigned char ch;
-            const auto pos = Stream->Position();
             m_pPayload->Position(m_Size);
-            for (size_t i = pos; i < Stream->Size(); i++) {
+            for (size_t i = 0; i < m_pPayload->Size(); i++) {
                 Stream->Read(&ch, 1);
                 ch = ch ^ m_Frame.MaskingKey[(m_pPayload->Position()) % 4];
                 m_pPayload->Write(&ch, 1);
@@ -557,7 +556,7 @@ namespace Delphi {
             if (m_Frame.Mask == WS_MASK) {
                 Decode(Stream);
             } else {
-                const auto size = Stream->Size() - Stream->Position();
+                const auto size = m_pPayload->Size();
                 if (size != 0) {
                     const auto pos = m_Size;
                     m_Size += size;
@@ -618,12 +617,12 @@ namespace Delphi {
 
             union {
                 uint16_t val;
-                uint8_t  arr[2];
+                uint8_t arr[2];
             } len16 = {0};
 
             union {
                 uint64_t val;
-                uint8_t  arr[8];
+                uint8_t arr[8];
             } len64 = {0};
 
             uint64_t size = 0;
@@ -2233,40 +2232,43 @@ namespace Delphi {
 
             auto pWSRequest = GetWSRequest();
 
-            CWebSocketParser::Parse(pWSRequest, Stream);
+            while (Stream->Position() < Stream->Size()) {
 
-            switch (pWSRequest->Frame().Opcode) {
-                case WS_OPCODE_CONTINUATION:
-                case WS_OPCODE_TEXT:
-                case WS_OPCODE_BINARY:
+                CWebSocketParser::Parse(pWSRequest, Stream);
 
-                    if (pWSRequest->Size() < pWSRequest->Payload()->Size()) {
-                        m_ConnectionStatus = csWaitRequest;
-                        DoWaitRequest();
-                    } else {
+                switch (pWSRequest->Frame().Opcode) {
+                    case WS_OPCODE_CONTINUATION:
+                    case WS_OPCODE_TEXT:
+                    case WS_OPCODE_BINARY:
+
+                        if (pWSRequest->Size() < pWSRequest->Payload()->Size()) {
+                            m_ConnectionStatus = csWaitRequest;
+                            DoWaitRequest();
+                        } else {
+                            m_ConnectionStatus = csRequestOk;
+                            DoRequest();
+                        }
+
+                        break;
+
+                    case WS_OPCODE_CLOSE:
+                        m_CloseConnection = true;
+                        SendWebSocketClose();
+                        break;
+
+                    case WS_OPCODE_PING:
+                        SendWebSocketPong();
+                        break;
+
+                    case WS_OPCODE_PONG:
                         m_ConnectionStatus = csRequestOk;
-                        DoRequest();
-                    }
+                        break;
 
-                    break;
-
-                case WS_OPCODE_CLOSE:
-                    m_CloseConnection = true;
-                    SendWebSocketClose();
-                    break;
-
-                case WS_OPCODE_PING:
-                    SendWebSocketPong();
-                    break;
-
-                case WS_OPCODE_PONG:
-                    m_ConnectionStatus = csRequestOk;
-                    break;
-
-                default:
-                    m_CloseConnection = true;
-                    SendWebSocketClose();
-                    break;
+                    default:
+                        m_CloseConnection = true;
+                        SendWebSocketClose();
+                        break;
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
