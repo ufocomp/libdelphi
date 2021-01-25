@@ -542,8 +542,9 @@ namespace Delphi {
 
         void CWebSocket::Decode(CMemoryStream *Stream) {
             unsigned char ch;
+            const auto size = Min(m_pPayload->Size() - m_pPayload->Position(), Stream->Size() - Stream->Position());
             m_pPayload->Position(m_Size);
-            for (size_t i = 0; i < m_pPayload->Size(); i++) {
+            for (size_t i = 0; i < size; i++) {
                 Stream->Read(&ch, 1);
                 ch = ch ^ m_Frame.MaskingKey[(m_pPayload->Position()) % 4];
                 m_pPayload->Write(&ch, 1);
@@ -556,7 +557,7 @@ namespace Delphi {
             if (m_Frame.Mask == WS_MASK) {
                 Decode(Stream);
             } else {
-                const auto size = m_pPayload->Size();
+                const auto size = Min(m_pPayload->Size() - m_pPayload->Position(), Stream->Size() - Stream->Position());
                 if (size != 0) {
                     const auto pos = m_Size;
                     m_Size += size;
