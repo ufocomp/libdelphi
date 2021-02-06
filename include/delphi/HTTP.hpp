@@ -1353,8 +1353,6 @@ namespace Delphi {
 
             CHTTPClientItem *Add(const CString &Host, unsigned short Port);
 
-            void CleanUp();
-
             CHTTPClientItem *Items(int Index) const override { return GetItem(Index); };
 
             CHTTPClientItem *operator[] (int Index) const override { return Items(Index); };

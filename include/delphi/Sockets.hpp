@@ -158,6 +158,7 @@ namespace Delphi {
             CSocket CreateSocketHandle(int ASocketType, int AProtocol = IPPROTO_IP, unsigned int AFlag = 0);
 #ifdef WITH_SSL
             static void SSLInit();
+            static void SSLFinalize();
             static SSL *SSLNew(bool IsSever = false);
             static void SSLFree(SSL *ssl);
             static CSocket SSLGetSocket(SSL *ssl);
@@ -1007,8 +1008,6 @@ namespace Delphi {
 
             unsigned short m_Port;
 
-            int m_ConnectionCount;
-
         public:
 
             CSocketClient();
@@ -1023,11 +1022,6 @@ namespace Delphi {
 
             unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
-
-            int ConnectionCount() const { return m_ConnectionCount; }
-
-            void IncConnection() { m_ConnectionCount++; }
-            void DecConnection() { m_ConnectionCount--; }
 
         };
 
@@ -1129,9 +1123,11 @@ namespace Delphi {
 
         private:
 
-            CPollSocketClient *m_pClient;
-
             CStringList m_Data;
+
+        protected:
+
+            CPollSocketClient *m_pClient;
 
         public:
 

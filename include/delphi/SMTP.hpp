@@ -381,8 +381,6 @@ namespace Delphi {
 
             bool InProgress(const CString &MsgId);
 
-            void CleanUp();
-
             CSMTPCollectionItem *Items(int Index) const override { return GetItem(Index); };
 
             CSMTPCollectionItem *operator[] (int Index) const override { return Items(Index); };

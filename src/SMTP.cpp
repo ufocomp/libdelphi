@@ -820,16 +820,6 @@ namespace Delphi {
             }
             return false;
         }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPManager::CleanUp() {
-            for (int i = Count() - 1; i >= 0; i--) {
-                auto Item = GetItem(i);
-                if (Item->Active() && Item->ConnectionCount() == 0)
-                    Delete(i);
-            }
-        }
-
     }
 }
 }

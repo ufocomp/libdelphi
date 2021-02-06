@@ -2913,6 +2913,10 @@ namespace Delphi {
                         pConnection->ConnectionStatus(csRequestSent);
                     }
                 }
+                if (pConnection->ClosedGracefully()) {
+                    AHandler->Binding(nullptr);
+                    delete pConnection;
+                }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
                 pConnection->Disconnect();
@@ -2996,15 +3000,6 @@ namespace Delphi {
 
         CHTTPClientItem *CHTTPClientManager::Add(const CString &Host, unsigned short Port) {
             return new CHTTPClientItem(this, Host, Port);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CHTTPClientManager::CleanUp() {
-            for (int i = Count() - 1; i >= 0; i--) {
-               auto Item = GetItem(i);
-               if (Item->Active() && Item->ConnectionCount() == 0)
-                   Delete(i);
-            }
         }
 
         //--------------------------------------------------------------------------------------------------------------

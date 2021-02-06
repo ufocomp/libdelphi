@@ -163,6 +163,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CStack::SSLFinalize() {
+            FIPS_mode_set(0);
+            EVP_cleanup();
+            CRYPTO_cleanup_all_ex_data();
+            ERR_free_strings();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         SSL *CStack::SSLNew(bool IsSever) {
             const SSL_METHOD *method = IsSever ? TLS_server_method() : TLS_client_method();
             SSL_CTX *ctx = ::SSL_CTX_new(method);
@@ -172,7 +180,9 @@ namespace Delphi {
 
         void CStack::SSLFree(SSL *ssl) {
             if (ssl != nullptr) {
+                SSL_CTX *ctx = ::SSL_get_SSL_CTX(ssl);
                 ::SSL_free(ssl);
+                ::SSL_CTX_free(ctx);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -613,6 +623,7 @@ namespace Delphi {
                 if (GInstanceCount == 0)
                 {
                     Delphi::Socket::CStack::DeleteSocket();
+                    GStack->SSLFinalize();
                     GStack = nullptr;
                 }
             } catch (...) {
@@ -2031,17 +2042,12 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient):
-                CTCPConnection(AClient) {
+        CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient): CTCPConnection(AClient) {
             m_pClient = AClient;
-            if (Assigned(m_pClient))
-                m_pClient->IncConnection();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CTCPClientConnection::~CTCPClientConnection() {
-            if (Assigned(m_pClient))
-                m_pClient->DecConnection();
             m_pClient = nullptr;
         }
 
@@ -2261,7 +2267,6 @@ namespace Delphi {
 
         CSocketClient::CSocketClient(): CSocketComponent() {
             m_Port = 0;
-            m_ConnectionCount = 0;
         }
 
         //--------------------------------------------------------------------------------------------------------------
