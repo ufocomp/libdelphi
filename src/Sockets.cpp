@@ -623,7 +623,9 @@ namespace Delphi {
                 if (GInstanceCount == 0)
                 {
                     Delphi::Socket::CStack::DeleteSocket();
+#ifdef WITH_SSL
                     GStack->SSLFinalize();
+#endif
                     GStack = nullptr;
                 }
             } catch (...) {
