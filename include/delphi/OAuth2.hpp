@@ -144,7 +144,7 @@ namespace Delphi {
                 CheckApplication(Application);
                 CStringList Issuers;
                 GetIssuers(Application, Issuers);
-                return Issuers[Index];
+                return Issuers.Names(Index);
             }
 
             CString Algorithm(const CString &Application) const {

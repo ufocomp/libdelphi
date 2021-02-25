@@ -300,6 +300,7 @@ namespace Delphi {
 
         typedef TPair<CString> CStringPair;
         typedef TPairs<CString> CStringPairs;
+        typedef TPairs<CStringList> CStringListPairs;
 
     }
 }
