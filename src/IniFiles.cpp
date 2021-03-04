@@ -80,20 +80,14 @@ namespace Delphi {
 
         bool CCustomIniFile::SectionExists(LPCTSTR lpszSectionName) const {
             CStringList S;
-            try {
-                ReadSection(lpszSectionName, &S);
-            } catch (...) {
-            }
+            ReadSection(lpszSectionName, &S);
             return S.Count() > 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         bool CCustomIniFile::ValueExists(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName) const {
             CStringList S;
-            try {
-                ReadSection(lpszSectionName, &S);
-            } catch (...) {
-            }
+            ReadSection(lpszSectionName, &S);
             return S.IndexOf(lpszKeyName) > -1;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -140,25 +134,25 @@ namespace Delphi {
 
         bool CCustomIniFile::ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) const {
 
-            LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
+            LPCTSTR szBoolStr[] = ARRAY_BOOLEAN_STRINGS;
 
             TCHAR szString[MAX_BUFFER_SIZE / 4 + 1] = {0};
-            if (ReadString(lpszSectionName, lpszKeyName, LBoolStr[(int) Default], szString, MAX_BUFFER_SIZE / 4)) {
-                for (size_t i = 0; i < chARRAY(LBoolStr); ++i) {
-                    if (SameText(LBoolStr[i], szString))
+            if (ReadString(lpszSectionName, lpszKeyName, szBoolStr[(int) Default], szString, MAX_BUFFER_SIZE / 4)) {
+                for (size_t i = 0; i < chARRAY(szBoolStr); ++i) {
+                    if (SameText(szBoolStr[i], szString))
                         return Odd(i);
                 }
             }
 
-            DoIniFileParseError(lpszSectionName, lpszKeyName, szString, LBoolStr[(int) Default]);
+            DoIniFileParseError(lpszSectionName, lpszKeyName, szString, szBoolStr[(int) Default]);
 
             return Default;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         BOOL CCustomIniFile::WriteBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Value) {
-            LPCTSTR LBoolStr[] = ARRAY_BOOLEAN_STRINGS;
-            return WriteString(lpszSectionName, lpszKeyName, LBoolStr[(int) Value]);
+            LPCTSTR szBoolStr[] = ARRAY_BOOLEAN_STRINGS;
+            return WriteString(lpszSectionName, lpszKeyName, szBoolStr[(int) Value]);
         }
         //--------------------------------------------------------------------------------------------------------------
 
