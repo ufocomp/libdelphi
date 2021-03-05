@@ -2605,17 +2605,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::InitializeBindings() {
-            CSocketHandle* LBinding = Bindings()->Add();
+            CSocketHandle* pBinding = Bindings()->Add();
             for (int i = 0; i < m_Sites.Count(); ++i) {
                 const auto& Site = m_Sites[i];
                 const auto& Port = Site.Value()["listen"];
                 if (Site.Name() == "*") {
                     if (!Port.IsEmpty())
-                        LBinding->Port(Port.AsInteger());
+                        pBinding->Port(Port.AsInteger());
                 } else {
                     if (!Port.IsEmpty() && Port.AsInteger() != DefaultPort()) {
-                        LBinding = Bindings()->Add();
-                        LBinding->Port(Port.AsInteger());
+                        pBinding = Bindings()->Add();
+                        pBinding->Port(Port.AsInteger());
                     }
                 }
             }
