@@ -371,7 +371,7 @@ namespace Delphi {
                 if (String.IsEmpty())
                     throw CAuthorizationError("Data has not be empty.");
 
-                if (String.SubString(0, 5) == "Basic") {
+                if (String.SubString(0, 5).Lower() == "basic") {
 
                     Schema = asBasic;
 
@@ -389,7 +389,7 @@ namespace Delphi {
                     if (Username.IsEmpty() || Password.IsEmpty())
                         throw CAuthorizationError("Username and password has not be empty.");
 
-                } else if (String.SubString(0, 6) == "Bearer") {
+                } else if (String.SubString(0, 6).Lower() == "bearer") {
 
                     Schema = asBearer;
                     Token = String.SubString(7);
