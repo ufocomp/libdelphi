@@ -365,12 +365,36 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSession *CSessionManager::FindByIP(const CString &Value) {
-            CSession *Session;
+        CSession *CSessionManager::Find(const CString &Session, const CString &Identity) {
+            CSession *pSession;
             for (int I = 0; I < Count(); ++I) {
-                Session = Get(I);
-                if (Session->IP() == Value)
-                    return Session;
+                pSession = Get(I);
+                if (pSession->Session() == Session && pSession->Identity() == Identity)
+                    return pSession;
+            }
+
+            return nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSession *CSessionManager::FindByIP(const CString &Value) {
+            CSession *pSession;
+            for (int I = 0; I < Count(); ++I) {
+                pSession = Get(I);
+                if (pSession->IP() == Value)
+                    return pSession;
+            }
+
+            return nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CSession *CSessionManager::FindBySession(const CString &Value) {
+            CSession *pSession;
+            for (int I = 0; I < Count(); ++I) {
+                pSession = Get(I);
+                if (pSession->Session() == Value)
+                    return pSession;
             }
 
             return nullptr;
@@ -378,11 +402,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSession *CSessionManager::FindByIdentity(const CString &Value) {
-            CSession *Session;
+            CSession *pSession;
             for (int I = 0; I < Count(); ++I) {
-                Session = Get(I);
-                if (Session->Identity() == Value)
-                    return Session;
+                pSession = Get(I);
+                if (pSession->Identity() == Value)
+                    return pSession;
             }
 
             return nullptr;
@@ -390,11 +414,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSession *CSessionManager::FindByConnection(CHTTPServerConnection *Value) {
-            CSession *Session;
+            CSession *pSession;
             for (int I = 0; I < Count(); ++I) {
-                Session = Get(I);
-                if (Session != nullptr && Session->Connection() == Value)
-                    return Session;
+                pSession = Get(I);
+                if (pSession->Connection() == Value)
+                    return pSession;
             }
 
             return nullptr;

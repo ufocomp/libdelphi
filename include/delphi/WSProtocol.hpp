@@ -251,7 +251,9 @@ namespace Delphi {
             CSession *First() { return Get(0); };
             CSession *Last() { return Get(Count() - 1); };
 
+            CSession *Find(const CString &Session, const CString &Identity);
             CSession *FindByIP(const CString &Value);
+            CSession *FindBySession(const CString &Value);
             CSession *FindByIdentity(const CString &Value);
             CSession *FindByConnection(CHTTPServerConnection *Value);
 
