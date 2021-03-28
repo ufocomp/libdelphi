@@ -303,6 +303,7 @@ namespace Delphi {
             bool UsedPassword();
 
             void Connect();
+            void Disconnect();
 
             void ConnectStart();
 
@@ -325,7 +326,7 @@ namespace Delphi {
 
             PGconn *Handle() { return m_pHandle; }
 
-            void Disconnect() override;
+            void Close() override;
 
             bool Connected() { return GetConnected(); }
 
@@ -563,12 +564,10 @@ namespace Delphi {
         #define POLL_QUERY_START_ERROR 0x10000u
         //--------------------------------------------------------------------------------------------------------------
 
-        class CPQPollQuery: public CPQQuery, public CCollectionItem {
+        class CPQPollQuery: public CPollConnection, public CPQQuery {
         private:
 
             CPQConnectPoll *m_pServer;
-
-            CPollConnection *m_pPollConnection;
 
             CStringList m_Data;
 
@@ -579,7 +578,6 @@ namespace Delphi {
         protected:
 
             void DoExecuted() override;
-
             void DoException(const Delphi::Exception::Exception &E);
 
         public:
@@ -588,17 +586,15 @@ namespace Delphi {
 
             int Start();
 
-            int AddToQueue();
+            void Close() override;
 
+            int AddToQueue();
             void RemoveFromQueue();
 
-            CPQConnectPoll *Server() { return m_pServer; };
+            CPQConnectPoll *Server() const { return m_pServer; };
 
             CStringList &Data() { return m_Data; }
             const CStringList &Data() const { return m_Data; }
-
-            CPollConnection *PollConnection() { return m_pPollConnection; };
-            void PollConnection(CPollConnection *Value) { m_pPollConnection = Value; };
 
             const COnPQPollQueryExecutedEvent &OnPollExecuted() const { return m_OnExecuted; }
             void OnPollExecuted(COnPQPollQueryExecutedEvent && Value) { m_OnExecuted = Value; }
@@ -613,18 +609,18 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CPQPollQueryManager: public CCollection {
+        class CPQPollQueryManager: public CPollManager {
         public:
 
-            explicit CPQPollQueryManager(): CCollection(this) {
+            explicit CPQPollQueryManager(): CPollManager(this) {
 
             };
 
             ~CPQPollQueryManager() override = default;
 
-            int QueryCount() { return CCollection::Count(); };
+            int QueryCount() { return CPollManager::Count(); };
 
-            CPQPollQuery *Queries(int Index) const { return (CPQPollQuery *) CCollection::Items(Index); };
+            CPQPollQuery *Queries(int Index) const { return (CPQPollQuery *) CPollManager::Items(Index); };
 
             CPQPollQuery *operator[] (int Index) const override { return Queries(Index); };
 

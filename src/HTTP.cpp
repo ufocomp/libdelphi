@@ -1541,7 +1541,7 @@ namespace Delphi {
             StatusString.Clear();
             StatusText.Clear();
             ContentType = CContentType::html;
-            CloseConnection = true;
+            CloseConnection = false;
             Headers.Clear();
             Content.Clear();
         }
@@ -2328,10 +2328,7 @@ namespace Delphi {
 
             if (AStatus == CHTTPReply::ok) {
                 const CString &Value = GetRequest()->Headers[_T("Connection")].Lower();
-                if (!Value.IsEmpty()) {
-                    if (Value == _T("keep-alive") || Value == _T("upgrade"))
-                        CloseConnection(false);
-                }
+                CloseConnection(!(Value == _T("keep-alive") || Value == _T("upgrade")));
             }
 
             GetReply()->CloseConnection = CloseConnection();
@@ -2672,19 +2669,18 @@ namespace Delphi {
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
-                if (pConnection->ConnectionStatus() >= csRequestOk) {
-                    if (pConnection->Protocol() == pHTTP) {
-                        if (pConnection->ConnectionStatus() == csRequestOk) {
-                            pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
-                            pConnection->CloseConnection(true);
+                if (pConnection->Connected()) {
+                    if (pConnection->ConnectionStatus() >= csRequestOk) {
+                        if (pConnection->Protocol() == pHTTP) {
+                            if (pConnection->ConnectionStatus() == csRequestOk) {
+                                pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
+                                pConnection->CloseConnection(true);
+                            }
                         }
-
-                        if (pConnection->ConnectionStatus() >= csReplySent)
-                            pConnection->CloseConnection(true);
-
-                        if (pConnection->CloseConnection())
-                            pConnection->Disconnect();
                     }
+
+                    if (pConnection->CloseConnection())
+                        pConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);

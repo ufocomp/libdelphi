@@ -633,6 +633,10 @@ namespace Delphi {
 
             };
 
+            explicit CPollManager(CCollection *AOwner): CCollection(AOwner) {
+
+            };
+
             ~CPollManager() override = default;
 
             void CloseAllConnection() { Clear(); };
@@ -651,8 +655,7 @@ namespace Delphi {
         class LIB_DELPHI CPollConnection: public CSocketComponent, public CCollectionItem {
         private:
 
-            CPollConnection *m_pOwner;
-
+            CPollConnection *m_pBinding;
             CPollEventHandler *m_pEventHandler;
 
         protected:
@@ -662,19 +665,22 @@ namespace Delphi {
 
             void ClosePoll();
 
+            void SetBinding(CPollConnection *AValue);
             void SetEventHandler(CPollEventHandler *AValue);
 
         public:
 
-            explicit CPollConnection(CPollConnection *AOwner, CPollManager *AManager = nullptr);
+            explicit CPollConnection(CPollManager *AManager);
 
-            CPollConnection *Owner() { return m_pOwner; };
+            ~CPollConnection() override;
 
-            CPollEventHandler *EventHandler() { return m_pEventHandler; }
+            virtual void Close() abstract;
 
+            CPollConnection *Binding() const { return m_pBinding; };
+            void Binding(CPollConnection *Value) { SetBinding(Value); };
+
+            CPollEventHandler *EventHandler() const { return m_pEventHandler; }
             void EventHandler(CPollEventHandler *Value) { SetEventHandler(Value); }
-
-            virtual void Disconnect() abstract;
 
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
@@ -761,9 +767,10 @@ namespace Delphi {
             CDateTime Clock() const { return m_Clock; };
             void UpdateClock() { m_Clock = Now(); };
 
-            bool Connected();
+            void Close() override;
 
-            void Disconnect() override;
+            bool Connected();
+            void Disconnect();
 
             void DisconnectSocket();
 
@@ -1934,10 +1941,6 @@ namespace Delphi {
 
             virtual void DoTimer(CPollEventHandler *AHandler);
 
-            void Disconnect() override {
-                Close();
-            };
-
         public:
 
             CEPollTimer(int AClockId, int AFlags);
@@ -1952,7 +1955,7 @@ namespace Delphi {
             int ClockId() const { return m_ClockId; };
 
             void Open();
-            void Close();
+            void Close() override;
 
             void SetTime(int AFlags, const struct itimerspec *AIn, struct itimerspec *AOut = nullptr);
             void GetTime(struct itimerspec *AOut);

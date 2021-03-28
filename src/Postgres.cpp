@@ -267,7 +267,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQConnectionEvent::CPQConnectionEvent(CPollManager *AManager): CPollConnection(this, AManager) {
+        CPQConnectionEvent::CPQConnectionEvent(CPollManager *AManager): CPollConnection(AManager) {
             m_OnReceiver = nullptr;
             m_OnProcessor = nullptr;
 
@@ -640,6 +640,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnection::Close() {
+            Disconnect();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnection::Disconnect() {
             if (m_Connected) {
                 DoDisconnected(this);
@@ -1006,9 +1011,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollQuery::CPQPollQuery(CPQConnectPoll *AServer): CPQQuery(), CCollectionItem(AServer->PollQueryManager()) {
+        CPQPollQuery::CPQPollQuery(CPQConnectPoll *AServer): CPQQuery(), CPollConnection(AServer->PollQueryManager()) {
             m_pServer = AServer;
-            m_pPollConnection = nullptr;
 
             m_OnExecuted = nullptr;
             m_OnException = nullptr;
@@ -1043,18 +1047,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQPollQuery::Close() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CPQPollQuery::AddToQueue() {
-            if (m_pPollConnection == nullptr)
+            if (Binding() == nullptr)
                 return m_pServer->Queue()->AddToQueue(m_pServer, this);
-            return m_pServer->Queue()->AddToQueue(m_pPollConnection, this);;
+            return m_pServer->Queue()->AddToQueue(Binding(), this);;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQPollQuery::RemoveFromQueue() {
-            if (m_pPollConnection == nullptr) {
+            if (Binding() == nullptr) {
                 m_pServer->Queue()->RemoveFromQueue(m_pServer, this);
             } else {
-                m_pServer->Queue()->RemoveFromQueue(m_pPollConnection, this);
+                m_pServer->Queue()->RemoveFromQueue(Binding(), this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1628,7 +1637,7 @@ namespace Delphi {
 
         CPQPollQuery *CPQServer::FindQueryByConnection(CPollConnection *APollConnection) {
             for (int i = 0; i < PollQueryManager()->QueryCount(); ++i) {
-                if (PollQueryManager()->Queries(i)->PollConnection() == APollConnection)
+                if (PollQueryManager()->Queries(i)->Binding() == APollConnection)
                     return PollQueryManager()->Queries(i);
             }
             return nullptr;

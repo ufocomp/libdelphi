@@ -1307,19 +1307,41 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CPollConnection::CPollConnection(CPollConnection *AOwner, CPollManager *AManager):
-                CCollectionItem(AManager) {
+        CPollConnection::CPollConnection(CPollManager *AManager): CCollectionItem(AManager) {
+            m_pBinding = nullptr;
             m_pEventHandler = nullptr;
-            m_pOwner = AOwner;
-            m_CloseConnection = true;
+            m_CloseConnection = false;
             m_AutoFree = true;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CPollConnection::~CPollConnection() {
+            if (m_pBinding != nullptr) {
+                m_pBinding->Binding(nullptr);
+            }
+
+            if (m_pEventHandler != nullptr) {
+                m_pEventHandler->Binding(nullptr);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPollConnection::SetBinding(CPollConnection *Value) {
+            if (m_pBinding != Value) {
+                m_pBinding = Value;
+                if (m_pBinding != nullptr) {
+                    m_pBinding->Binding(this);
+                }
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPollConnection::SetEventHandler(CPollEventHandler *AValue) {
             if (m_pEventHandler != AValue) {
                 m_pEventHandler = AValue;
-                m_pEventHandler->Binding(m_pOwner);
+                if (m_pEventHandler != nullptr) {
+                    m_pEventHandler->Binding(this);
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1335,7 +1357,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CTCPConnection::CTCPConnection(CPollManager *AManager): CPollConnection(this, AManager) {
+        CTCPConnection::CTCPConnection(CPollManager *AManager): CPollConnection(AManager) {
             m_Clock = 0;
 
             m_pIOHandler = nullptr;
@@ -1381,6 +1403,13 @@ namespace Delphi {
             if (bResult)
                 bResult = IOHandler()->Connected();
             return bResult;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPConnection::Close() {
+            if (!m_ClosedGracefully) {
+                Disconnect();
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3178,7 +3207,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollEventHandler::CPollEventHandler(CPollEventHandlers *AEventHandlers, CSocket ASocket):
-            CCollectionItem(AEventHandlers) {
+                CCollectionItem(AEventHandlers) {
             m_Socket = ASocket;
             m_Events = 0;
             m_EventType = etNull;
@@ -3198,17 +3227,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPollEventHandler::ClearBinding() {
-            CPollConnection *Temp;
+            CPollConnection *pTemp;
             if (Assigned(m_pBinding)) {
-                Temp = m_pBinding;
-                try {
-                    m_pBinding->Disconnect();
-                } catch (...) {
-
-                }
+                pTemp = m_pBinding;
+                m_pBinding->Close();
                 m_pBinding = nullptr;
-                if (Temp->AutoFree())
-                    delete Temp;
+                if (pTemp->AutoFree())
+                    delete pTemp;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3374,10 +3399,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CEPollTimer::CEPollTimer(int AClockId, int AFlags): CHandleStream(INVALID_HANDLE_VALUE),
-            CPollConnection(this) {
+                CPollConnection(nullptr) {
 
             m_AutoFree = true;
-
             m_ClockId = AClockId;
             m_Flags = AFlags;
             m_OnTimer = nullptr;
