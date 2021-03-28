@@ -528,15 +528,15 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        struct CHTTPRequest {
+        class CHTTPRequest {
         public:
 
             CString Method;
 
             CString URI;
 
-            int VMajor = 0;
-            int VMinor = 0;
+            int VMajor;
+            int VMinor;
 
             /// The headers to be included in the request.
             CHeaders Headers;
@@ -548,7 +548,7 @@ namespace Delphi {
             CStringList Cookies;
 
             /// The content length to be sent in the request.
-            size_t ContentLength = 0;
+            size_t ContentLength;
 
             /// The content type of the reply.
             enum CContentType
@@ -597,14 +597,7 @@ namespace Delphi {
             bool BuildLocation();
             void BuildCookies();
 
-            /// Get a prepare request.
-            static CHTTPRequest *Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
-                    LPCTSTR AContentType = nullptr);
-
-            /// Add Authorization header to headers
-            static CHTTPRequest *Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
-
-            CHTTPRequest &operator=(const CHTTPRequest &Value) {
+            void Assign(const CHTTPRequest &Value) {
                 if (this != &Value) {
                     Method = Value.Method;
                     URI = Value.URI;
@@ -620,9 +613,28 @@ namespace Delphi {
                     CloseConnection = Value.CloseConnection;
                     Location = Value.Location;
                 }
+            };
 
+            CHTTPRequest(): VMajor(1), VMinor(1), ContentLength(0) {
+                Params.LineBreak("&");
+                Params.Delimiter('&');
+            }
+
+            CHTTPRequest(const CHTTPRequest &Request): CHTTPRequest() {
+                Assign(Request);
+            }
+
+            CHTTPRequest &operator=(const CHTTPRequest &Request) {
+                Assign(Request);
                 return *this;
             };
+
+            /// Get a prepare request.
+            static CHTTPRequest *Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
+                                         LPCTSTR AContentType = nullptr);
+
+            /// Add Authorization header to headers
+            static CHTTPRequest *Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
 
         };
 
