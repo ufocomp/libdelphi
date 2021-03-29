@@ -2601,6 +2601,25 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CHTTPServer::Assign(const CHTTPServer &Server) {
+            if (&Server != this) {
+                DefaultIP() = Server.DefaultIP();
+                DefaultPort(Server.DefaultPort());
+
+                ServerName() = Server.ServerName();
+                AllowedMethods() = Server.AllowedMethods();
+
+                IOHandler(Server.IOHandler());
+                Bindings(Server.Bindings());
+
+                m_Providers = Server.m_Providers;
+                m_Sites = Server.m_Sites;
+
+                m_ActiveLevel = Server.m_ActiveLevel;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHTTPServer::InitializeBindings() {
             CSocketHandle* pBinding = Bindings()->Add();
             for (int i = 0; i < m_Sites.Count(); ++i) {

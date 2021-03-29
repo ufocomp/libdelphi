@@ -1253,6 +1253,8 @@ namespace Delphi {
 
             void InitializeBindings() override;
 
+            void Assign(const CHTTPServer &Server);
+
             static CString URLEncode(const CString& In);
             static CString URLDecode(const CString& In);
             static bool URLDecode(const CString& In, CString& Out);
@@ -1264,16 +1266,7 @@ namespace Delphi {
             const CSites& Sites() const { return m_Sites; };
 
             CHTTPServer &operator = (const CHTTPServer &Server) {
-                if (&Server != this) {
-                    SetIOHandler(Server.IOHandler());
-                    SetBindings(Server.Bindings());
-
-                    m_Providers = Server.m_Providers;
-                    m_Sites = Server.m_Sites;
-
-                    m_ActiveLevel = Server.m_ActiveLevel;
-                }
-
+                Assign(Server);
                 return *this;
             }
 

@@ -735,14 +735,14 @@ namespace Delphi {
             CMaxLineAction m_MaxLineAction;
             CNotifyEvent m_OnDisconnected;
 
+            bool m_FreeIOHandler;
+
+            void SetIOHandler(CIOHandler *AValue, bool AFree);
             void FreeIOHandler();
 
         protected:
 
             CDateTime m_Clock;
-
-            bool m_FreeIOHandler;
-            void SetIOHandler(CIOHandler *AValue, bool AFree);
 
             void DoDisconnected();
 
@@ -986,7 +986,7 @@ namespace Delphi {
             CString& DefaultIP() { return GetDefaultIP(); }
             const CString& DefaultIP() const { return GetDefaultIP(); }
 
-            unsigned short DefaultPort() { return GetDefaultPort(); }
+            unsigned short DefaultPort() const { return GetDefaultPort(); }
             void DefaultPort(unsigned short Value) { SetDefaultPort(Value); }
 
             CString& ServerName() { return m_ServerName; };
@@ -2112,14 +2112,16 @@ namespace Delphi {
 
             CStringList m_Data;
 
+            bool m_FreeIOHandler;
+
+            void SetIOHandler(CServerIOHandler *Value);
+
         protected:
 
             CActiveLevel m_ActiveLevel;
 
             CServerIOHandler *m_pIOHandler;
-            bool m_FreeIOHandler;
 
-            void SetIOHandler(CServerIOHandler *Value);
             void FreeIOHandler();
 
             virtual void InitializeCommandHandlers();
