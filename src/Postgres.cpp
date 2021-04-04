@@ -1525,92 +1525,97 @@ namespace Delphi {
 
         void CPQConnectPoll::DoRead(CPollEventHandler *AHandler) {
             auto pConnection = GetHandlerConnection(AHandler);
-            try {
-                switch (pConnection->ConnectionStatus()) {
-                    case qsConnect:
-                        pConnection->ConnectPoll();
-                        break;
+            if (Assigned(pConnection)) {
+                try {
+                    switch (pConnection->ConnectionStatus()) {
+                        case qsConnect:
+                            pConnection->ConnectPoll();
+                            break;
 
-                    case qsReset:
-                        pConnection->ResetPoll();
-                        break;
+                        case qsReset:
+                            pConnection->ResetPoll();
+                            break;
 
-                    case qsReady:
-                        pConnection->CheckNotify();
-                        break;
+                        case qsReady:
+                            pConnection->CheckNotify();
+                            break;
 
-                    case qsBusy:
-                        if (pConnection->CheckResult())
-                            pConnection->QueryStop();
-                        pConnection->CheckNotify();
-                        break;
+                        case qsBusy:
+                            if (pConnection->CheckResult())
+                                pConnection->QueryStop();
+                            pConnection->CheckNotify();
+                            break;
 
-                    case qsError:
-                        // Connection closed gracefully
-                        m_ConnInfo.PingValid(false);
-                        AHandler->Binding(nullptr);
-                        delete pConnection;
-                        AHandler->Start(etNull);
-                        AHandler->Stop();
-                        break;
+                        case qsError:
+                            // Connection closed gracefully
+                            m_ConnInfo.PingValid(false);
+                            AHandler->Binding(nullptr);
+                            delete pConnection;
+                            AHandler->Start(etNull);
+                            AHandler->Stop();
+                            break;
+                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    pConnection->ConnectionStatus(qsError);
+                    DoConnectException(pConnection, E);
                 }
-            } catch (Delphi::Exception::Exception &E) {
-                pConnection->ConnectionStatus(qsError);
-                DoConnectException(pConnection, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoWrite(CPollEventHandler *AHandler) {
             auto pConnection = GetHandlerConnection(AHandler);
-            try {
-                switch (pConnection->ConnectionStatus()) {
-                    case qsConnect:
-                        if (pConnection->Connected()) {
-                            pConnection->ConnectionStatus(qsReady);
+            if (Assigned(pConnection)) {
+                try {
+                    switch (pConnection->ConnectionStatus()) {
+                        case qsConnect:
+                            if (pConnection->Connected()) {
+                                pConnection->ConnectionStatus(qsReady);
+                                CheckQueue();
+                            } else {
+                                pConnection->ConnectPoll();
+                            }
+                            break;
+
+                        case qsReset:
+                            if (pConnection->Connected()) {
+                                pConnection->ConnectionStatus(qsReady);
+                                CheckQueue();
+                            } else {
+                                pConnection->ResetPoll();
+                            }
+                            break;
+
+                        case qsReady:
+                            pConnection->Flush();
+
+                            if ((m_pQueue->Count() == 0) && !pConnection->Listener() &&
+                                (m_pPollManager->Count() > (int) m_SizeMax)) {
+                                pConnection->Disconnect();
+                            }
+
                             CheckQueue();
-                        } else {
-                            pConnection->ConnectPoll();
-                        }
-                        break;
+                            break;
 
-                    case qsReset:
-                        if (pConnection->Connected()) {
-                            pConnection->ConnectionStatus(qsReady);
-                            CheckQueue();
-                        } else {
-                            pConnection->ResetPoll();
-                        }
-                        break;
+                        case qsBusy:
+                            if (pConnection->CheckResult())
+                                pConnection->QueryStop();
+                            pConnection->CheckNotify();
+                            break;
 
-                    case qsReady:
-                        pConnection->Flush();
-
-                        if ((m_pQueue->Count() == 0) && !pConnection->Listener() && (m_pPollManager->Count() > (int) m_SizeMax)) {
-                            pConnection->Disconnect();
-                        }
-
-                        CheckQueue();
-                        break;
-
-                    case qsBusy:
-                        if (pConnection->CheckResult())
-                            pConnection->QueryStop();
-                        pConnection->CheckNotify();
-                        break;
-
-                    case qsError:
-                        // Connection closed gracefully
-                        m_ConnInfo.PingValid(false);
-                        AHandler->Binding(nullptr);
-                        delete pConnection;
-                        AHandler->Start(etNull);
-                        AHandler->Stop();
-                        break;
+                        case qsError:
+                            // Connection closed gracefully
+                            m_ConnInfo.PingValid(false);
+                            AHandler->Binding(nullptr);
+                            delete pConnection;
+                            AHandler->Start(etNull);
+                            AHandler->Stop();
+                            break;
+                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    pConnection->ConnectionStatus(qsError);
+                    DoConnectException(pConnection, E);
                 }
-            } catch (Delphi::Exception::Exception &E) {
-                pConnection->ConnectionStatus(qsError);
-                DoConnectException(pConnection, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
