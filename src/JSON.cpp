@@ -352,16 +352,16 @@ namespace Delphi {
 
         void CJSON::LoadFromFile(LPCTSTR lpszFileName) {
             CFileStream Stream(lpszFileName, O_RDONLY);
-            LoadFromStream(&Stream);
+            LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CJSON::LoadFromStream(CStream *Stream) {
+        void CJSON::LoadFromStream(CStream &Stream) {
 
             size_t BufSize, Count;
             LPTSTR Buffer;
 
-            Count = Stream->Size() - Stream->Position();
+            Count = Stream.Size() - Stream.Position();
 
             if (Count > MaxBufSize)
                 BufSize = MaxBufSize;
@@ -371,7 +371,7 @@ namespace Delphi {
             Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize);
             BeginUpdate();
             try {
-                Stream->Read(Buffer, BufSize);
+                Stream.Read(Buffer, BufSize);
                 StrToJson(Buffer, BufSize);
             } catch (...) {
                 GHeap->Free(0, Buffer, BufSize);
@@ -385,13 +385,13 @@ namespace Delphi {
 
         void CJSON::SaveToFile(LPCTSTR lpszFileName) const {
             CFileStream Stream(lpszFileName, OF_CREATE);
-            SaveToStream(&Stream);
+            SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CJSON::SaveToStream(CStream *Stream) const {
+        void CJSON::SaveToStream(CStream &Stream) const {
             const CString& S = JsonToString();
-            Stream->WriteBuffer(S.Data(), S.Size());
+            Stream.WriteBuffer(S.Data(), S.Size());
         }
         //--------------------------------------------------------------------------------------------------------------
 

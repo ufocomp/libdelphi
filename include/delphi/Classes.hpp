@@ -180,7 +180,7 @@ namespace Delphi {
         class LIB_DELPHI CHeapComponent {
         public:
             CHeapComponent();
-            ~CHeapComponent();
+            virtual ~CHeapComponent();
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -465,7 +465,7 @@ namespace Delphi {
         public:
 
             CStream(): CHeapComponent() {};
-            virtual ~CStream() = default;
+            ~CStream() override = default;
 
             virtual ssize_t Read(void *Buffer, size_t Count) abstract;
             virtual ssize_t Write(const void *Buffer, size_t Count) abstract;
@@ -586,7 +586,7 @@ namespace Delphi {
 
             ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
-            void SaveToStream(CStream *Stream);
+            void SaveToStream(CStream &Stream);
             void SaveToFile(LPCTSTR lpszFileName);
 
             virtual Pointer Memory() const { return m_Memory; }
@@ -630,7 +630,7 @@ namespace Delphi {
 
             virtual void Clear();
 
-            void LoadFromStream(CStream *Stream);
+            void LoadFromStream(CStream &Stream);
             void LoadFromFile(LPCTSTR lpszFileName);
 
             void SetSize(ssize_t NewSize) override;
@@ -681,7 +681,7 @@ namespace Delphi {
 
             ssize_t Seek(off_t Offset, unsigned short Origin) override;
 
-            void SaveToStream(CStream *Stream) const;
+            void SaveToStream(CStream &Stream) const;
             void SaveToFile(LPCTSTR lpszFileName) const;
 
             LPTSTR Data() { return m_Data; };
@@ -726,7 +726,7 @@ namespace Delphi {
 
             virtual void SetLength(size_t NewLength) abstract;
 
-            void LoadFromStream(CStream *Stream);
+            void LoadFromStream(CStream &Stream);
 
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromFile(const CString& FileName);
@@ -820,7 +820,7 @@ namespace Delphi {
 
             CString(TCHAR C);
 
-            explicit CString(CStream *Stream);
+            explicit CString(CStream &Stream);
 
             explicit CString(size_t Length, TCHAR C);
 
@@ -1226,10 +1226,10 @@ namespace Delphi {
             virtual void InsertObject(int Index, reference Str, CObject* AObject);
             virtual void InsertObject(int Index, TCHAR C, CObject* AObject);
             virtual void LoadFromFile(LPCTSTR lpszFileName);
-            virtual void LoadFromStream(CStream* Stream);
+            virtual void LoadFromStream(CStream &Stream);
             virtual void Move(int CurIndex, int NewIndex);
             virtual void SaveToFile(LPCTSTR lpszFileName) const;
-            virtual void SaveToStream(CStream* Stream) const;
+            virtual void SaveToStream(CStream &Stream) const;
             virtual void SetTextStr(LPCTSTR Text, size_t Size);
 
             int Capacity() const noexcept { return GetCapacity(); };

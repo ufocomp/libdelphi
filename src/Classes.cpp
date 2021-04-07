@@ -970,7 +970,7 @@ namespace Delphi {
 
         void CStream::ReadBuffer(void *Buffer, size_t Count) {
             if ((Count != 0) && (Read(Buffer, Count) != Count))
-                throw ERangeError(_T("Range check error"));
+                throw EReadError(_T("Range check error"));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1139,19 +1139,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomMemoryStream::SaveToStream(CStream *Stream) {
+        void CCustomMemoryStream::SaveToStream(CStream &Stream) {
             if (m_Size != 0)
-                Stream->WriteBuffer(m_Memory, m_Size);
+                Stream.WriteBuffer(m_Memory, m_Size);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCustomMemoryStream::SaveToFile(LPCTSTR lpszFileName) {
-            CStream *Stream = new CFileStream(lpszFileName, OF_CREATE);
-            try {
-                SaveToStream(Stream);
-            } catch (...) {
-            }
-            delete Stream;
+            auto Stream = CFileStream(lpszFileName, OF_CREATE);
+            SaveToStream(Stream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1179,20 +1175,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemoryStream::LoadFromStream(CStream *Stream) {
+        void CMemoryStream::LoadFromStream(CStream &Stream) {
             size_t Count;
-            Stream->Position(0);
-            Count = Stream->Size();
+            Stream.Position(0);
+            Count = Stream.Size();
             SetSize(Count);
 
             if (Count != 0)
-                Stream->ReadBuffer(Memory(), Count);
+                Stream.ReadBuffer(Memory(), Count);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CMemoryStream::LoadFromFile(LPCTSTR lpszFileName) {
             CFileStream Stream(lpszFileName, O_RDONLY);
-            LoadFromStream(&Stream);
+            LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1316,15 +1312,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomStringStream::SaveToStream(CStream *Stream) const {
+        void CCustomStringStream::SaveToStream(CStream &Stream) const {
             if (m_Size != 0)
-                Stream->WriteBuffer(m_Data, m_Size);
+                Stream.WriteBuffer(m_Data, m_Size);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCustomStringStream::SaveToFile(LPCTSTR lpszFileName) const {
             CFileStream Stream(lpszFileName, OF_CREATE);
-            SaveToStream(&Stream);
+            SaveToStream(Stream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1352,20 +1348,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStringStream::LoadFromStream(CStream *Stream) {
+        void CStringStream::LoadFromStream(CStream &Stream) {
             size_t Count;
-            Stream->Position(0);
-            Count = Stream->Size();
+            Stream.Position(0);
+            Count = Stream.Size();
             SetLength(Count / sizeof(TCHAR));
 
             if (Count != 0)
-                Stream->ReadBuffer(Data(), Count);
+                Stream.ReadBuffer(Data(), Count);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringStream::LoadFromFile(LPCTSTR lpszFileName) {
             CFileStream Stream(lpszFileName, O_RDONLY);
-            LoadFromStream(&Stream);
+            LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1542,10 +1538,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(CStream *Stream): CString() {
-            auto Position = Stream->Position();
+        CString::CString(CStream &Stream): CString() {
+            auto Position = Stream.Position();
             LoadFromStream(Stream);
-            Stream->Position(Position);
+            Stream.Position(Position);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2259,15 +2255,15 @@ namespace Delphi {
 
         void CStrings::LoadFromFile(LPCTSTR lpszFileName) {
             CFileStream Stream(lpszFileName, O_RDONLY);
-            LoadFromStream(&Stream);
+            LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::LoadFromStream(CStream *Stream) {
+        void CStrings::LoadFromStream(CStream &Stream) {
             size_t BufSize, Count;
             LPTSTR Buffer;
 
-            Count = Stream->Size() - Stream->Position();
+            Count = Stream.Size() - Stream.Position();
 
             if (Count > MaxBufSize)
                 BufSize = MaxBufSize;
@@ -2277,7 +2273,7 @@ namespace Delphi {
             Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize);
             BeginUpdate();
             try {
-                Stream->Read(Buffer, BufSize);
+                Stream.Read(Buffer, BufSize);
                 SetTextStr(Buffer, BufSize);
             } catch (...) {
                 GHeap->Free(0, Buffer, BufSize);
@@ -2311,13 +2307,13 @@ namespace Delphi {
 
         void CStrings::SaveToFile(LPCTSTR lpszFileName) const {
             CFileStream Stream(lpszFileName, OF_CREATE);
-            SaveToStream(&Stream);
+            SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SaveToStream(CStream *Stream) const {
-            const CString& S = GetText();
-            Stream->WriteBuffer(S.Data(), S.Size());
+        void CStrings::SaveToStream(CStream &Stream) const {
+            const auto &S = GetText();
+            Stream.WriteBuffer(S.Data(), S.Size());
         }
         //--------------------------------------------------------------------------------------------------------------
 

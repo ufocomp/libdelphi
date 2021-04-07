@@ -116,7 +116,7 @@ namespace Delphi {
 
             void Clear();
 
-            void ToBuffers(CMemoryStream *AStream) const;
+            void ToBuffers(CMemoryStream &AStream) const;
 
             CString &Command() { return m_Command; };
             const CString &Command() const { return m_Command; };

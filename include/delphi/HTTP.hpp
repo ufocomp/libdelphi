@@ -583,7 +583,7 @@ namespace Delphi {
             /// Convert the request into a vector of buffers. The buffers do not own the
             /// underlying memory blocks, therefore the request object must remain valid and
             /// not be changed until the write operation has completed.
-            void ToBuffers(CMemoryStream *AStream);
+            void ToBuffers(CMemoryStream &Stream);
 
             /// Add header to headers.
             void AddHeader(LPCTSTR lpszName, LPCTSTR lpszValue);
@@ -683,40 +683,36 @@ namespace Delphi {
         private:
 
             CWebSocketFrame m_Frame;
+            CMemoryStream m_Payload;
 
-            CMemoryStream *m_pPayload;
+            size_t m_MaskingIndex;
 
-            size_t m_Size;
+            void Encode(CMemoryStream &Stream);
+            void Decode(CMemoryStream &Stream);
 
-            void Encode(CMemoryStream *Stream);
-            void Decode(CMemoryStream *Stream);
-
-            void PayloadFromStream(CMemoryStream *Stream);
-            void PayloadToStream(CMemoryStream *Stream);
+            void PayloadFromStream(CMemoryStream &Stream);
+            void PayloadToStream(CMemoryStream &Stream);
 
         public:
 
             CWebSocket();
 
-            ~CWebSocket();
-
             void Clear();
-
-            size_t Size() const { return m_Size; };
 
             CWebSocketFrame &Frame() { return m_Frame; }
             const CWebSocketFrame &Frame() const { return m_Frame; }
 
-            CMemoryStream *Payload() { return m_pPayload; };
+            CMemoryStream &Payload() { return m_Payload; };
+            const CMemoryStream &Payload() const { return m_Payload; };
 
-            void Close(CMemoryStream *Stream);
-            void Ping(CMemoryStream *Stream);
-            void Pong(CMemoryStream *Stream);
+            void Close(CMemoryStream &Stream);
+            void Ping(CMemoryStream &Stream);
+            void Pong(CMemoryStream &Stream);
 
-            void SaveToStream(CMemoryStream *Stream);
-            void LoadFromStream(CMemoryStream *Stream);
+            void SaveToStream(CMemoryStream &Stream);
+            void LoadFromStream(CMemoryStream &Stream);
 
-            void SetPayload(CMemoryStream *Stream);
+            void SetPayload(CMemoryStream &Stream);
             void SetPayload(const CString &String);
 
             CWebSocket& operator<< (const CString &String) {
@@ -725,16 +721,16 @@ namespace Delphi {
             }
 
             CWebSocket& operator>> (CString &String) {
-                String.LoadFromStream(m_pPayload);
+                String.LoadFromStream(m_Payload);
                 return *this;
             }
 
-            CWebSocket& operator<< (CMemoryStream *Stream) {
+            CWebSocket& operator<< (CMemoryStream &Stream) {
                 LoadFromStream(Stream);
                 return *this;
             }
 
-            CWebSocket& operator>> (CMemoryStream *Stream) {
+            CWebSocket& operator>> (CMemoryStream &Stream) {
                 SaveToStream(Stream);
                 return *this;
             }
@@ -786,8 +782,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         struct CHTTPContext {
-            LPCTSTR Begin;
-            LPCTSTR End;
+            LPCBYTE Begin;
+            LPCBYTE End;
             size_t Size;
             int Result;
             Request::CParserState State;
@@ -795,7 +791,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            CHTTPContext(LPCTSTR ABegin, size_t ASize, Request::CParserState AState = Request::method_start,
+            CHTTPContext(LPCBYTE ABegin, size_t ASize, Request::CParserState AState = Request::method_start,
                          size_t AContentLength = 0) {
                 Begin = ABegin;
                 End = ABegin + ASize;
@@ -847,7 +843,7 @@ namespace Delphi {
         class CWebSocketParser {
         public:
 
-            static void Parse(CWebSocket *ARequest, CMemoryStream *AStream);
+            static void Parse(CWebSocket *ARequest, CMemoryStream &AStream);
 
         };
 
@@ -933,7 +929,7 @@ namespace Delphi {
             /// Convert the reply into a vector of buffers. The buffers do not own the
             /// underlying memory blocks, therefore the reply object must remain valid and
             /// not be changed until the write operation has completed.
-            void ToBuffers(CMemoryStream *AStream);
+            void ToBuffers(CMemoryStream &Stream);
 
             static LPCTSTR GetGMT(LPTSTR lpszBuffer, size_t Size, time_t Delta = 0);
 
@@ -1001,8 +997,8 @@ namespace Delphi {
         }
 
         struct CHTTPReplyContext {
-            LPCTSTR Begin;
-            LPCTSTR End;
+            LPCBYTE Begin;
+            LPCBYTE End;
             size_t Size;
             int Result;
             Reply::CParserState State;
@@ -1012,7 +1008,7 @@ namespace Delphi {
             TCHAR MIME[3] = {};
             size_t MimeIndex;
 
-            CHTTPReplyContext(LPCTSTR ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h,
+            CHTTPReplyContext(LPCBYTE ABegin, size_t ASize, Reply::CParserState AState = Reply::http_version_h,
                           size_t AContentLength = 0, size_t AChunkedLength = 0) {
                 Begin = ABegin;
                 End = ABegin + ASize;
@@ -1091,8 +1087,8 @@ namespace Delphi {
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
-            void ParseHTTP(CMemoryStream *Stream);
-            void ParseWebSocket(CMemoryStream *Stream);
+            void ParseHTTP(CMemoryStream &Stream);
+            void ParseWebSocket(CMemoryStream &Stream);
 
         protected:
 

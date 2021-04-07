@@ -30,7 +30,7 @@ namespace Delphi {
 
     namespace HTTP {
 
-        #define StringArrayToStream(Stream, Buf) (Stream)->Write((Buf), sizeof((Buf)) - sizeof(TCHAR))
+        #define StringArrayToStream(Stream, Buf) (Stream).Write((Buf), sizeof((Buf)) - sizeof(TCHAR))
 
         namespace Mapping {
 
@@ -261,35 +261,35 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPRequest::ToBuffers(CMemoryStream *AStream) {
+        void CHTTPRequest::ToBuffers(CMemoryStream &Stream) {
 
-            Method.SaveToStream(AStream);
-            StringArrayToStream(AStream, MiscStrings::space);
+            Method.SaveToStream(Stream);
+            StringArrayToStream(Stream, MiscStrings::space);
 
-            URI.SaveToStream(AStream);
+            URI.SaveToStream(Stream);
             for (int i = 0; i < Params.Count(); ++i) {
                 if (i == 0) {
-                    StringArrayToStream(AStream, MiscStrings::question);
+                    StringArrayToStream(Stream, MiscStrings::question);
                 } else {
-                    StringArrayToStream(AStream, MiscStrings::ampersand);
+                    StringArrayToStream(Stream, MiscStrings::ampersand);
                 }
-                Params[i].SaveToStream(AStream);
+                Params[i].SaveToStream(Stream);
             }
-            StringArrayToStream(AStream, MiscStrings::space);
+            StringArrayToStream(Stream, MiscStrings::space);
 
-            StringArrayToStream(AStream, MiscStrings::http);
-            StringArrayToStream(AStream, MiscStrings::crlf);
+            StringArrayToStream(Stream, MiscStrings::http);
+            StringArrayToStream(Stream, MiscStrings::crlf);
 
             for (int i = 0; i < Headers.Count(); ++i) {
                 const auto &H = Headers[i];
-                H.Name().SaveToStream(AStream);
-                StringArrayToStream(AStream, MiscStrings::separator);
-                H.Value().SaveToStream(AStream);
-                StringArrayToStream(AStream, MiscStrings::crlf);
+                H.Name().SaveToStream(Stream);
+                StringArrayToStream(Stream, MiscStrings::separator);
+                H.Value().SaveToStream(Stream);
+                StringArrayToStream(Stream, MiscStrings::crlf);
             }
 
-            StringArrayToStream(AStream, MiscStrings::crlf);
-            Content.SaveToStream(AStream);
+            StringArrayToStream(Stream, MiscStrings::crlf);
+            Content.SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -477,119 +477,98 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CWebSocket::CWebSocket() {
-            m_Size = 0;
-            m_pPayload = new CMemoryStream();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CWebSocket::~CWebSocket() {
-            FreeAndNil(m_pPayload);
+            m_MaskingIndex = 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Clear() {
-            m_Size = 0;
-            m_Frame.Clear();
-            m_pPayload->Clear();
+            m_MaskingIndex = 0;
+            m_Payload.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::Close(CMemoryStream *Stream) {
-            const unsigned char Close[2] = { WS_FIN | WS_OPCODE_CLOSE, 0x00 };
-            if (m_Frame.Length == 0) {
-                Stream->Write(Close, sizeof(Close));
-            } else {
-                Stream->Write(Close, 1);
-                m_Frame.Mask = 0;
-                PayloadToStream(Stream);
-            }
+        void CWebSocket::Close(CMemoryStream &Stream) {
+            m_Frame.FIN = WS_FIN;
+            m_Frame.Opcode = WS_OPCODE_CLOSE;
+            m_Frame.Mask = 0;
+            SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::Ping(CMemoryStream *Stream) {
-            const unsigned char Ping[2] = { WS_FIN | WS_OPCODE_PING, 0x00 };
-            if (m_Frame.Length == 0) {
-                Stream->Write(Ping, sizeof(Ping));
-            } else {
-                Stream->Write(Ping, 1);
-                PayloadToStream(Stream);
-            }
+        void CWebSocket::Ping(CMemoryStream &Stream) {
+            m_Frame.FIN = WS_FIN;
+            m_Frame.Opcode = WS_OPCODE_PING;
+            m_Frame.Mask = 0;
+            SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::Pong(CMemoryStream *Stream) {
-            const unsigned char Pong[2] = { WS_FIN | WS_OPCODE_PONG, 0x00 };
-            if (m_Frame.Length == 0) {
-                Stream->Write(Pong, sizeof(Pong));
-            } else {
-                Stream->Write(Pong, 1);
-                m_Frame.Mask = 0;
-                PayloadToStream(Stream);
-            }
+        void CWebSocket::Pong(CMemoryStream &Stream) {
+            m_Frame.FIN = WS_FIN;
+            m_Frame.Opcode = WS_OPCODE_PONG;
+            m_Frame.Mask = 0;
+            SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::Encode(CMemoryStream *Stream) {
+        void CWebSocket::Encode(CMemoryStream &Stream) {
             unsigned char ch;
-            m_pPayload->Position(0);
-            for (size_t i = 0; i < m_pPayload->Size(); i++) {
-                m_pPayload->Read(&ch, 1);
+            m_Payload.Position(0);
+            for (size_t i = 0; i < m_Payload.Size(); i++) {
+                m_Payload.Read(&ch, 1);
                 ch = ch ^ m_Frame.MaskingKey[i % 4];
-                Stream->Write(&ch, 1);
+                Stream.Write(&ch, 1);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::Decode(CMemoryStream *Stream) {
+        void CWebSocket::Decode(CMemoryStream &Stream) {
             unsigned char ch;
             size_t size = 0;
 
-            m_pPayload->Position(m_Size);
+            const auto payloadSize = m_Payload.Size() - m_Payload.Position();
+            const auto streamSize = Stream.Size() - Stream.Position();
 
-            if (m_pPayload->Size() > Stream->Size()) {
-                size = Stream->Size() - Stream->Position();
+            if (payloadSize > streamSize) {
+                size = streamSize;
             } else {
-                size = m_pPayload->Size() - m_pPayload->Position();
+                size = payloadSize;
             }
 
             for (size_t i = 0; i < size; i++) {
-                Stream->Read(&ch, 1);
-                ch = ch ^ m_Frame.MaskingKey[(m_pPayload->Position()) % 4];
-                m_pPayload->Write(&ch, 1);
-                m_Size++;
+                Stream.Read(&ch, 1);
+                ch = ch ^ m_Frame.MaskingKey[m_MaskingIndex % 4];
+                m_Payload.Write(&ch, 1);
+                m_MaskingIndex++;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::PayloadFromStream(CMemoryStream *Stream) {
+        void CWebSocket::PayloadFromStream(CMemoryStream &Stream) {
             if (m_Frame.Mask == WS_MASK) {
                 Decode(Stream);
             } else {
                 size_t size = 0;
 
-                m_pPayload->Position(m_Size);
+                const auto payloadSize = m_Payload.Size() - m_Payload.Position();
+                const auto streamSize = Stream.Size() - Stream.Position();
 
-                if (m_pPayload->Size() > Stream->Size()) {
-                    size = Stream->Size() - Stream->Position();
+                if (payloadSize > streamSize) {
+                    size = streamSize;
                 } else {
-                    size = m_pPayload->Size() - m_pPayload->Position();
+                    size = payloadSize;
                 }
 
                 if (size != 0) {
-                    const auto pos = m_Size;
-                    m_Size += size;
-                    if (m_Size > m_pPayload->Size())
-                        m_pPayload->Size(m_Size);
-                    const auto count = Stream->Read(Pointer((size_t) m_pPayload->Memory() + pos), size);
-                    m_pPayload->Position(pos + count);
+                    const auto pos = m_Payload.Position();
+                    const auto count = Stream.Read(Pointer((size_t) m_Payload.Memory() + pos), size);
+                    m_Payload.Position(pos + count);
                 }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::PayloadToStream(CMemoryStream *Stream) {
-            const unsigned char octet = m_Frame.Mask | m_Frame.Length;
-            Stream->Write(&octet, sizeof(octet));
+        void CWebSocket::PayloadToStream(CMemoryStream &Stream) {
 
             union {
                 uint16_t val;
@@ -602,36 +581,40 @@ namespace Delphi {
             } len64 = {0};
 
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                len16.val = be16toh(m_pPayload->Size());
-                Stream->Write(len16.arr, sizeof(len16));
+                len16.val = be16toh(m_Payload.Size());
+                Stream.Write(len16.arr, sizeof(len16));
             } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
-                len64.val = be64toh(m_pPayload->Size());
-                Stream->Write(len64.arr, sizeof(len64));
+                len64.val = be64toh(m_Payload.Size());
+                Stream.Write(len64.arr, sizeof(len64));
             }
 
             if (m_Frame.Mask == WS_MASK) {
-                Stream->Write(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+                Stream.Write(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
                 Encode(Stream);
             } else {
-                m_pPayload->SaveToStream(Stream);
+                m_Payload.Position(0);
+                m_Payload.SaveToStream(Stream);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::SaveToStream(CMemoryStream *Stream) {
-            const unsigned char octet = m_Frame.FIN | m_Frame.Opcode;
-            Stream->Write(&octet, sizeof(octet));
+        void CWebSocket::SaveToStream(CMemoryStream &Stream) {
+            unsigned char frame[2];
+
+            frame[0] = m_Frame.FIN | m_Frame.Opcode;
+            frame[1] = m_Frame.Mask | m_Frame.Length;
+
+            Stream.Write(&frame, sizeof(frame));
+
             if (m_Frame.Length > 0) {
                 PayloadToStream(Stream);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::LoadFromStream(CMemoryStream *Stream) {
-            if (Stream->Size() < 2)
+        void CWebSocket::LoadFromStream(CMemoryStream &Stream) {
+            if (Stream.Size() < 2)
                 return;
-
-            Clear();
 
             union {
                 uint16_t val;
@@ -646,7 +629,7 @@ namespace Delphi {
             uint64_t size = 0;
 
             unsigned char frame[2] = {0, 0};
-            Stream->Read(frame, sizeof(frame));
+            Stream.Read(frame, sizeof(frame));
 
             m_Frame.FIN = frame[0] & WS_FIN;
             m_Frame.Opcode = frame[0] & 0x0Fu;
@@ -655,38 +638,45 @@ namespace Delphi {
             m_Frame.Length = frame[1] & 0x7Fu;
 
             if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                Stream->Read(len16.arr, sizeof(len16));
+                Stream.Read(len16.arr, sizeof(len16));
                 size = htobe16(len16.val);
             } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
-                Stream->Read(len64.arr, sizeof(len64));
+                Stream.Read(len64.arr, sizeof(len64));
                 size = htobe64(len64.val);
             } else {
                 size = m_Frame.Length;
             }
 
             if (m_Frame.Mask == WS_MASK) {
-                Stream->Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+                Stream.Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
             }
 
-            m_pPayload->SetSize(size);
-            SecureZeroMemory(m_pPayload->Memory(), size);
+            if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
+                Clear();
+
+            const auto payloadSize = m_Payload.Size();
+
+            m_Payload.SetSize((ssize_t) (payloadSize + size));
+            SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
+
+            m_MaskingIndex = 0;
             PayloadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::SetPayload(CMemoryStream *Stream) {
+        void CWebSocket::SetPayload(CMemoryStream &Stream) {
             m_Frame.FIN = WS_FIN;
             m_Frame.Opcode = WS_OPCODE_BINARY;
 
-            if (Stream->Size() < WS_PAYLOAD_LENGTH_16) {
-                m_Frame.Length = Stream->Size();
-            } else if (Stream->Size() <= 0xFFFF) {
+            if (Stream.Size() < WS_PAYLOAD_LENGTH_16) {
+                m_Frame.Length = Stream.Size();
+            } else if (Stream.Size() <= 0xFFFF) {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_16;
             } else {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
-            m_pPayload->LoadFromStream(Stream);
+            m_Payload.LoadFromStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -702,10 +692,10 @@ namespace Delphi {
                 m_Frame.Length = WS_PAYLOAD_LENGTH_64;
             }
 
-            m_pPayload->Position(0);
-            m_pPayload->SetSize(String.Size());
+            m_Payload.Position(0);
+            m_Payload.SetSize((ssize_t) String.Size());
 
-            String.SaveToStream(m_pPayload);
+            String.SaveToStream(m_Payload);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -718,124 +708,124 @@ namespace Delphi {
             size_t ContentLength = 0;
 
             const auto BufferSize = Context.End - Context.Begin;
-            char AInput = *Context.Begin++;
+            const auto ch = (TCHAR) *Context.Begin++;
 
             switch (Context.State) {
                 case Request::method_start:
-                    if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
                         Context.State = Request::method;
-                        ARequest->Method.Append(AInput);
+                        ARequest->Method.Append(ch);
                         return -1;
                     }
                 case Request::method:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Request::uri;
                         return -1;
-                    } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    } else if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
-                        ARequest->Method.Append(AInput);
+                        ARequest->Method.Append(ch);
                         return -1;
                     }
                 case Request::uri_start:
-                    if (IsCtl(AInput)) {
+                    if (IsCtl(ch)) {
                         return 0;
                     } else {
                         Context.State = Request::uri;
-                        ARequest->URI.Append(AInput);
+                        ARequest->URI.Append(ch);
                         return -1;
                     }
                 case Request::uri:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Request::http_version_h;
                         return -1;
-                    } else if (AInput == '?') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '?') {
+                        ARequest->URI.Append(ch);
                         Context.State = Request::uri_param_start;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->URI.Append(AInput);
+                        ARequest->URI.Append(ch);
                         return -1;
                     }
                 case Request::uri_param_start:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Request::http_version_h;
                         return -1;
-                    } else if (AInput == '&') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '&') {
+                        ARequest->URI.Append(ch);
                         Context.State = Request::uri_param_start;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->URI.Append(AInput);
-                        ARequest->Params.Add(AInput);
+                        ARequest->URI.Append(ch);
+                        ARequest->Params.Add(ch);
                         Context.State = Request::uri_param;
                         return -1;
                     }
                 case Request::uri_param:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Request::http_version_h;
                         return -1;
-                    } else if (AInput == '&') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '&') {
+                        ARequest->URI.Append(ch);
                         Context.State = Request::uri_param_start;
                         return -1;
-                    } else if (AInput == '#') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '#') {
+                        ARequest->URI.Append(ch);
                         Context.State = Request::uri;
                         return -1;
-                    } else if (AInput == '%') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '%') {
+                        ARequest->URI.Append(ch);
                         Context.MimeIndex = 0;
                         ::SecureZeroMemory(Context.MIME, sizeof(Context.MIME));
                         Context.State = Request::uri_param_mime;
                         return -1;
-                    } else if (AInput == '+') {
-                        ARequest->URI.Append(AInput);
+                    } else if (ch == '+') {
+                        ARequest->URI.Append(ch);
                         ARequest->Params.back().Append(' ');
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->URI.Append(AInput);
-                        ARequest->Params.back().Append(AInput);
+                        ARequest->URI.Append(ch);
+                        ARequest->Params.back().Append(ch);
                         return -1;
                     }
                 case Request::http_version_h:
-                    if (AInput == 'H') {
+                    if (ch == 'H') {
                         Context.State = Request::http_version_t_1;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_t_1:
-                    if (AInput == 'T') {
+                    if (ch == 'T') {
                         Context.State = Request::http_version_t_2;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_t_2:
-                    if (AInput == 'T') {
+                    if (ch == 'T') {
                         Context.State = Request::http_version_p;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_p:
-                    if (AInput == 'P') {
+                    if (ch == 'P') {
                         Context.State = Request::http_version_slash;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_slash:
-                    if (AInput == '/') {
+                    if (ch == '/') {
                         ARequest->VMajor = 0;
                         ARequest->VMinor = 0;
                         Context.State = Request::http_version_major_start;
@@ -844,138 +834,138 @@ namespace Delphi {
                         return 0;
                     }
                 case Request::http_version_major_start:
-                    if (IsDigit(AInput)) {
-                        ARequest->VMajor = ARequest->VMajor * 10 + AInput - '0';
+                    if (IsDigit(ch)) {
+                        ARequest->VMajor = ARequest->VMajor * 10 + ch - '0';
                         Context.State = Request::http_version_major;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_major:
-                    if (AInput == '.') {
+                    if (ch == '.') {
                         Context.State = Request::http_version_minor_start;
                         return -1;
-                    } else if (IsDigit(AInput)) {
-                        ARequest->VMajor = ARequest->VMajor * 10 + AInput - '0';
+                    } else if (IsDigit(ch)) {
+                        ARequest->VMajor = ARequest->VMajor * 10 + ch - '0';
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_minor_start:
-                    if (IsDigit(AInput)) {
-                        ARequest->VMinor = ARequest->VMinor * 10 + AInput - '0';
+                    if (IsDigit(ch)) {
+                        ARequest->VMinor = ARequest->VMinor * 10 + ch - '0';
                         Context.State = Request::http_version_minor;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::http_version_minor:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Request::expecting_newline_1;
                         return -1;
-                    } else if (IsDigit(AInput)) {
-                        ARequest->VMinor = ARequest->VMinor * 10 + AInput - '0';
+                    } else if (IsDigit(ch)) {
+                        ARequest->VMinor = ARequest->VMinor * 10 + ch - '0';
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::expecting_newline_1:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         Context.State = Request::header_line_start;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::header_line_start:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Request::expecting_newline_3;
                         return -1;
-                    } else if ((ARequest->Headers.Count() > 0) && (AInput == ' ' || AInput == '\t')) {
+                    } else if ((ARequest->Headers.Count() > 0) && (ch == ' ' || ch == '\t')) {
                         Context.State = Request::header_lws;
                         return -1;
-                    } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    } else if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
                         ARequest->Headers.Add(CHeader());
-                        ARequest->Headers.Last().Name().Append(AInput);
+                        ARequest->Headers.Last().Name().Append(ch);
 
                         Context.State = Request::header_name;
                         return -1;
                     }
                 case Request::header_lws:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Request::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ' ' || AInput == '\t') {
+                    } else if (ch == ' ' || ch == '\t') {
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value().Append(AInput);
+                        ARequest->Headers.Last().Value().Append(ch);
                         Context.State = Request::header_value;
                         return -1;
                     }
                 case Request::header_name:
-                    if (AInput == ':') {
+                    if (ch == ':') {
                         Context.State = Request::space_before_header_value;
                         return -1;
-                    } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    } else if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Name().Append(AInput);
+                        ARequest->Headers.Last().Name().Append(ch);
                         return -1;
                     }
                 case Request::space_before_header_value:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Request::header_value;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Request::header_value:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Request::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ';') {
-                        ARequest->Headers.Last().Value().Append(AInput);
+                    } else if (ch == ';') {
+                        ARequest->Headers.Last().Value().Append(ch);
                         Context.State = Request::header_value_options_start;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value().Append(AInput);
+                        ARequest->Headers.Last().Value().Append(ch);
                         return -1;
                     }
                 case Request::header_value_options_start:
-                    if ((AInput == ' ' || AInput == '\t')) {
+                    if ((ch == ' ' || ch == '\t')) {
                         Context.State = Request::header_value_options_start;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value().Append(AInput);
-                        ARequest->Headers.Last().Data().Add(AInput);
+                        ARequest->Headers.Last().Value().Append(ch);
+                        ARequest->Headers.Last().Data().Add(ch);
 
                         Context.State = Request::header_value_options;
                         return -1;
                     }
                 case Request::header_value_options:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Request::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ';') {
-                        ARequest->Headers.Last().Value().Append(AInput);
+                    } else if (ch == ';') {
+                        ARequest->Headers.Last().Value().Append(ch);
                         Context.State = Request::header_value_options_start;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->Headers.Last().Value().Append(AInput);
-                        ARequest->Headers.Last().Data().back().Append(AInput);
+                        ARequest->Headers.Last().Value().Append(ch);
+                        ARequest->Headers.Last().Data().back().Append(ch);
                         return -1;
                     }
                 case Request::expecting_newline_2:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         Context.State = Request::header_line_start;
                         return -1;
                     }
@@ -983,7 +973,7 @@ namespace Delphi {
                     return 0;
 
                 case Request::expecting_newline_3:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         ARequest->ContentLength = 0;
                         Context.ContentLength = BufferSize - 1;
 
@@ -1031,37 +1021,37 @@ namespace Delphi {
                     return Context.ContentLength == 0 ? 1 : -1;
 
                 case Request::form_data_start:
-                    ARequest->Content.Append(AInput);
+                    ARequest->Content.Append(ch);
 
-                    if (IsCtl(AInput)) {
+                    if (IsCtl(ch)) {
                         return 0;
                     } else {
                         Context.State = Request::form_data;
-                        ARequest->FormData.Add(AInput);
+                        ARequest->FormData.Add(ch);
                         return -1;
                     }
                 case Request::form_data:
-                    ARequest->Content.Append(AInput);
+                    ARequest->Content.Append(ch);
 
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         return 1;
-                    } else if (AInput == '\r') {
+                    } else if (ch == '\r') {
                         return -1;
-                    } else if (AInput == '&') {
+                    } else if (ch == '&') {
                         Context.State = Request::form_data_start;
                         return -1;
-                    } else if (AInput == '+') {
+                    } else if (ch == '+') {
                         ARequest->FormData.back().Append(' ');
                         return -1;
-                    } else if (AInput == '%') {
+                    } else if (ch == '%') {
                         Context.MimeIndex = 0;
                         ::SecureZeroMemory(Context.MIME, sizeof(Context.MIME));
                         Context.State = Request::form_mime;
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        ARequest->FormData.back().Append(AInput);
+                        ARequest->FormData.back().Append(ch);
 
                         if (ARequest->Content.Size() < ARequest->ContentLength) {
                             return -1;
@@ -1070,16 +1060,16 @@ namespace Delphi {
 
                     return 1;
                 case Request::uri_param_mime:
-                    ARequest->URI.Append(AInput);
-                    Context.MIME[Context.MimeIndex++] = AInput;
+                    ARequest->URI.Append(ch);
+                    Context.MIME[Context.MimeIndex++] = ch;
                     if (Context.MimeIndex == 2) {
                         ARequest->Params.back().Append((TCHAR) HexToDec(Context.MIME));
                         Context.State = Request::uri_param;
                     }
                     return -1;
                 case Request::form_mime:
-                    ARequest->Content.Append(AInput);
-                    Context.MIME[Context.MimeIndex++] = AInput;
+                    ARequest->Content.Append(ch);
+                    Context.MIME[Context.MimeIndex++] = ch;
                     if (Context.MimeIndex == 2) {
                         ARequest->FormData.back().Append((TCHAR) HexToDec(Context.MIME));
                         Context.State = Request::form_data;
@@ -1143,7 +1133,7 @@ namespace Delphi {
                 CHTTPRequest Request;
 
                 for (int I = 0; I < Data.Count(); I++) {
-                    CHTTPContext Context = CHTTPContext(Data[I].Data(), Data[I].Size());
+                    CHTTPContext Context = CHTTPContext((LPCBYTE) Data[I].Data(), Data[I].Size());
                     Context.State = Request::CParserState::header_line_start;
                     const int Result = Parse(&Request, Context);
                     if (Result == 1) {
@@ -1218,11 +1208,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream *AStream) {
-            if (ARequest->Size() == ARequest->Payload()->Size()) {
-                ARequest->LoadFromStream(AStream);
+        void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream &Stream) {
+            if (ARequest->Payload().Position() == ARequest->Payload().Size()) {
+                ARequest->LoadFromStream(Stream);
             } else {
-                ARequest->PayloadFromStream(AStream);
+                ARequest->PayloadFromStream(Stream);
             }
         }
 
@@ -1281,52 +1271,52 @@ namespace Delphi {
             const TCHAR service_unavailable[] = _T("Service Unavailable");
             const TCHAR gateway_timeout[] = _T("Gateway Timeout");
 
-            size_t ToBuffer(CHTTPReply::CStatusType AStatus, CStream *AStream) {
+            size_t ToBuffer(CHTTPReply::CStatusType AStatus, CStream &Stream) {
                 switch (AStatus) {
                     case CHTTPReply::switching_protocols:
-                        return StringArrayToStream(AStream, switching_protocols);
+                        return StringArrayToStream(Stream, switching_protocols);
                     case CHTTPReply::ok:
-                        return StringArrayToStream(AStream, ok);
+                        return StringArrayToStream(Stream, ok);
                     case CHTTPReply::created:
-                        return StringArrayToStream(AStream, created);
+                        return StringArrayToStream(Stream, created);
                     case CHTTPReply::accepted:
-                        return StringArrayToStream(AStream, accepted);
+                        return StringArrayToStream(Stream, accepted);
                     case CHTTPReply::non_authoritative:
-                        return StringArrayToStream(AStream, non_authoritative);
+                        return StringArrayToStream(Stream, non_authoritative);
                     case CHTTPReply::no_content:
-                        return StringArrayToStream(AStream, no_content);
+                        return StringArrayToStream(Stream, no_content);
                     case CHTTPReply::multiple_choices:
-                        return StringArrayToStream(AStream, multiple_choices);
+                        return StringArrayToStream(Stream, multiple_choices);
                     case CHTTPReply::moved_permanently:
-                        return StringArrayToStream(AStream, moved_permanently);
+                        return StringArrayToStream(Stream, moved_permanently);
                     case CHTTPReply::moved_temporarily:
-                        return StringArrayToStream(AStream, moved_temporarily);
+                        return StringArrayToStream(Stream, moved_temporarily);
                     case CHTTPReply::see_other:
-                        return StringArrayToStream(AStream, see_other);
+                        return StringArrayToStream(Stream, see_other);
                     case CHTTPReply::not_modified:
-                        return StringArrayToStream(AStream, not_modified);
+                        return StringArrayToStream(Stream, not_modified);
                     case CHTTPReply::bad_request:
-                        return StringArrayToStream(AStream, bad_request);
+                        return StringArrayToStream(Stream, bad_request);
                     case CHTTPReply::unauthorized:
-                        return StringArrayToStream(AStream, unauthorized);
+                        return StringArrayToStream(Stream, unauthorized);
                     case CHTTPReply::forbidden:
-                        return StringArrayToStream(AStream, forbidden);
+                        return StringArrayToStream(Stream, forbidden);
                     case CHTTPReply::not_found:
-                        return StringArrayToStream(AStream, not_found);
+                        return StringArrayToStream(Stream, not_found);
                     case CHTTPReply::not_allowed:
-                        return StringArrayToStream(AStream, not_allowed);
+                        return StringArrayToStream(Stream, not_allowed);
                     case CHTTPReply::internal_server_error:
-                        return StringArrayToStream(AStream, internal_server_error);
+                        return StringArrayToStream(Stream, internal_server_error);
                     case CHTTPReply::not_implemented:
-                        return StringArrayToStream(AStream, not_implemented);
+                        return StringArrayToStream(Stream, not_implemented);
                     case CHTTPReply::bad_gateway:
-                        return StringArrayToStream(AStream, bad_gateway);
+                        return StringArrayToStream(Stream, bad_gateway);
                     case CHTTPReply::service_unavailable:
-                        return StringArrayToStream(AStream, service_unavailable);
+                        return StringArrayToStream(Stream, service_unavailable);
                     case CHTTPReply::gateway_timeout:
-                        return StringArrayToStream(AStream, gateway_timeout);
+                        return StringArrayToStream(Stream, gateway_timeout);
                     default:
-                        return StringArrayToStream(AStream, internal_server_error);
+                        return StringArrayToStream(Stream, internal_server_error);
                 }
             }
 
@@ -1403,27 +1393,27 @@ namespace Delphi {
         } // namespace StatusStrings
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPReply::ToBuffers(CMemoryStream *AStream) {
+        void CHTTPReply::ToBuffers(CMemoryStream &Stream) {
 
             StatusString = Status;
             StatusStrings::ToString(Status, StatusText);
 
             CString HTTP;
             HTTP.Format("HTTP/%d.%d %d %s", VMajor, VMinor, Status, StatusText.c_str());
-            HTTP.SaveToStream(AStream);
+            HTTP.SaveToStream(Stream);
 
-            StringArrayToStream(AStream, MiscStrings::crlf);
+            StringArrayToStream(Stream, MiscStrings::crlf);
 
             for (int i = 0; i < Headers.Count(); ++i) {
                 const auto &H = Headers[i];
-                H.Name().SaveToStream(AStream);
-                StringArrayToStream(AStream, MiscStrings::separator);
-                H.Value().SaveToStream(AStream);
-                StringArrayToStream(AStream, MiscStrings::crlf);
+                H.Name().SaveToStream(Stream);
+                StringArrayToStream(Stream, MiscStrings::separator);
+                H.Value().SaveToStream(Stream);
+                StringArrayToStream(Stream, MiscStrings::crlf);
             }
 
-            StringArrayToStream(AStream, MiscStrings::crlf);
-            Content.SaveToStream(AStream);
+            StringArrayToStream(Stream, MiscStrings::crlf);
+            Content.SaveToStream(Stream);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1778,40 +1768,40 @@ namespace Delphi {
             size_t ContentLength = 0;
             size_t ChunkedLength = 0;
 
-            const auto BufferSize = Context.End - Context.Begin;
-            const auto AInput = *Context.Begin++;
+            const auto bufferSize = Context.End - Context.Begin;
+            const auto ch = (TCHAR) *Context.Begin++;
 
             switch (Context.State) {
                 case Reply::http_version_h:
-                    if (AInput == 'H') {
+                    if (ch == 'H') {
                         Context.State = Reply::http_version_t_1;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_t_1:
-                    if (AInput == 'T') {
+                    if (ch == 'T') {
                         Context.State = Reply::http_version_t_2;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_t_2:
-                    if (AInput == 'T') {
+                    if (ch == 'T') {
                         Context.State = Reply::http_version_p;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_p:
-                    if (AInput == 'P') {
+                    if (ch == 'P') {
                         Context.State = Reply::http_version_slash;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_slash:
-                    if (AInput == '/') {
+                    if (ch == '/') {
                         AReply->VMajor = 0;
                         AReply->VMinor = 0;
                         Context.State = Reply::http_version_major_start;
@@ -1820,177 +1810,177 @@ namespace Delphi {
                         return 0;
                     }
                 case Reply::http_version_major_start:
-                    if (IsDigit(AInput)) {
-                        AReply->VMajor = AReply->VMajor * 10 + AInput - '0';
+                    if (IsDigit(ch)) {
+                        AReply->VMajor = AReply->VMajor * 10 + ch - '0';
                         Context.State = Reply::http_version_major;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_major:
-                    if (AInput == '.') {
+                    if (ch == '.') {
                         Context.State = Reply::http_version_minor_start;
                         return -1;
-                    } else if (IsDigit(AInput)) {
-                        AReply->VMajor = AReply->VMajor * 10 + AInput - '0';
+                    } else if (IsDigit(ch)) {
+                        AReply->VMajor = AReply->VMajor * 10 + ch - '0';
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_minor_start:
-                    if (IsDigit(AInput)) {
-                        AReply->VMinor = AReply->VMinor * 10 + AInput - '0';
+                    if (IsDigit(ch)) {
+                        AReply->VMinor = AReply->VMinor * 10 + ch - '0';
                         Context.State = Reply::http_version_minor;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_version_minor:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Reply::http_status_start;
                         return -1;
-                    } else if (IsDigit(AInput)) {
-                        AReply->VMinor = AReply->VMinor * 10 + AInput - '0';
+                    } else if (IsDigit(ch)) {
+                        AReply->VMinor = AReply->VMinor * 10 + ch - '0';
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_status_start:
-                    if (IsDigit(AInput)) {
-                        AReply->StatusString.Append(AInput);
+                    if (IsDigit(ch)) {
+                        AReply->StatusString.Append(ch);
                         Context.State = Reply::http_status;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_status:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         AReply->StringToStatus();
                         Context.State = Reply::http_status_text_start;
                         return -1;
-                    } else if (IsDigit(AInput)) {
-                        AReply->StatusString.Append(AInput);
+                    } else if (IsDigit(ch)) {
+                        AReply->StatusString.Append(ch);
                         Context.State = Reply::http_status;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_status_text_start:
-                    if (IsChar(AInput)) {
-                        AReply->StatusText.Append(AInput);
+                    if (IsChar(ch)) {
+                        AReply->StatusText.Append(ch);
                         Context.State = Reply::http_status_text;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::http_status_text:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Reply::expecting_newline_1;
                         return -1;
-                    } else if (IsChar(AInput)) {
-                        AReply->StatusText.Append(AInput);
+                    } else if (IsChar(ch)) {
+                        AReply->StatusText.Append(ch);
                         Context.State = Reply::http_status_text;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::expecting_newline_1:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         Context.State = Reply::header_line_start;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::header_line_start:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Reply::expecting_newline_3;
                         return -1;
-                    } else if ((AReply->Headers.Count() > 0) && (AInput == ' ' || AInput == '\t')) {
+                    } else if ((AReply->Headers.Count() > 0) && (ch == ' ' || ch == '\t')) {
                         Context.State = Reply::header_lws;
                         return -1;
-                    } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    } else if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
                         AReply->Headers.Add(CHeader());
-                        AReply->Headers.Last().Name().Append(AInput);
+                        AReply->Headers.Last().Name().Append(ch);
 
                         Context.State = Reply::header_name;
                         return -1;
                     }
                 case Reply::header_lws:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Reply::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ' ' || AInput == '\t') {
+                    } else if (ch == ' ' || ch == '\t') {
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
                         Context.State = Reply::header_value;
-                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
                         return -1;
                     }
                 case Reply::header_name:
-                    if (AInput == ':') {
+                    if (ch == ':') {
                         Context.State = Reply::space_before_header_value;
                         return -1;
-                    } else if (!IsChar(AInput) || IsCtl(AInput) || IsTSpecial(AInput)) {
+                    } else if (!IsChar(ch) || IsCtl(ch) || IsTSpecial(ch)) {
                         return 0;
                     } else {
-                        AReply->Headers.Last().Name().Append(AInput);
+                        AReply->Headers.Last().Name().Append(ch);
                         return -1;
                     }
                 case Reply::space_before_header_value:
-                    if (AInput == ' ') {
+                    if (ch == ' ') {
                         Context.State = Reply::header_value;
                         return -1;
                     } else {
                         return 0;
                     }
                 case Reply::header_value:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Reply::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ';') {
+                    } else if (ch == ';') {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
                         return -1;
                     }
                 case Reply::header_value_options_start:
-                    if ((AInput == ' ' || AInput == '\t')) {
+                    if ((ch == ' ' || ch == '\t')) {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
                         Context.State = Reply::header_value_options;
-                        AReply->Headers.Last().Value().Append(AInput);
-                        AReply->Headers.Last().Data().Add(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
+                        AReply->Headers.Last().Data().Add(ch);
                         return -1;
                     }
                 case Reply::header_value_options:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.State = Reply::expecting_newline_2;
                         return -1;
-                    } else if (AInput == ';') {
+                    } else if (ch == ';') {
                         Context.State = Reply::header_value_options_start;
-                        AReply->Headers.Last().Value().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
                         return -1;
-                    } else if (IsCtl(AInput)) {
+                    } else if (IsCtl(ch)) {
                         return 0;
                     } else {
-                        AReply->Headers.Last().Value().Append(AInput);
-                        AReply->Headers.Last().Data().back().Append(AInput);
+                        AReply->Headers.Last().Value().Append(ch);
+                        AReply->Headers.Last().Data().back().Append(ch);
                         return -1;
                     }
                 case Reply::expecting_newline_2:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         Context.State = Reply::header_line_start;
                         return -1;
                     }
@@ -1998,9 +1988,9 @@ namespace Delphi {
                     return 0;
 
                 case Reply::expecting_newline_3:
-                    if (AInput == '\n') {
+                    if (ch == '\n') {
                         AReply->ContentLength = 0;
-                        Context.ContentLength = BufferSize - 1;
+                        Context.ContentLength = bufferSize - 1;
 
                         if (AReply->Headers.Count() > 0) {
                             const auto& contentLength = AReply->Headers[_T("Content-Length")];
@@ -2028,7 +2018,7 @@ namespace Delphi {
                     if (Context.ContentLength == 0)
                         return 1;
 
-                    ContentLength = Context.ContentLength > BufferSize ? BufferSize : Context.ContentLength;
+                    ContentLength = Context.ContentLength > bufferSize ? bufferSize : Context.ContentLength;
 
                     AReply->Content.Append((LPCSTR) Context.Begin - 1, ContentLength);
                     AReply->ContentLength += ContentLength;
@@ -2039,15 +2029,15 @@ namespace Delphi {
                     return Context.ContentLength == 0 ? 1 : -1;
 
                 case Reply::content_checking_length:
-                    if (IsHex(AInput)) {
-                        Context.Chunked.Append(AInput);
+                    if (IsHex(ch)) {
+                        Context.Chunked.Append(ch);
                         return -1;
-                    } else if (AInput == '\r') {
+                    } else if (ch == '\r') {
                         if (Context.Chunked.IsEmpty())
                             return 0;
                         Context.ChunkedLength = StrToInt(Context.Chunked.c_str(), 16);
                         return -1;
-                    } else if (AInput == '\n') {
+                    } else if (ch == '\n') {
                         Context.State = Reply::content_checking_data;
                         return -1;
                     }
@@ -2055,11 +2045,11 @@ namespace Delphi {
                     return 0;
 
                 case Reply::content_checking_newline:
-                    if (AInput == '\r') {
+                    if (ch == '\r') {
                         Context.Chunked.Clear();
                         Context.ChunkedLength = 0;
                         return -1;
-                    } else if (AInput == '\n') {
+                    } else if (ch == '\n') {
                         Context.State = Reply::content_checking_length;
                         return -1;
                     }
@@ -2070,11 +2060,11 @@ namespace Delphi {
                     if (Context.ChunkedLength == 0)
                         return 1;
 
-                    if (BufferSize > Context.ChunkedLength) {
+                    if (bufferSize > Context.ChunkedLength) {
                         ChunkedLength = Context.ChunkedLength;
                         Context.State = Reply::content_checking_newline;
                     } else {
-                        ChunkedLength = BufferSize;
+                        ChunkedLength = bufferSize;
                         Context.State = Reply::content_checking_data;
                     }
 
@@ -2213,12 +2203,12 @@ namespace Delphi {
             FreeAndNil(m_Request);
             FreeAndNil(m_Reply);
             FreeAndNil(m_WSRequest);
-            FreeAndNil(m_WSReply);
+            FreeAndNil(m_WSReply)
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::ParseHTTP(CMemoryStream *Stream) {
-            CHTTPContext Context = CHTTPContext((LPCTSTR) Stream->Memory(), Stream->Size(), m_State, m_ContentLength);
+        void CHTTPServerConnection::ParseHTTP(CMemoryStream &Stream) {
+            CHTTPContext Context = CHTTPContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
             const int ParseResult = CHTTPRequestParser::Parse(GetRequest(), Context);
 
             switch (ParseResult) {
@@ -2246,11 +2236,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::ParseWebSocket(CMemoryStream *Stream) {
-
+        void CHTTPServerConnection::ParseWebSocket(CMemoryStream &Stream) {
+#ifdef _DEBUG
+            CString Hex;
+            Hex.SetLength(Stream.Size() * 3 + 1);
+            ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Stream.Memory(), Stream.Size(), 32);
+            DebugMessage("\nRAW %d: %s\n", Stream.Size(), Hex.c_str());
+#endif
             auto pWSRequest = GetWSRequest();
 
-            while (Stream->Position() < Stream->Size()) {
+            while (Stream.Position() < Stream.Size()) {
 
                 CWebSocketParser::Parse(pWSRequest, Stream);
 
@@ -2259,31 +2254,35 @@ namespace Delphi {
                     case WS_OPCODE_TEXT:
                     case WS_OPCODE_BINARY:
 
-                        if (pWSRequest->Size() < pWSRequest->Payload()->Size()) {
+                        if (pWSRequest->Frame().FIN == 0 || (pWSRequest->Payload().Position() < pWSRequest->Payload().Size())) {
                             m_ConnectionStatus = csWaitRequest;
                             DoWaitRequest();
                         } else {
                             m_ConnectionStatus = csRequestOk;
-                            DoRequest();
+                            //DoRequest();
                         }
 
                         break;
 
                     case WS_OPCODE_CLOSE:
                         m_CloseConnection = true;
+                        DoRequest();
                         SendWebSocketClose();
                         break;
 
                     case WS_OPCODE_PING:
+                        DoRequest();
                         SendWebSocketPong();
                         break;
 
                     case WS_OPCODE_PONG:
+                        DoRequest();
                         m_ConnectionStatus = csRequestOk;
                         break;
 
                     default:
                         m_CloseConnection = true;
+                        DoRequest();
                         SendWebSocketClose();
                         break;
                 }
@@ -2301,10 +2300,10 @@ namespace Delphi {
                     InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
-                            ParseHTTP(&Stream);
+                            ParseHTTP(Stream);
                             break;
                         case pWebSocket:
-                            ParseWebSocket(&Stream);
+                            ParseWebSocket(Stream);
                             break;
                     }
                 }
@@ -2341,7 +2340,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendReply(bool ASendNow) {
 
-            GetReply()->ToBuffers(OutputBuffer());
+            GetReply()->ToBuffers(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2356,8 +2355,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SwitchingProtocols(const CString &Accept, const CString &Protocol) {
-
-            m_Protocol = pWebSocket;
 
             RecvBufferSize(256 * 1024);
 
@@ -2377,12 +2374,14 @@ namespace Delphi {
                 pReply->AddHeader("Sec-WebSocket-Protocol", Protocol);
 
             SendReply();
+
+            m_Protocol = pWebSocket;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendWebSocket(bool ASendNow) {
 
-            GetWSReply()->SaveToStream(OutputBuffer());
+            GetWSReply()->SaveToStream(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2398,7 +2397,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocketPing(bool ASendNow) {
 
-            GetWSReply()->Ping(OutputBuffer());
+            GetWSReply()->Ping(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2414,7 +2413,8 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocketPong(bool ASendNow) {
 
-            GetWSRequest()->Pong(OutputBuffer());
+            GetWSReply()->SetPayload(GetWSRequest()->Payload());
+            GetWSReply()->Pong(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2430,7 +2430,7 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendWebSocketClose(bool ASendNow) {
 
-            GetWSRequest()->Close(OutputBuffer());
+            GetWSReply()->Close(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2504,7 +2504,7 @@ namespace Delphi {
                 if (Result) {
                     InputBuffer()->Extract(Stream.Memory(), Stream.Size());
 
-                    CHTTPReplyContext Context = CHTTPReplyContext((LPCTSTR) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
+                    CHTTPReplyContext Context = CHTTPReplyContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
                     const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
 
                     switch (ParseResult) {
@@ -2558,7 +2558,7 @@ namespace Delphi {
 
         void CHTTPClientConnection::SendRequest(bool ASendNow) {
 
-            GetRequest()->ToBuffers(OutputBuffer());
+            GetRequest()->ToBuffers(*OutputBuffer());
 
             m_ConnectionStatus = csRequestReady;
 

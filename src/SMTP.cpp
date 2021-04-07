@@ -113,9 +113,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSMTPCommand::ToBuffers(CMemoryStream *AStream) const {
-            m_Data.SaveToStream(AStream);
-            AStream->Write(_T("\r\n"), 2);
+        void CSMTPCommand::ToBuffers(CMemoryStream &Stream) const {
+            m_Data.SaveToStream(Stream);
+            Stream.Write(_T("\r\n"), 2);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -281,7 +281,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CSMTPConnection::SendCommand() {
-            m_Command.ToBuffers(OutputBuffer());
+            m_Command.ToBuffers(*OutputBuffer());
             DoRequest();
             return WriteAsync();
         }

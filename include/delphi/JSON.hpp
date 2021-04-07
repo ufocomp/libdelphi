@@ -161,10 +161,10 @@ namespace Delphi {
             const CJSONObject &Object() const { return *(CJSONObject *) m_Value; }
 
             void LoadFromFile(LPCTSTR lpszFileName);
-            void LoadFromStream(CStream *Stream);
+            void LoadFromStream(CStream &Stream);
 
             void SaveToFile(LPCTSTR lpszFileName) const;
-            void SaveToStream(CStream *Stream) const;
+            void SaveToStream(CStream &Stream) const;
 
             CString ToString() const { return JsonToString(); };
             void ToJson(const CString &Value) { StringToJson(Value); };
