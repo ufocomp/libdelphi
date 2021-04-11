@@ -331,11 +331,6 @@ namespace Delphi {
             const CNotifyEvent &OnReply() { return m_OnReply; }
             void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
-            CSMTPConnection *Items(int Index) const override { return dynamic_cast<CSMTPConnection *>(GetItem(Index)); }
-            void Items(int Index, CSMTPConnection *Value) { SetItem(Index, Value); }
-
-            CSMTPConnection *operator[] (int Index) const override { return Items(Index); };
-
         };
 
         //--------------------------------------------------------------------------------------------------------------
