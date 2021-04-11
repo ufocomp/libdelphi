@@ -595,8 +595,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CMessage &CSMTPClient::NewMessage() {
-            m_Messages.Add(CMessage());
-            return m_Messages.Last();
+            const auto index = m_Messages.Add(CMessage());
+            return m_Messages[index];
         }
         //--------------------------------------------------------------------------------------------------------------
 
