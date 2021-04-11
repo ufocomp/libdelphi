@@ -255,8 +255,8 @@ namespace Delphi {
                 if (Result) {
                     InputBuffer()->Extract(LStream.Memory(), LStream.Size());
 
-                    CSMTPReplyParser LParser((LPCSTR) LStream.Memory(), (LPCSTR) LStream.Memory() + LStream.Size());
-                    const int ParseResult = LParser.Parse(m_Command);
+                    CSMTPReplyParser pParser((LPCSTR) LStream.Memory(), (LPCSTR) LStream.Memory() + LStream.Size());
+                    const int ParseResult = pParser.Parse(m_Command);
 
                     switch (ParseResult) {
                         case 0:

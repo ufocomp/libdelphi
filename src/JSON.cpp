@@ -329,14 +329,14 @@ namespace Delphi {
 
         void CJSON::StrToJson(LPCTSTR ABuffer, size_t ASize) {
 
-            CJSONParser LParser(this);
+            CJSONParser pParser(this);
             CJSONParserResult R;
 
             BeginUpdate();
             try {
                 if (Assigned(ABuffer)) {
                     Clear();
-                    R = LParser.Parse((LPTSTR) ABuffer, ABuffer + ASize);
+                    R = pParser.Parse((LPTSTR) ABuffer, ABuffer + ASize);
                     if (!R.result) {
                         throw Exception::EJSONParseSyntaxError(_T("JSON Parser syntax error in position %d, char: %#x"), R.pos, ABuffer[R.pos]);
                     }
