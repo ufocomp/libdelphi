@@ -2474,7 +2474,7 @@ namespace Delphi {
             m_State = Reply::http_version_h;
             m_ContentLength = 0;
             m_ChunkedLength = 0;
-            m_CloseConnection = false;
+            m_CloseConnection = true;
             m_ConnectionStatus = csConnected;
             m_Request = nullptr;
             m_Reply = nullptr;
