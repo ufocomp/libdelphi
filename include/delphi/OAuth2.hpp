@@ -55,8 +55,18 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        enum CKeyStatus { ksUnknown = -1, ksFetching, ksSuccess, ksFailed };
+
         struct CProvider {
         private:
+
+            CString m_Name;
+
+            CJSON m_Params;
+            CJSON m_Keys;
+
+            CDateTime m_KeyStatusTime;
+            CKeyStatus m_KeyStatus;
 
             void CheckApplication(const CString &Application) const {
                 if (Application.IsEmpty())
@@ -68,75 +78,94 @@ namespace Delphi {
 
         public:
 
-            CString Name;
+            CProvider(): m_KeyStatus(ksUnknown) {
+                m_KeyStatusTime = Now();
+            }
 
-            CJSON Params;
-            CJSON Keys;
-
-            CDateTime KeyStatusTime;
-
-            enum CKeyStatus {
-                ksUnknown = -1,
-                ksFetching,
-                ksSuccess,
-                ksFailed
-            } KeyStatus;
-
-            CProvider(): KeyStatus(ksUnknown) {
-                KeyStatusTime = Now();
+            explicit CProvider(const CString &ProviderName): CProvider() {
+              m_Name = ProviderName;
             }
 
             CProvider(const CProvider &Other): CProvider() {
                 if (this != &Other) {
-                    this->Name = Other.Name;
-                    this->Params = Other.Params;
-                    this->Keys = Other.Keys;
-                    this->KeyStatusTime = Other.KeyStatusTime;
-                    this->KeyStatus = Other.KeyStatus;
+                    this->m_Name = Other.m_Name;
+                    this->m_Params = Other.m_Params;
+                    this->m_Keys = Other.m_Keys;
+                    this->m_KeyStatusTime = Other.m_KeyStatusTime;
+                    this->m_KeyStatus = Other.m_KeyStatus;
                 }
             }
 
-            const CJSONObject &Applications() const {
-                return Params.Object();
+            CJSONObject &Applications() {
+                return m_Params.Object();
             }
 
+            const CJSONObject &Applications() const {
+                return m_Params.Object();
+            }
+
+            CJSON &Params() {
+                return m_Params;
+            }
+
+            const CJSON &Params() const {
+                return m_Params;
+            }
+
+            CJSON &Keys() {
+                return m_Keys;
+            }
+
+            const CJSON &Keys() const {
+                return m_Keys;
+            }
+
+            CDateTime KeyStatusTime() const { return m_KeyStatusTime; }
+            void KeyStatusTime(CDateTime Value) { m_KeyStatusTime = Value; }
+
+            CKeyStatus KeyStatus() const { return m_KeyStatus; }
+            void KeyStatus(CKeyStatus Value) { m_KeyStatus = Value; }
+
+            CString &Name() { return m_Name; };
+            const CString &Name() const { return m_Name; };
+
             bool ApplicationExists(const CString& Application) const {
-                return Params.HasOwnProperty(Application);
+                return m_Params.HasOwnProperty(Application);
             }
 
             void GetClients(CStringList &Clients) const {
                 const auto &apps = Applications();
                 for (int i = 0; i < apps.Count(); i++) {
-                    const auto& String = apps.Members(i).String();;
+                    const auto &String = apps.Members(i).String();;
                     Clients.AddPair(ClientId(String), String);
                 }
             }
 
             void GetScopes(const CString &Application, CStringList &Scopes) const {
-                const auto& Issuers = Applications()[Application]["scopes"];
-                if (Issuers.IsArray()) {
-                    for (int i = 0; i < Issuers.Count(); ++i) {
-                        Scopes.AddPair(Issuers[i].AsString(), Name);
+                const auto &scopes = Applications()[Application]["scopes"];
+                if (scopes.IsArray()) {
+                    for (int i = 0; i < scopes.Count(); ++i) {
+                        Scopes.AddPair(scopes[i].AsString(), m_Name);
                     }
                 }
 
-                if (Scopes.Count() == 0 && Name == "google") {
+                if (Scopes.Count() == 0 && m_Name == "google") {
                     Scopes.Add("api");
                     Scopes.Add("openid");
                 }
             }
 
             void GetIssuers(const CString &Application, CStringList &Issuers) const {
-                const auto& issuers = Applications()[Application]["issuers"];
+                const auto &issuers = Applications()[Application]["issuers"];
                 if (issuers.IsArray()) {
                     for (int i = 0; i < issuers.Count(); ++i) {
-                        Issuers.AddPair(issuers[i].AsString(), Name);
+                        Issuers.AddPair(issuers[i].AsString(), m_Name);
                     }
                 }
 
-                if (Issuers.Count() == 0 && Name == "google") {
-                    Issuers.AddPair("accounts.google.com", Name);
-                    Issuers.AddPair("https://accounts.google.com", Name);
+                if (Issuers.Count() == 0 && m_Name == "google") {
+                    Issuers.AddPair("accounts.google.com", m_Name);
+                    Issuers.AddPair("https://accounts.google.com", m_Name);
                 }
             }
 
@@ -147,34 +176,39 @@ namespace Delphi {
                 return Issuers.Names(Index);
             }
 
+            CString Type(const CString &Application) const {
+                CheckApplication(Application);
+                return Applications()[Application]["type"].AsString();
+            }
+
             CString Algorithm(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["algorithm"].AsString();
+                return Applications()[Application]["algorithm"].AsString();
             }
 
             CString ClientId(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["client_id"].AsString();
+                return Applications()[Application]["client_id"].AsString();
             }
 
             CString Secret(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["client_secret"].AsString();
+                return Applications()[Application]["client_secret"].AsString();
             }
 
             CString AuthURI(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["auth_uri"].AsString();
+                return Applications()[Application]["auth_uri"].AsString();
             }
 
             CString TokenURI(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["token_uri"].AsString();
+                return Applications()[Application]["token_uri"].AsString();
             }
 
             void RedirectURI(const CString &Application, CStringList &RedirectURIs) const {
                 CheckApplication(Application);
-                const auto& redirect_uris = Params[Application]["redirect_uris"];
+                const auto &redirect_uris = Applications()[Application]["redirect_uris"];
                 if (redirect_uris.IsArray()) {
                     for (int i = 0; i < redirect_uris.Count(); ++i) {
                         RedirectURIs.Add(redirect_uris[i].AsString());
@@ -184,7 +218,7 @@ namespace Delphi {
 
             void JavaScriptOrigins(const CString &Application, CStringList &JavascriptOrigins) const {
                 CheckApplication(Application);
-                const auto& javascript_origins = Params[Application]["javascript_origins"];
+                const auto &javascript_origins = Applications()[Application]["javascript_origins"];
                 if (javascript_origins.IsArray()) {
                     for (int i = 0; i < javascript_origins.Count(); ++i) {
                         JavascriptOrigins.Add(javascript_origins[i].AsString());
@@ -194,12 +228,12 @@ namespace Delphi {
 
             CString CertURI(const CString &Application) const {
                 CheckApplication(Application);
-                return Params[Application]["auth_provider_x509_cert_url"].AsString();
+                return Applications()[Application]["auth_provider_x509_cert_url"].AsString();
             }
 
             CString PublicKey(const CString &KeyId) const {
-                if (KeyStatus == ksSuccess)
-                    return Keys[KeyId].AsString();
+                if (m_KeyStatus == ksSuccess)
+                    return m_Keys[KeyId].AsString();
                 return CString();
             }
         };
@@ -270,7 +304,7 @@ namespace Delphi {
             inline CString GetSecret(const CProvider &Provider, const CString &Application) {
                 const auto &Secret = Provider.Secret(Application);
                 if (Secret.IsEmpty())
-                    throw COAuth2Error("Not found Secret for \"%s:%s\"", Provider.Name.c_str(), Application.c_str());
+                    throw COAuth2Error("Not found Secret for \"%s:%s\"", Provider.Name().c_str(), Application.c_str());
                 return Secret;
             };
         }
