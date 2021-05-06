@@ -327,15 +327,9 @@ namespace Delphi {
                 atClient
             } Type;
 
-            enum CTokenType {
-                attUnknown = -1,
-                attAccess,
-                attRefresh
-            } TokenType;
-
             CString Token;
 
-            CAuthorization(): Schema(asUnknown), Type(atUnknown), TokenType(attUnknown) {
+            CAuthorization(): Schema(asUnknown), Type(atUnknown) {
 
             }
 
@@ -354,7 +348,6 @@ namespace Delphi {
                 Username = Value.Username;
                 Password = Value.Password;
                 Type = Value.Type;
-                TokenType = Value.TokenType;
                 Token = Value.Token;
             }
 
@@ -363,7 +356,6 @@ namespace Delphi {
                 Username.Clear();
                 Password.Clear();
                 Type = atUnknown;
-                TokenType = attUnknown;
                 Token.Clear();
             }
 
@@ -375,19 +367,19 @@ namespace Delphi {
 
                     Schema = asBasic;
 
-                    const CString LPassphrase(base64_decode(String.SubString(6)));
+                    const CString Passphrase(base64_decode(String.SubString(6)));
 
-                    const size_t LPos = LPassphrase.Find(':');
-                    if (LPos == CString::npos)
+                    const size_t pos = Passphrase.Find(':');
+                    if (pos == CString::npos)
                         throw CAuthorizationError("Incorrect passphrase.");
 
                     Type = atOwner;
 
-                    Username = LPassphrase.SubString(0, LPos);
-                    Password = LPassphrase.SubString(LPos + 1);
+                    Username = Passphrase.SubString(0, pos);
+                    Password = Passphrase.SubString(pos + 1);
 
-                    if (Username.IsEmpty() || Password.IsEmpty())
-                        throw CAuthorizationError("Username and password has not be empty.");
+                    if (Username.IsEmpty())
+                        throw CAuthorizationError("Username has not be empty.");
 
                 } else if (String.SubString(0, 6).Lower() == "bearer") {
 
