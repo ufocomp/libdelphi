@@ -3410,7 +3410,7 @@ namespace Delphi {
 
         CEPollTimer::~CEPollTimer() {
             ClosePoll();
-            Close();
+            CEPollTimer::Close();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3952,8 +3952,8 @@ namespace Delphi {
 
                     CMemoryStream Stream;
 
-                    Stream.    SetSize(MaxLineLengthDefault);
-                    Stream.SetSize(AConnection->ReadLn((char *) Stream.Memory()));
+                    Stream.SetSize(MaxLineLengthDefault);
+                    Stream.SetSize((ssize_t) AConnection->ReadLn((char *) Stream.Memory()));
 
                     if (Stream.Size() > 0 && Stream.Size() < MaxLineLengthDefault) {
                         DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());

@@ -161,7 +161,7 @@ namespace Delphi {
                 Assign(Value);
             }
 
-            TPairs(TPairs &&Value) {
+            TPairs(TPairs &&Value) noexcept {
                 Assign(Value);
             }
 
