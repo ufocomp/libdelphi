@@ -1842,7 +1842,7 @@ namespace Delphi {
                     return false;
                 case string:
                     if (IsLetter(AInput) || IsDigit(AInput)) {
-                        CurrentMember().String().Append(AInput);
+                        CurrentMember().String().Append((TCHAR) AInput);
                         m_State = string;
                         return -1;
                     } else if (AInput == '"') {
@@ -2057,7 +2057,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSONParser::IsLetter(u_char c) {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '-') || (c == '@');
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '-') || (c == '@') || (c == '#');
         }
         //--------------------------------------------------------------------------------------------------------------
 

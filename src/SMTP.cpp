@@ -640,14 +640,14 @@ namespace Delphi {
                     Index++;
 
                 if (Index == command.Reply().Count()) {
-                    CString LPlain;
+                    CString Plain;
 
-                    LPlain.Write("\0", 1);
-                    LPlain << m_Config.UserName();
-                    LPlain.Write("\0", 1);
-                    LPlain << m_Config.Password();
+                    Plain.Write("\0", 1);
+                    Plain << m_Config.UserName();
+                    Plain.Write("\0", 1);
+                    Plain << m_Config.Password();
 
-                    pConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(LPlain));
+                    pConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(Plain));
                 } else {
 #ifdef WITH_SSL
                     pConnection->NewCommand("STARTTLS");
@@ -745,7 +745,7 @@ namespace Delphi {
                 auto &message = CurrentMessage();
                 const auto& Line = command.LastMessage();
                 size_t Pos = Line.Find("id=");
-                message.MessageId() = command.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
+                message.MsgId() = command.LastMessage().SubString(Pos == CString::npos ? 4 : Pos + 3);
                 message.Submitted(true);
             } else {
                 command.ErrorMessage() = command.LastMessage();
