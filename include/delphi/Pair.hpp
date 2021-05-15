@@ -94,7 +94,7 @@ namespace Delphi {
 
         private:
 
-            ClassList m_pList;
+            ClassList m_pList {};
 
             ClassPair m_Default;
 

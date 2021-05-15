@@ -86,6 +86,9 @@ namespace Delphi {
 
         public:
 
+            typedef TEnumerator<CJSON, TList<CJSON>> Enumerator;
+            typedef const TEnumerator<CJSON, TList<CJSON>> ConstEnumerator;
+
             CJSON();
 
             explicit CJSON(CJSONValueType ValueType);
