@@ -250,12 +250,12 @@ namespace Delphi {
             bool Result = false;
 
             if (Connected()) {
-                CMemoryStream LStream(ReadAsync());
-                Result = LStream.Size() > 0;
+                CMemoryStream Stream(ReadAsync());
+                Result = Stream.Size() > 0;
                 if (Result) {
-                    InputBuffer()->Extract(LStream.Memory(), LStream.Size());
+                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
 
-                    CSMTPReplyParser pParser((LPCSTR) LStream.Memory(), (LPCSTR) LStream.Memory() + LStream.Size());
+                    CSMTPReplyParser pParser((LPCSTR) Stream.Memory(), (LPCSTR) Stream.Memory() + Stream.Size());
                     const int ParseResult = pParser.Parse(m_Command);
 
                     switch (ParseResult) {
