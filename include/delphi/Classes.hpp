@@ -357,7 +357,7 @@ namespace Delphi {
             virtual void Deleting(CCollectionItem *Item);
             virtual void Notify(CCollectionItem *Item, CCollectionNotification Action);
 
-            int GetAttrCount();
+            static int GetAttrCount();
             void Changed();
 
             virtual CCollectionItem *GetItem(int Index) const;
