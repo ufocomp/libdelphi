@@ -210,7 +210,8 @@ namespace Delphi {
                 return *this;
             }
 
-            const ClassItem& base() const { return Current(); }
+            reference base() { return Current(); }
+            const_reference base() const { return Current(); }
 
         };
 
