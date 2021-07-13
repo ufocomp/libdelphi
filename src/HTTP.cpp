@@ -3023,9 +3023,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager) {
+        CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager),
+            CPollConnection(nullptr) {
 
             m_Request = nullptr;
+            AConnection->Binding(this);
 
             m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
