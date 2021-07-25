@@ -1317,7 +1317,8 @@ namespace Delphi {
 
         CPollConnection::~CPollConnection() {
             if (m_pBinding != nullptr) {
-                m_pBinding->Close();
+                if (m_pBinding->Binding() != nullptr )
+                    m_pBinding->Close();
                 m_pBinding->Binding(nullptr);
             }
 
