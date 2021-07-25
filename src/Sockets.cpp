@@ -3935,7 +3935,7 @@ namespace Delphi {
 
             pEventHandler->Start(etConnect);
 
-            int ErrorCode = pIOHandler->Binding()->Connect(AF_INET, m_Host.c_str(), m_Port);
+            int ErrorCode = pIOHandler->Binding()->Connect(AF_INET, m_Host.IsEmpty() ? "localhost" : m_Host.c_str(), m_Port);
 
             DoConnectStart(pIOHandler, pEventHandler);
 
