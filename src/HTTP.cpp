@@ -2681,7 +2681,7 @@ namespace Delphi {
             CString decodeURL;
             if (URLDecode(In, decodeURL))
                 return decodeURL;
-            return CString();
+            return {};
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2689,12 +2689,10 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             try {
                 if (pConnection->Connected()) {
-                    if (pConnection->ConnectionStatus() >= csRequestOk) {
-                        if (pConnection->Protocol() == pHTTP) {
-                            if (pConnection->ConnectionStatus() == csRequestOk) {
-                                pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
-                                pConnection->CloseConnection(true);
-                            }
+                    if (pConnection->Protocol() == pHTTP) {
+                        if (pConnection->ConnectionStatus() == csRequestOk) {
+                            pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
+                            pConnection->CloseConnection(true);
                         }
                     }
 
