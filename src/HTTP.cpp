@@ -2776,7 +2776,6 @@ namespace Delphi {
                     if (pConnection->ConnectionStatus() == csReplyReady) {
 
                         pConnection->ConnectionStatus(csReplySent);
-                        DoAccessLog(pConnection);
                         pConnection->Clear();
 
                         if (pConnection->CloseConnection()) {
