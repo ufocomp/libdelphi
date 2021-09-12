@@ -494,7 +494,7 @@ namespace Delphi {
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
-                pConnection->Disconnect();
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -530,7 +530,7 @@ namespace Delphi {
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
-                pConnection->Disconnect();
+                AHandler->Stop();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
