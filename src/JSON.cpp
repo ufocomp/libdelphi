@@ -80,6 +80,12 @@ namespace Delphi {
                             case 't':
                                 Result.Append('\t');
                                 break;
+                            case '"':
+                                Result.Append('"');
+                                break;
+                            case '\\':
+                                Result.Append('\\');
+                                break;
                             default:
                                 Result.Append(ch);
                                 break;
