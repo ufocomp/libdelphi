@@ -612,9 +612,21 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::LoadFromStream(CMemoryStream &Stream) {
-            if (Stream.Size() < 2)
-                return;
+        void CWebSocket::LoadHeader(CMemoryStream &Stream) {
+            unsigned char frame[2] = {0, 0};
+            Stream.Read(frame, sizeof(frame));
+
+            m_Frame.FIN = frame[0] & WS_FIN;
+            m_Frame.Opcode = frame[0] & 0x0Fu;
+
+            m_Frame.Mask = frame[1] & WS_MASK;
+            m_Frame.Length = frame[1] & 0x7Fu;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CWebSocket::LoadFromStream(CMemoryStream &Stream) {
+
+            const auto message = "Invalid WebSocket header size (%s).";
 
             union {
                 uint16_t val;
@@ -628,39 +640,85 @@ namespace Delphi {
 
             uint64_t size = 0;
 
-            unsigned char frame[2] = {0, 0};
-            Stream.Read(frame, sizeof(frame));
+            if (m_State == frame) {
+                if (Stream.Size() - Stream.Position() < 2)
+                    throw Delphi::Exception::ExceptionFrm(message, "Frame");
 
-            m_Frame.FIN = frame[0] & WS_FIN;
-            m_Frame.Opcode = frame[0] & 0x0Fu;
+                LoadHeader(Stream);
 
-            m_Frame.Mask = frame[1] & WS_MASK;
-            m_Frame.Length = frame[1] & 0x7Fu;
+                m_State = extended;
 
-            if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                Stream.Read(len16.arr, sizeof(len16));
-                size = htobe16(len16.val);
-            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
-                Stream.Read(len64.arr, sizeof(len64));
-                size = htobe64(len64.val);
-            } else {
-                size = m_Frame.Length;
+                if (Stream.Position() == Stream.Size())
+                    return -1;
             }
 
-            if (m_Frame.Mask == WS_MASK) {
+            if (m_State == extended) {
+                if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
+                    if (Stream.Size() - Stream.Position() < sizeof(len16))
+                        throw Delphi::Exception::ExceptionFrm(message, "Extended-16");
+
+                    Stream.Read(len16.arr, sizeof(len16));
+                    size = htobe16(len16.val);
+                } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
+                    if (Stream.Size() - Stream.Position() < sizeof(len64))
+                        throw Delphi::Exception::ExceptionFrm(message, "Extended-64");
+
+                    Stream.Read(len64.arr, sizeof(len64));
+                    size = htobe64(len64.val);
+                } else {
+                    size = m_Frame.Length;
+                }
+
+                if (m_Frame.Mask == WS_MASK) {
+                    m_State = masking_key;
+                } else {
+                    m_State = payload_start;
+                }
+
+                if (Stream.Position() == Stream.Size())
+                    return -1;
+            }
+
+            if (m_State == masking_key) {
+                if (Stream.Size() - Stream.Position() < sizeof(m_Frame.MaskingKey))
+                    throw Delphi::Exception::ExceptionFrm(message, "Masking-key");
+
                 Stream.Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+
+                m_State = payload_start;
+
+                if (Stream.Position() == Stream.Size())
+                    return -1;
             }
 
-            if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
-                Clear();
+            if (m_State == payload_start) {
 
-            const auto payloadSize = m_Payload.Size();
+                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
+                    Clear();
 
-            m_Payload.SetSize((ssize_t) (payloadSize + size));
-            SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
+                const auto payloadSize = m_Payload.Size();
 
-            m_MaskingIndex = 0;
-            PayloadFromStream(Stream);
+                m_Payload.SetSize((ssize_t) (payloadSize + size));
+                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
+
+                m_MaskingIndex = 0;
+
+                m_State = payload;
+            }
+
+            if (m_State == payload) {
+                PayloadFromStream(Stream);
+
+                if (m_Payload.Position() == m_Payload.Size()) {
+                    m_State = frame;
+                    return 1;
+                }
+
+                if (Stream.Position() == Stream.Size())
+                    return -1;
+            }
+
+            return 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1208,12 +1266,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream &Stream) {
-            if (ARequest->Payload().Position() == ARequest->Payload().Size()) {
-                ARequest->LoadFromStream(Stream);
-            } else {
-                ARequest->PayloadFromStream(Stream);
-            }
+        int CWebSocketParser::Parse(CWebSocket *ARequest, CMemoryStream &Stream) {
+            return ARequest->LoadFromStream(Stream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2243,18 +2297,19 @@ namespace Delphi {
             ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Stream.Memory(), Stream.Size(), 32);
             DebugMessage("\nRAW %d: %s\n", Stream.Size(), Hex.c_str());
 #endif
+            int status;
             auto pWSRequest = GetWSRequest();
 
             while (Stream.Position() < Stream.Size()) {
 
-                CWebSocketParser::Parse(pWSRequest, Stream);
+                status = CWebSocketParser::Parse(pWSRequest, Stream);
 
                 switch (pWSRequest->Frame().Opcode) {
                     case WS_OPCODE_CONTINUATION:
                     case WS_OPCODE_TEXT:
                     case WS_OPCODE_BINARY:
 
-                        if (pWSRequest->Frame().FIN == 0 || (pWSRequest->Payload().Position() < pWSRequest->Payload().Size())) {
+                        if (pWSRequest->Frame().FIN == 0 || status == -1) {
                             m_ConnectionStatus = csWaitRequest;
                             DoWaitRequest();
                         } else {

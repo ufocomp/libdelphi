@@ -674,10 +674,20 @@ namespace Delphi {
 
         private:
 
+            enum CWSParserState {
+                frame,
+                extended,
+                masking_key,
+                payload_start,
+                payload
+            } m_State = frame;
+
             CWebSocketFrame m_Frame;
             CMemoryStream m_Payload;
 
             size_t m_MaskingIndex;
+
+            void LoadHeader(CMemoryStream &Stream);
 
             void Encode(CMemoryStream &Stream);
             void Decode(CMemoryStream &Stream);
@@ -697,12 +707,14 @@ namespace Delphi {
             CMemoryStream &Payload() { return m_Payload; };
             const CMemoryStream &Payload() const { return m_Payload; };
 
+            CWSParserState State() { return m_State; }
+
             void Close(CMemoryStream &Stream);
             void Ping(CMemoryStream &Stream);
             void Pong(CMemoryStream &Stream);
 
             void SaveToStream(CMemoryStream &Stream);
-            void LoadFromStream(CMemoryStream &Stream);
+            int LoadFromStream(CMemoryStream &Stream);
 
             void SetPayload(CMemoryStream &Stream);
             void SetPayload(const CString &String);
@@ -774,14 +786,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         struct CHTTPContext {
-            LPCBYTE Begin;
-            LPCBYTE End;
-            size_t Size;
+            LPCBYTE Begin {};
+            LPCBYTE End {};
+            size_t Size {};
             int Result;
             Request::CParserState State;
-            size_t ContentLength;
+            size_t ContentLength {};
             TCHAR MIME[3] = {};
-            size_t MimeIndex;
+            size_t MimeIndex {};
 
             CHTTPContext(LPCBYTE ABegin, size_t ASize, Request::CParserState AState = Request::method_start,
                          size_t AContentLength = 0) {
@@ -835,7 +847,7 @@ namespace Delphi {
         class CWebSocketParser {
         public:
 
-            static void Parse(CWebSocket *ARequest, CMemoryStream &AStream);
+            static int Parse(CWebSocket *ARequest, CMemoryStream &AStream);
 
         };
 
@@ -850,8 +862,8 @@ namespace Delphi {
 
         struct CHTTPReply
         {
-            int VMajor;
-            int VMinor;
+            int VMajor {};
+            int VMinor {};
 
             /// The status of the reply.
             enum CStatusType
@@ -877,10 +889,10 @@ namespace Delphi {
                 bad_gateway = 502,
                 service_unavailable = 503,
                 gateway_timeout = 504
-            } Status;
+            } Status = internal_server_error;
 
-            CString StatusString;
-            CString StatusText;
+            CString StatusString{};
+            CString StatusText{};
 
             /// The content type of the reply.
             enum CContentType
@@ -892,23 +904,23 @@ namespace Delphi {
                 sbin
             } ContentType = html;
 
-            CString ServerName;
+            CString ServerName{};
 
-            CString AllowedMethods;
+            CString AllowedMethods{};
 
             bool CloseConnection = true;
 
             /// The headers to be included in the reply.
-            CHeaders Headers;
+            CHeaders Headers{};
 
             /// The content length to be receive in the reply.
             size_t ContentLength = 0;
 
             /// The content to be receive in the reply.
-            CString Content;
+            CString Content{};
 
             /// The cache file.
-            CString CacheFile;
+            CString CacheFile{};
 
             /// Clear content and headers.
             void Clear();
