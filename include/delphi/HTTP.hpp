@@ -678,7 +678,6 @@ namespace Delphi {
                 frame,
                 extended,
                 masking_key,
-                payload_start,
                 payload
             } m_State = frame;
 

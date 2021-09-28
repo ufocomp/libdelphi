@@ -669,10 +669,20 @@ namespace Delphi {
                     size = m_Frame.Length;
                 }
 
+                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
+                    Clear();
+
+                const auto payloadSize = m_Payload.Size();
+
+                m_Payload.SetSize((ssize_t) (payloadSize + size));
+                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
+
+                m_MaskingIndex = 0;
+
                 if (m_Frame.Mask == WS_MASK) {
                     m_State = masking_key;
                 } else {
-                    m_State = payload_start;
+                    m_State = payload;
                 }
 
                 if (Stream.Position() == Stream.Size())
@@ -685,25 +695,10 @@ namespace Delphi {
 
                 Stream.Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
 
-                m_State = payload_start;
+                m_State = payload;
 
                 if (Stream.Position() == Stream.Size())
                     return -1;
-            }
-
-            if (m_State == payload_start) {
-
-                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
-                    Clear();
-
-                const auto payloadSize = m_Payload.Size();
-
-                m_Payload.SetSize((ssize_t) (payloadSize + size));
-                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
-
-                m_MaskingIndex = 0;
-
-                m_State = payload;
             }
 
             if (m_State == payload) {
@@ -713,9 +708,6 @@ namespace Delphi {
                     m_State = frame;
                     return 1;
                 }
-
-                if (Stream.Position() == Stream.Size())
-                    return -1;
             }
 
             return 0;
