@@ -678,15 +678,20 @@ namespace Delphi {
                 frame,
                 extended,
                 masking_key,
+                payload_start,
                 payload
             } m_State = frame;
 
             CWebSocketFrame m_Frame;
             CMemoryStream m_Payload;
 
+            uint64_t m_PayloadSize;
+
             size_t m_MaskingIndex;
 
             void LoadHeader(CMemoryStream &Stream);
+            void LoadExtended(CMemoryStream &Stream);
+            void LoadMaskingKey(CMemoryStream &Stream);
 
             void Encode(CMemoryStream &Stream);
             void Decode(CMemoryStream &Stream);

@@ -23,6 +23,11 @@ Author:
 
 #include "delphi.hpp"
 #include "delphi/HTTP.hpp"
+//----------------------------------------------------------------------------------------------------------------------
+
+#define WEBSOCKET_ERROR_MESSAGE "Invalid WebSocket header size (%s)."
+
+//----------------------------------------------------------------------------------------------------------------------
 
 extern "C++" {
 
@@ -478,6 +483,7 @@ namespace Delphi {
 
         CWebSocket::CWebSocket() {
             m_MaskingIndex = 0;
+            m_PayloadSize = 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -613,6 +619,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::LoadHeader(CMemoryStream &Stream) {
+            if (Stream.Size() - Stream.Position() < 2)
+                throw Delphi::Exception::ExceptionFrm(WEBSOCKET_ERROR_MESSAGE, "Frame");
+
             unsigned char frame[2] = {0, 0};
             Stream.Read(frame, sizeof(frame));
 
@@ -624,9 +633,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CWebSocket::LoadFromStream(CMemoryStream &Stream) {
-
-            const auto message = "Invalid WebSocket header size (%s).";
+        void CWebSocket::LoadExtended(CMemoryStream &Stream) {
 
             union {
                 uint16_t val;
@@ -638,12 +645,35 @@ namespace Delphi {
                 uint8_t arr[8];
             } len64 = {0};
 
-            uint64_t size = 0;
+            if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
+                if (Stream.Size() - Stream.Position() < sizeof(len16))
+                    throw Delphi::Exception::ExceptionFrm(WEBSOCKET_ERROR_MESSAGE, "Extended-16");
+
+                Stream.Read(len16.arr, sizeof(len16));
+                m_PayloadSize = htobe16(len16.val);
+            } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
+                if (Stream.Size() - Stream.Position() < sizeof(len64))
+                    throw Delphi::Exception::ExceptionFrm(WEBSOCKET_ERROR_MESSAGE, "Extended-64");
+
+                Stream.Read(len64.arr, sizeof(len64));
+                m_PayloadSize = htobe64(len64.val);
+            } else {
+                m_PayloadSize = m_Frame.Length;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocket::LoadMaskingKey(CMemoryStream &Stream) {
+            if (Stream.Size() - Stream.Position() < sizeof(m_Frame.MaskingKey))
+                throw Delphi::Exception::ExceptionFrm(WEBSOCKET_ERROR_MESSAGE, "Masking-key");
+
+            Stream.Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CWebSocket::LoadFromStream(CMemoryStream &Stream) {
 
             if (m_State == frame) {
-                if (Stream.Size() - Stream.Position() < 2)
-                    throw Delphi::Exception::ExceptionFrm(message, "Frame");
-
                 LoadHeader(Stream);
 
                 m_State = extended;
@@ -653,36 +683,12 @@ namespace Delphi {
             }
 
             if (m_State == extended) {
-                if (m_Frame.Length == WS_PAYLOAD_LENGTH_16) {
-                    if (Stream.Size() - Stream.Position() < sizeof(len16))
-                        throw Delphi::Exception::ExceptionFrm(message, "Extended-16");
-
-                    Stream.Read(len16.arr, sizeof(len16));
-                    size = htobe16(len16.val);
-                } else if (m_Frame.Length == WS_PAYLOAD_LENGTH_64) {
-                    if (Stream.Size() - Stream.Position() < sizeof(len64))
-                        throw Delphi::Exception::ExceptionFrm(message, "Extended-64");
-
-                    Stream.Read(len64.arr, sizeof(len64));
-                    size = htobe64(len64.val);
-                } else {
-                    size = m_Frame.Length;
-                }
-
-                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
-                    Clear();
-
-                const auto payloadSize = m_Payload.Size();
-
-                m_Payload.SetSize((ssize_t) (payloadSize + size));
-                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, size);
-
-                m_MaskingIndex = 0;
+                LoadExtended(Stream);
 
                 if (m_Frame.Mask == WS_MASK) {
                     m_State = masking_key;
                 } else {
-                    m_State = payload;
+                    m_State = payload_start;
                 }
 
                 if (Stream.Position() == Stream.Size())
@@ -690,10 +696,25 @@ namespace Delphi {
             }
 
             if (m_State == masking_key) {
-                if (Stream.Size() - Stream.Position() < sizeof(m_Frame.MaskingKey))
-                    throw Delphi::Exception::ExceptionFrm(message, "Masking-key");
+                LoadMaskingKey(Stream);
 
-                Stream.Read(m_Frame.MaskingKey, sizeof(m_Frame.MaskingKey));
+                m_State = payload_start;
+
+                if (Stream.Position() == Stream.Size())
+                    return -1;
+            }
+
+            if (m_State == payload_start) {
+
+                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
+                    Clear();
+
+                const auto payloadSize = m_Payload.Size();
+
+                m_Payload.SetSize((ssize_t) (payloadSize + m_PayloadSize));
+                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, m_PayloadSize);
+
+                m_MaskingIndex = 0;
 
                 m_State = payload;
 
@@ -708,6 +729,9 @@ namespace Delphi {
                     m_State = frame;
                     return 1;
                 }
+
+                if (Stream.Position() == Stream.Size())
+                    return -1;
             }
 
             return 0;
@@ -2287,7 +2311,7 @@ namespace Delphi {
             CString Hex;
             Hex.SetLength(Stream.Size() * 3 + 1);
             ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Stream.Memory(), Stream.Size(), 32);
-            DebugMessage("\nRAW %d: %s\n", Stream.Size(), Hex.c_str());
+            DebugMessage("\n[INPUT] %d: %s\n", Stream.Size(), Hex.c_str());
 #endif
             int status;
             auto pWSRequest = GetWSRequest();
