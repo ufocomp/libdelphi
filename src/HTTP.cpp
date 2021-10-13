@@ -1736,6 +1736,7 @@ namespace Delphi {
 
         CHTTPReply *CHTTPReply::GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType) {
 
+            TCHAR szBuffer[MAX_STRING_LEN + 1] = {0};
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
             TCHAR szSize[_INT_T_LEN + 1] = {0};
 
@@ -1780,7 +1781,39 @@ namespace Delphi {
                 }
 
                 AReply->AddHeader(_T("Content-Type"), AContentType);
-                AReply->AddHeader(_T("Content-Length"), IntToStr((int) AReply->Content.Size(), szSize, sizeof(szSize)));
+
+                AReply->Content.Position(0);
+                const auto size = AReply->Content.Size();
+
+                if (size > MAX_STRING_LEN && AReply->ContentType == CContentType::json) {
+                    AReply->AddHeader(_T("Transfer-Encoding"), _T("chunked"));
+
+                    CString Buffer;
+                    CString Length;
+
+                    ssize_t count;
+                    size_t pos = 0;
+
+                    while (true) {
+                        count = AReply->Content.Read(szBuffer, MAX_STRING_LEN);
+                        Length = IntToStr((int) count, szSize, sizeof(szSize), 16);
+
+                        Buffer.WriteBuffer(Length.Data(), Length.Size());
+                        StringArrayToStream(Buffer, MiscStrings::crlf);
+
+                        if (count == 0) {
+                            StringArrayToStream(Buffer, MiscStrings::crlf);
+                            break;
+                        }
+
+                        Buffer.WriteBuffer(szBuffer, count);
+                        StringArrayToStream(Buffer, MiscStrings::crlf);
+                    };
+
+                    AReply->Content = Buffer;
+                } else {
+                    AReply->AddHeader(_T("Content-Length"), IntToStr((int) size, szSize, sizeof(szSize)));
+                }
             }
 
             switch (AStatus) {
