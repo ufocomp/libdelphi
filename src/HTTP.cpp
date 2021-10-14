@@ -1734,7 +1734,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPReply *CHTTPReply::GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType) {
+        CHTTPReply *CHTTPReply::GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType,
+                LPCTSTR ATransferEncoding) {
 
             TCHAR szBuffer[MAX_STRING_LEN + 1] = {0};
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
@@ -1783,10 +1784,9 @@ namespace Delphi {
                 AReply->AddHeader(_T("Content-Type"), AContentType);
 
                 AReply->Content.Position(0);
-                const auto size = AReply->Content.Size();
 
-                if (size > MAX_STRING_LEN && AReply->ContentType == CContentType::json) {
-                    AReply->AddHeader(_T("Transfer-Encoding"), _T("chunked"));
+                if (ATransferEncoding != nullptr && CompareString(ATransferEncoding, _T("chunked")) == 0) {
+                    AReply->AddHeader(_T("Transfer-Encoding"), ATransferEncoding);
 
                     CString Buffer;
                     CString Length;
@@ -1812,7 +1812,7 @@ namespace Delphi {
 
                     AReply->Content = Buffer;
                 } else {
-                    AReply->AddHeader(_T("Content-Length"), IntToStr((int) size, szSize, sizeof(szSize)));
+                    AReply->AddHeader(_T("Content-Length"), IntToStr((int) AReply->Content.Size(), szSize, sizeof(szSize)));
                 }
             }
 

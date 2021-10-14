@@ -955,7 +955,8 @@ namespace Delphi {
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
 
             /// Get a prepare reply.
-            static CHTTPReply *GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr);
+            static CHTTPReply *GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr,
+                LPCTSTR ATransferEncoding = nullptr);
 
             /// Get a stock reply.
             static CHTTPReply *GetStockReply(CHTTPReply *AReply, CStatusType AStatus);
