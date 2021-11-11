@@ -689,14 +689,14 @@ namespace Delphi {
 
             size_t m_MaskingIndex;
 
-            void LoadHeader(CMemoryStream &Stream);
-            void LoadExtended(CMemoryStream &Stream);
-            void LoadMaskingKey(CMemoryStream &Stream);
+            void LoadHeader(const CMemoryStream &Stream);
+            void LoadExtended(const CMemoryStream &Stream);
+            void LoadMaskingKey(const CMemoryStream &Stream);
 
             void Encode(CMemoryStream &Stream);
-            void Decode(CMemoryStream &Stream);
+            void Decode(const CMemoryStream &Stream);
 
-            void PayloadFromStream(CMemoryStream &Stream);
+            void PayloadFromStream(const CMemoryStream &Stream);
             void PayloadToStream(CMemoryStream &Stream);
 
         public:
@@ -718,7 +718,7 @@ namespace Delphi {
             void Pong(CMemoryStream &Stream);
 
             void SaveToStream(CMemoryStream &Stream);
-            int LoadFromStream(CMemoryStream &Stream);
+            int LoadFromStream(const CMemoryStream &Stream);
 
             void SetPayload(CMemoryStream &Stream);
             void SetPayload(const CString &String);
@@ -851,7 +851,7 @@ namespace Delphi {
         class CWebSocketParser {
         public:
 
-            static int Parse(CWebSocket *ARequest, CMemoryStream &AStream);
+            static int Parse(CWebSocket *ARequest, const CMemoryStream &AStream);
 
         };
 
@@ -1083,6 +1083,8 @@ namespace Delphi {
             CWebSocket *m_WSRequest;
             CWebSocket *m_WSReply;
 
+            CMemoryStream m_Buffer;
+
             /// The current state of the parser.
             Request::CParserState m_State;
 
@@ -1096,8 +1098,8 @@ namespace Delphi {
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
-            void ParseHTTP(CMemoryStream &Stream);
-            void ParseWebSocket(CMemoryStream &Stream);
+            int ParseHTTP(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            int ParseWebSocket(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         protected:
 
@@ -1119,7 +1121,7 @@ namespace Delphi {
 
             void Clear();
 
-            bool ParseInput();
+            int ParseInput(COnSocketExecuteEvent && OnExecute);
 
             CHTTPServer *HTTPServer() { return (CHTTPServer *) Server(); }
 
@@ -1199,7 +1201,7 @@ namespace Delphi {
 
             void Clear();
 
-            bool ParseInput();
+            int ParseInput();
 
             CHTTPRequest *Request() { return GetRequest(); }
 
@@ -1243,8 +1245,6 @@ namespace Delphi {
             void DoWrite(CPollEventHandler *AHandler) override;
 
             bool DoCommand(CTCPConnection *AConnection) override;
-
-            bool DoExecute(CTCPConnection *AConnection) override;
 
             void DoReply(CObject *Sender);
 

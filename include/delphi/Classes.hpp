@@ -454,12 +454,12 @@ namespace Delphi {
         {
         private:
 
-            off_t GetPosition();
+            off_t GetPosition() const;
             void SetPosition(off_t Pos);
 
         protected:
 
-            virtual off_t GetSize();
+            virtual off_t GetSize() const;
             virtual void SetSize(ssize_t NewSize);
 
         public:
@@ -467,21 +467,21 @@ namespace Delphi {
             CStream(): CHeapComponent() {};
             ~CStream() override = default;
 
-            virtual ssize_t Read(void *Buffer, size_t Count) abstract;
+            virtual ssize_t Read(void *Buffer, size_t Count) const abstract;
             virtual ssize_t Write(const void *Buffer, size_t Count) abstract;
 
-            virtual off_t Seek(off_t Offset, unsigned short Origin) abstract;
-            virtual off_t Seek(off_t Offset, CSeekOrigin Origin);
+            virtual off_t Seek(off_t Offset, unsigned short Origin) const abstract;
+            virtual off_t Seek(off_t Offset, CSeekOrigin Origin) const;
 
-            void ReadBuffer(void *Buffer, size_t Count);
+            void ReadBuffer(void *Buffer, size_t Count) const;
             void WriteBuffer(const void *Buffer, size_t Count);
 
             size_t CopyFrom(CStream *Source, size_t Count);
 
-            size_t Position() { return GetPosition(); };
+            size_t Position() const { return GetPosition(); };
             void Position(size_t Value) { SetPosition(Value); };
 
-            size_t Size() { return GetSize(); };
+            size_t Size() const { return GetSize(); };
             void Size(size_t Value) { SetSize(Value); };
 
         }; // CStream
@@ -513,11 +513,11 @@ namespace Delphi {
 
             ~CHandleStream() override = default;
 
-            ssize_t Read(void *Buffer, size_t Count) override;
+            ssize_t Read(void *Buffer, size_t Count) const override;
 
             ssize_t Write(const void *Buffer, size_t Count) override;
 
-            off_t Seek(off_t Offset, unsigned short Origin) override;
+            off_t Seek(off_t Offset, unsigned short Origin) const override;
 
         }; // CHandleStream
 
@@ -568,7 +568,7 @@ namespace Delphi {
             Pointer m_Memory;
 
             size_t m_Size;
-            size_t m_Position;
+            mutable size_t m_Position;
 
         protected:
 
@@ -580,11 +580,11 @@ namespace Delphi {
 
             ~CCustomMemoryStream() override = default;
 
-            inline off_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
+            inline off_t Seek(off_t Offset, CSeekOrigin Origin) const override { return CStream::Seek(Offset, Origin); };
 
-            ssize_t Read(Pointer Buffer, size_t Count) override;
+            ssize_t Read(Pointer Buffer, size_t Count) const override;
 
-            ssize_t Seek(off_t Offset, unsigned short Origin) override;
+            ssize_t Seek(off_t Offset, unsigned short Origin) const override;
 
             void SaveToStream(CStream &Stream);
             void SaveToFile(LPCTSTR lpszFileName);
@@ -661,13 +661,13 @@ namespace Delphi {
             LPTSTR m_Data;
 
             size_t m_Size;
-            size_t m_Position;
+            mutable size_t m_Position;
 
         protected:
 
             void SetData(LPTSTR Data, size_t Size);
 
-            size_t GetSize() const noexcept { return m_Size; };
+            off_t GetSize() const override { return (off_t) m_Size; };
 
         public:
 
@@ -675,11 +675,11 @@ namespace Delphi {
 
             ~CCustomStringStream() override = default;
 
-            inline off_t Seek(off_t Offset, CSeekOrigin Origin) override { return CStream::Seek(Offset, Origin); };
+            inline off_t Seek(off_t Offset, CSeekOrigin Origin) const override { return CStream::Seek(Offset, Origin); };
 
-            ssize_t Read(Pointer Buffer, size_t Count) override;
+            ssize_t Read(Pointer Buffer, size_t Count) const override;
 
-            ssize_t Seek(off_t Offset, unsigned short Origin) override;
+            ssize_t Seek(off_t Offset, unsigned short Origin) const override;
 
             void SaveToStream(CStream &Stream) const;
             void SaveToFile(LPCTSTR lpszFileName) const;

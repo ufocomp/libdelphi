@@ -923,7 +923,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CStream::GetPosition() {
+        off_t CStream::GetPosition() const {
             return Seek(0, soCurrent);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -933,7 +933,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CStream::GetSize() {
+        off_t CStream::GetSize() const {
             off_t Pos, Result;
 
             Pos = Seek(0, soCurrent);
@@ -950,7 +950,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CStream::Seek(off_t Offset, CSeekOrigin Origin) {
+        off_t CStream::Seek(off_t Offset, CSeekOrigin Origin) const {
             switch (Origin) {
                 case soBeginning:
                 case soCurrent:
@@ -968,7 +968,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStream::ReadBuffer(void *Buffer, size_t Count) {
+        void CStream::ReadBuffer(void *Buffer, size_t Count) const {
             if ((Count != 0) && (Read(Buffer, Count) != Count))
                 throw EReadError(_T("Range check error"));
         }
@@ -1030,7 +1030,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CHandleStream::Read(void *Buffer, size_t Count) {
+        ssize_t CHandleStream::Read(void *Buffer, size_t Count) const {
             ssize_t Result = ::read(m_Handle, Buffer, Count);
             if (!Result)
                 Result = 0;
@@ -1046,7 +1046,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CHandleStream::Seek(const off_t Offset, unsigned short Origin) {
+        off_t CHandleStream::Seek(const off_t Offset, unsigned short Origin) const {
             return ::lseek(m_Handle, Offset, Origin);
         }
 
@@ -1096,7 +1096,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CCustomMemoryStream::Read(void *Buffer, size_t Count) {
+        ssize_t CCustomMemoryStream::Read(void *Buffer, size_t Count) const {
             size_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
@@ -1113,7 +1113,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CCustomMemoryStream::Seek(off_t Offset, unsigned short Origin) {
+        off_t CCustomMemoryStream::Seek(off_t Offset, unsigned short Origin) const {
             switch (Origin) {
                 case soFromBeginning:
                     m_Position = (size_t) Offset;
@@ -1269,7 +1269,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CCustomStringStream::Read(void *Buffer, size_t Count) {
+        ssize_t CCustomStringStream::Read(void *Buffer, size_t Count) const {
             ssize_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
@@ -1286,7 +1286,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        off_t CCustomStringStream::Seek(off_t Offset, unsigned short Origin) {
+        off_t CCustomStringStream::Seek(off_t Offset, unsigned short Origin) const {
             switch (Origin) {
                 case soFromBeginning:
                     m_Position = Offset;
@@ -1308,7 +1308,7 @@ namespace Delphi {
                     break;
             }
 
-            return m_Position;
+            return (off_t) m_Position;
         }
         //--------------------------------------------------------------------------------------------------------------
 
