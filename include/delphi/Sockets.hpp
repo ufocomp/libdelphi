@@ -75,6 +75,20 @@ Author:
 #endif
 //----------------------------------------------------------------------------------------------------------------------
 
+#define WS_FIN                  0x80u
+#define WS_MASK                 0x80u
+
+#define WS_OPCODE_CONTINUATION  0x00u
+#define WS_OPCODE_TEXT          0x01u
+#define WS_OPCODE_BINARY        0x02u
+#define WS_OPCODE_CLOSE         0x08u
+#define WS_OPCODE_PING          0x09u
+#define WS_OPCODE_PONG          0x0Au
+
+#define WS_PAYLOAD_LENGTH_16    126u
+#define WS_PAYLOAD_LENGTH_64    127u
+//----------------------------------------------------------------------------------------------------------------------
+
 typedef struct sockaddr SOCKADDR, *LPSOCKADDR;
 typedef struct sockaddr_in SOCKADDR_IN, *LPSOCKADDRIN;
 //----------------------------------------------------------------------------------------------------------------------
@@ -1090,6 +1104,191 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CWebSocket ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        struct CWebSocketFrame {
+
+            unsigned char FIN = WS_FIN;
+            unsigned char Opcode = 0xFF;
+            unsigned char Mask = 0;
+            unsigned char Length = 0;
+            unsigned char MaskingKey[4] = { 0, 0, 0, 0 };
+
+            void Clear() {
+                FIN = WS_FIN;
+                Opcode = 0xFF;
+                Mask = 0;
+                Length = 0;
+                ::SecureZeroMemory(MaskingKey, sizeof(MaskingKey));
+            }
+
+            void SetMaskingKey(uint32_t Key) {
+                Mask = WS_MASK;
+                ::CopyMemory(MaskingKey, &Key, sizeof(Key));
+            }
+
+            void SetMaskingKey(unsigned char Key[4]) {
+                Mask = WS_MASK;
+                ::CopyMemory(MaskingKey, Key, sizeof(MaskingKey));
+            }
+
+            //unsigned long long PayloadLength = 0;
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CWebSocket {
+        private:
+
+            enum CWSParserState {
+                frame,
+                extended,
+                masking_key,
+                payload_start,
+                payload
+            } m_State = frame;
+
+            CWebSocketFrame m_Frame;
+            CMemoryStream m_Payload;
+
+            uint64_t m_PayloadSize;
+
+            size_t m_MaskingIndex;
+
+            void LoadHeader(const CMemoryStream &Stream);
+            void LoadExtended(const CMemoryStream &Stream);
+            void LoadMaskingKey(const CMemoryStream &Stream);
+
+            void Encode(CMemoryStream &Stream);
+            void Decode(const CMemoryStream &Stream);
+
+            void PayloadFromStream(const CMemoryStream &Stream);
+            void PayloadToStream(CMemoryStream &Stream);
+
+        public:
+
+            CWebSocket();
+
+            void Clear();
+
+            CWebSocketFrame &Frame() { return m_Frame; }
+            const CWebSocketFrame &Frame() const { return m_Frame; }
+
+            CMemoryStream &Payload() { return m_Payload; };
+            const CMemoryStream &Payload() const { return m_Payload; };
+
+            CWSParserState State() { return m_State; }
+
+            void Close(CMemoryStream &Stream);
+            void Ping(CMemoryStream &Stream);
+            void Pong(CMemoryStream &Stream);
+
+            void SaveToStream(CMemoryStream &Stream);
+            int LoadFromStream(const CMemoryStream &Stream);
+
+            void SetPayload(CMemoryStream &Stream);
+            void SetPayload(const CString &String);
+
+            CWebSocket& operator<< (const CString &String) {
+                SetPayload(String);
+                return *this;
+            }
+
+            CWebSocket& operator>> (CString &String) {
+                String.LoadFromStream(m_Payload);
+                return *this;
+            }
+
+            CWebSocket& operator<< (CMemoryStream &Stream) {
+                LoadFromStream(Stream);
+                return *this;
+            }
+
+            CWebSocket& operator>> (CMemoryStream &Stream) {
+                SaveToStream(Stream);
+                return *this;
+            }
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CWebSocketConnection --------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        enum CHTTPProtocol { pHTTP = 0, pWebSocket };
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CWebSocketConnection: public CTCPConnection {
+            typedef CTCPConnection inherited;
+
+        private:
+
+            CWebSocket *m_WSRequest;
+            CWebSocket *m_WSReply;
+
+            CStringList m_Data;
+
+            CNotifyEvent m_OnWaitRequest;
+            CNotifyEvent m_OnRequest;
+            CNotifyEvent m_OnReply;
+
+        protected:
+
+            CConnectionStatus m_ConnectionStatus;
+
+            CHTTPProtocol m_Protocol;
+
+            CWebSocket *GetWSRequest();
+            CWebSocket *GetWSReply();
+
+            void DoWaitRequest();
+            void DoRequest();
+            void DoReply();
+
+            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+
+        public:
+
+            explicit CWebSocketConnection(CPollManager *AManager);
+
+            ~CWebSocketConnection() override = default;
+
+            CHTTPProtocol Protocol() const { return m_Protocol; }
+
+            CWebSocket *WSRequest() { return GetWSRequest(); }
+            CWebSocket *WSReply() { return GetWSReply(); }
+
+            CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
+            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }
+
+            void SendWebSocket(bool ASendNow = false);
+
+            void SendWebSocketPing(bool ASendNow = false);
+            void SendWebSocketPong(bool ASendNow = false);
+            void SendWebSocketClose(bool ASendNow = false);
+
+            virtual void Clear();
+
+            CStringList &Data() { return m_Data; }
+            const CStringList &Data() const { return m_Data; }
+
+            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
+            void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
+
+            const CNotifyEvent &OnRequest() { return m_OnRequest; }
+            void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
+
+            const CNotifyEvent &OnReply() { return m_OnReply; }
+            void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
+
+        }; // CWebSocketConnection
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CTCPServerConnection --------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1097,14 +1296,12 @@ namespace Delphi {
         class CAsyncServer;
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CTCPServerConnection: public CTCPConnection {
-            typedef CTCPConnection inherited;
+        class LIB_DELPHI CTCPServerConnection: public CWebSocketConnection {
+            typedef CWebSocketConnection inherited;
 
         private:
 
             CPollSocketServer *m_pServer;
-
-            CStringList m_Data;
 
         public:
 
@@ -1114,9 +1311,6 @@ namespace Delphi {
 
             virtual CPollSocketServer *Server() { return m_pServer; }
 
-            CStringList &Data() { return m_Data; }
-            const CStringList &Data() const { return m_Data; }
-
         }; // CTCPServerConnection
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1125,12 +1319,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CTCPClientConnection: public CTCPConnection {
-            typedef CTCPConnection inherited;
-
-        private:
-
-            CStringList m_Data;
+        class LIB_DELPHI CTCPClientConnection: public CWebSocketConnection {
+            typedef CWebSocketConnection inherited;
 
         protected:
 
@@ -1143,9 +1333,6 @@ namespace Delphi {
             ~CTCPClientConnection() override;
 
             virtual CPollSocketClient *Client() { return m_pClient; }
-
-            CStringList &Data() { return m_Data; }
-            const CStringList &Data() const { return m_Data; }
 
         }; // CTCPClientConnection
 

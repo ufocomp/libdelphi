@@ -29,19 +29,6 @@ Author:
 #define DefaultAllowedMethods  _T("HEAD, OPTIONS, GET")
 //----------------------------------------------------------------------------------------------------------------------
 
-#define WS_FIN                  0x80u
-#define WS_MASK                 0x80u
-
-#define WS_OPCODE_CONTINUATION  0x00u
-#define WS_OPCODE_TEXT          0x01u
-#define WS_OPCODE_BINARY        0x02u
-#define WS_OPCODE_CLOSE         0x08u
-#define WS_OPCODE_PING          0x09u
-#define WS_OPCODE_PONG          0x0Au
-
-#define WS_PAYLOAD_LENGTH_16    126u
-#define WS_PAYLOAD_LENGTH_64    127u
-
 #ifndef WWWServerName
 #define WWWServerName DefaultServerName
 #endif
@@ -623,125 +610,10 @@ namespace Delphi {
 
             /// Get a prepare request.
             static CHTTPRequest *Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
-                                         LPCTSTR AContentType = nullptr);
+                LPCTSTR AContentType = nullptr, LPCTSTR AConnection = nullptr);
 
             /// Add Authorization header to headers
             static CHTTPRequest *Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
-
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CWebSocket ------------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        struct CWebSocketFrame {
-
-            unsigned char FIN = WS_FIN;
-            unsigned char Opcode = 0xFF;
-            unsigned char Mask = 0;
-            unsigned char Length = 0;
-            unsigned char MaskingKey[4] = { 0, 0, 0, 0 };
-
-            void Clear() {
-                FIN = WS_FIN;
-                Opcode = 0xFF;
-                Mask = 0;
-                Length = 0;
-                ::SecureZeroMemory(MaskingKey, sizeof(MaskingKey));
-            }
-
-            void SetMaskingKey(uint32_t Key) {
-                Mask = WS_MASK;
-                ::CopyMemory(MaskingKey, &Key, sizeof(Key));
-            }
-
-            void SetMaskingKey(unsigned char Key[4]) {
-                Mask = WS_MASK;
-                ::CopyMemory(MaskingKey, Key, sizeof(MaskingKey));
-            }
-
-            //unsigned long long PayloadLength = 0;
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CWebSocketParser;
-
-        class CWebSocket {
-            friend CWebSocketParser;
-
-        private:
-
-            enum CWSParserState {
-                frame,
-                extended,
-                masking_key,
-                payload_start,
-                payload
-            } m_State = frame;
-
-            CWebSocketFrame m_Frame;
-            CMemoryStream m_Payload;
-
-            uint64_t m_PayloadSize;
-
-            size_t m_MaskingIndex;
-
-            void LoadHeader(const CMemoryStream &Stream);
-            void LoadExtended(const CMemoryStream &Stream);
-            void LoadMaskingKey(const CMemoryStream &Stream);
-
-            void Encode(CMemoryStream &Stream);
-            void Decode(const CMemoryStream &Stream);
-
-            void PayloadFromStream(const CMemoryStream &Stream);
-            void PayloadToStream(CMemoryStream &Stream);
-
-        public:
-
-            CWebSocket();
-
-            void Clear();
-
-            CWebSocketFrame &Frame() { return m_Frame; }
-            const CWebSocketFrame &Frame() const { return m_Frame; }
-
-            CMemoryStream &Payload() { return m_Payload; };
-            const CMemoryStream &Payload() const { return m_Payload; };
-
-            CWSParserState State() { return m_State; }
-
-            void Close(CMemoryStream &Stream);
-            void Ping(CMemoryStream &Stream);
-            void Pong(CMemoryStream &Stream);
-
-            void SaveToStream(CMemoryStream &Stream);
-            int LoadFromStream(const CMemoryStream &Stream);
-
-            void SetPayload(CMemoryStream &Stream);
-            void SetPayload(const CString &String);
-
-            CWebSocket& operator<< (const CString &String) {
-                SetPayload(String);
-                return *this;
-            }
-
-            CWebSocket& operator>> (CString &String) {
-                String.LoadFromStream(m_Payload);
-                return *this;
-            }
-
-            CWebSocket& operator<< (CMemoryStream &Stream) {
-                LoadFromStream(Stream);
-                return *this;
-            }
-
-            CWebSocket& operator>> (CMemoryStream &Stream) {
-                SaveToStream(Stream);
-                return *this;
-            }
 
         };
 
@@ -1069,9 +941,6 @@ namespace Delphi {
         class CHTTPServer;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CHTTPProtocol { pHTTP = 0, pWebSocket };
-        //--------------------------------------------------------------------------------------------------------------
-
         class CHTTPServerConnection: public CTCPServerConnection {
             typedef CTCPServerConnection inherited;
 
@@ -1080,38 +949,17 @@ namespace Delphi {
             CHTTPRequest *m_Request;
             CHTTPReply *m_Reply;
 
-            CWebSocket *m_WSRequest;
-            CWebSocket *m_WSReply;
-
-            CMemoryStream m_Buffer;
-
             /// The current state of the parser.
             Request::CParserState m_State;
 
             size_t m_ContentLength;
 
-            CConnectionStatus m_ConnectionStatus;
-
-            CHTTPProtocol m_Protocol;
-
-            CNotifyEvent m_OnWaitRequest;
-            CNotifyEvent m_OnRequest;
-            CNotifyEvent m_OnReply;
-
-            int ParseHTTP(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
-            int ParseWebSocket(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            void ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         protected:
 
             CHTTPRequest *GetRequest();
             CHTTPReply *GetReply();
-
-            CWebSocket *GetWSRequest();
-            CWebSocket *GetWSReply();
-
-            void DoWaitRequest();
-            void DoRequest();
-            void DoReply();
 
         public:
 
@@ -1119,42 +967,18 @@ namespace Delphi {
 
             ~CHTTPServerConnection() override;
 
-            void Clear();
+            void Clear() override;
 
-            int ParseInput(COnSocketExecuteEvent && OnExecute);
-
-            CHTTPServer *HTTPServer() { return (CHTTPServer *) Server(); }
+            bool ParseInput(COnSocketExecuteEvent && OnExecute);
 
             CHTTPRequest *Request() { return GetRequest(); }
             CHTTPReply *Reply() { return GetReply(); }
-
-            CWebSocket *WSRequest() { return GetWSRequest(); }
-            CWebSocket *WSReply() { return GetWSReply(); }
-
-            CHTTPProtocol Protocol() const { return m_Protocol; }
-
-            CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
-            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }
 
             void SendStockReply(CHTTPReply::CStatusType AStatus, bool ASendNow = false);
             void SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
             void SendReply(bool ASendNow = false);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
-            void SendWebSocket(bool ASendNow = false);
-
-            void SendWebSocketPing(bool ASendNow = false);
-            void SendWebSocketPong(bool ASendNow = false);
-            void SendWebSocketClose(bool ASendNow = false);
-
-            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
-            void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
-
-            const CNotifyEvent &OnRequest() { return m_OnRequest; }
-            void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
-
-            const CNotifyEvent &OnReply() { return m_OnReply; }
-            void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
         }; // CHTTPServerConnection
 
@@ -1170,7 +994,6 @@ namespace Delphi {
         private:
 
             CHTTPRequest *m_Request;
-
             CHTTPReply *m_Reply;
 
             /// The current state of the parser.
@@ -1179,19 +1002,12 @@ namespace Delphi {
             size_t m_ContentLength;
             size_t m_ChunkedLength;
 
-            CConnectionStatus m_ConnectionStatus;
-
-            CNotifyEvent m_OnRequest;
-            CNotifyEvent m_OnReply;
+            void ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         protected:
 
             CHTTPRequest *GetRequest();
-
             CHTTPReply *GetReply();
-
-            void DoRequest();
-            void DoReply();
 
         public:
 
@@ -1199,24 +1015,16 @@ namespace Delphi {
 
             ~CHTTPClientConnection() override;
 
-            void Clear();
+            void Clear() override;
 
-            int ParseInput();
+            bool ParseInput(COnSocketExecuteEvent && OnExecute);
 
             CHTTPRequest *Request() { return GetRequest(); }
-
             CHTTPReply *Reply() { return GetReply(); };
 
-            CConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
-            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };
+            void SwitchingProtocols(CHTTPProtocol Protocol);
 
             void SendRequest(bool ASendNow = false);
-
-            const CNotifyEvent &OnRequest() { return m_OnRequest; }
-            void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
-
-            const CNotifyEvent &OnReply() { return m_OnReply; }
-            void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
         }; // CHTTPServerConnection
 
@@ -1245,6 +1053,8 @@ namespace Delphi {
             void DoWrite(CPollEventHandler *AHandler) override;
 
             bool DoCommand(CTCPConnection *AConnection) override;
+
+            bool DoExecute(CTCPConnection *AConnection) override;
 
             void DoReply(CObject *Sender);
 
@@ -1284,6 +1094,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPClient;
+        //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CHTTPClient *Sender, CHTTPRequest *Request)> COnHTTPClientRequestEvent;
         //--------------------------------------------------------------------------------------------------------------
