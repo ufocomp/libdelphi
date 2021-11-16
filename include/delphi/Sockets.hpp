@@ -1188,8 +1188,8 @@ namespace Delphi {
             void SaveToStream(CMemoryStream &Stream);
             int LoadFromStream(const CMemoryStream &Stream);
 
-            void SetPayload(CMemoryStream &Stream);
-            void SetPayload(const CString &String);
+            void SetPayload(CMemoryStream &Stream, uint32_t Key = 0);
+            void SetPayload(const CString &String, uint32_t Key = 0);
 
             CWebSocket& operator<< (const CString &String) {
                 SetPayload(String);

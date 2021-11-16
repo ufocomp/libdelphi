@@ -2583,7 +2583,8 @@ namespace Delphi {
                 }
                 if (pConnection->ClosedGracefully()) {
                     AHandler->Binding(nullptr);
-                    delete pConnection;
+                    if (pConnection->AutoFree())
+                        delete pConnection;
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);

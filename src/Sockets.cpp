@@ -2321,9 +2321,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::SetPayload(CMemoryStream &Stream) {
+        void CWebSocket::SetPayload(CMemoryStream &Stream, uint32_t Key) {
             m_Frame.FIN = WS_FIN;
             m_Frame.Opcode = WS_OPCODE_BINARY;
+
+            if (Key != 0) {
+                m_Frame.SetMaskingKey(Key);
+            }
 
             if (Stream.Size() < WS_PAYLOAD_LENGTH_16) {
                 m_Frame.Length = Stream.Size();
@@ -2337,9 +2341,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocket::SetPayload(const CString &String) {
+        void CWebSocket::SetPayload(const CString &String, uint32_t Key) {
             m_Frame.FIN = WS_FIN;
             m_Frame.Opcode = WS_OPCODE_TEXT;
+
+            if (Key != 0) {
+                m_Frame.SetMaskingKey(Key);
+            }
 
             if (String.Size() < WS_PAYLOAD_LENGTH_16) {
                 m_Frame.Length = String.Size();
@@ -2404,7 +2412,7 @@ namespace Delphi {
                             DoWaitRequest();
                         } else {
                             m_ConnectionStatus = csRequestOk;
-                            //DoRequest();
+                            DoRequest();
                             OnExecute(this);
                         }
 
@@ -2439,7 +2447,13 @@ namespace Delphi {
         void CWebSocketConnection::SendWebSocket(bool ASendNow) {
 
             GetWSReply()->SaveToStream(*OutputBuffer());
-
+#ifdef _DEBUG
+            const auto &Stream = *OutputBuffer();
+            CString Hex;
+            Hex.SetLength(Stream.Size() * 3 + 1);
+            ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Stream.Memory(), Stream.Size(), 32);
+            DebugMessage("\n[OUTPUT] %d: %s\n", Stream.Size(), Hex.c_str());
+#endif
             m_ConnectionStatus = csReplyReady;
 
             DoReply();
