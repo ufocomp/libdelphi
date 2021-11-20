@@ -954,7 +954,7 @@ namespace Delphi {
 
             size_t m_ContentLength;
 
-            void ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
         protected:
 
@@ -1002,7 +1002,7 @@ namespace Delphi {
             size_t m_ContentLength;
             size_t m_ChunkedLength;
 
-            void ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
         protected:
 

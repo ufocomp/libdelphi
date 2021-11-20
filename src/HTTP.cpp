@@ -1995,7 +1995,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
+        void CHTTPServerConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
             CHTTPContext Context = CHTTPContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
             const int ParseResult = CHTTPRequestParser::Parse(GetRequest(), Context);
 
@@ -2033,7 +2033,7 @@ namespace Delphi {
                     InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
-                            ParseHTTP(Stream, std::move(OnExecute));
+                            CHTTPServerConnection::Parse(Stream, std::move(OnExecute));
                             break;
                         case pWebSocket:
                             CWebSocketConnection::Parse(Stream, std::move(OnExecute));
@@ -2149,7 +2149,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPClientConnection::ParseHTTP(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
+        void CHTTPClientConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
                 CHTTPReplyContext Context = CHTTPReplyContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
 
             const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
@@ -2188,7 +2188,7 @@ namespace Delphi {
                     InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
-                            ParseHTTP(Stream, std::move(OnExecute));
+                            CHTTPClientConnection::Parse(Stream, std::move(OnExecute));
                             break;
                         case pWebSocket:
                             CWebSocketConnection::Parse(Stream, std::move(OnExecute));

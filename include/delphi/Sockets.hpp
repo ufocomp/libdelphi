@@ -1233,6 +1233,8 @@ namespace Delphi {
             CStringList m_Data;
 
             CNotifyEvent m_OnWaitRequest;
+            CNotifyEvent m_OnWaitReply;
+
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
@@ -1246,10 +1248,12 @@ namespace Delphi {
             CWebSocket *GetWSReply();
 
             void DoWaitRequest();
+            void DoWaitReply();
+
             void DoRequest();
             void DoReply();
 
-            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            virtual void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         public:
 
@@ -1278,6 +1282,9 @@ namespace Delphi {
 
             const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
             void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
+
+            const CNotifyEvent &OnWaitReply() { return m_OnWaitReply; }
+            void OnWaitReply(CNotifyEvent && Value) { m_OnWaitReply = Value; }
 
             const CNotifyEvent &OnRequest() { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }

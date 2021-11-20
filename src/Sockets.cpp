@@ -2377,6 +2377,8 @@ namespace Delphi {
             m_WSReply = nullptr;
 
             m_OnWaitRequest = nullptr;
+            m_OnWaitReply = nullptr;
+
             m_OnRequest = nullptr;
             m_OnReply = nullptr;
         }
@@ -2481,8 +2483,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketConnection::SendWebSocketPing(bool ASendNow) {
+            TCHAR szDate[25] = {0};
 
-            GetWSReply()->Ping(*OutputBuffer());
+            auto pReply = GetWSReply();
+
+            pReply->Clear();
+            pReply->SetPayload(DateTimeToStr(Now(), szDate, sizeof(szDate)), (uint32_t) MsEpoch());
+            pReply->Ping(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2497,9 +2504,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketConnection::SendWebSocketPong(bool ASendNow) {
+            auto pReply = GetWSReply();
+            auto pRequest = GetWSRequest();
 
-            GetWSReply()->SetPayload(GetWSRequest()->Payload());
-            GetWSReply()->Pong(*OutputBuffer());
+            pReply->Clear();
+            pReply->SetPayload(pRequest->Payload());
+            pReply->Pong(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2532,6 +2542,13 @@ namespace Delphi {
         void CWebSocketConnection::DoWaitRequest() {
             if (m_OnWaitRequest != nullptr) {
                 m_OnWaitRequest(this);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocketConnection::DoWaitReply() {
+            if (m_OnWaitReply != nullptr) {
+                m_OnWaitReply(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------

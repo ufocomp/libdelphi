@@ -220,9 +220,6 @@ namespace Delphi {
         CSMTPConnection::CSMTPConnection(CPollSocketClient *AClient) : CTCPClientConnection(AClient) {
             m_ConnectionStatus = csConnected;
             m_CloseConnection = false;
-            m_OnWaitReply = nullptr;
-            m_OnRequest = nullptr;
-            m_OnReply= nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -232,6 +229,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSMTPConnection::Clear() {
+            CWebSocketConnection::Clear();
             m_Command.Clear();
             m_ConnectionStatus = csConnected;
             m_CloseConnection = false;
@@ -284,27 +282,6 @@ namespace Delphi {
             m_Command.ToBuffers(*OutputBuffer());
             DoRequest();
             return WriteAsync();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPConnection::DoWaitReply() {
-            if (m_OnWaitReply != nullptr) {
-                m_OnWaitReply(this);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPConnection::DoRequest() {
-            if (m_OnRequest != nullptr) {
-                m_OnRequest(this);
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSMTPConnection::DoReply() {
-            if (m_OnReply != nullptr) {
-                m_OnReply(this);
-            }
         }
 
         //--------------------------------------------------------------------------------------------------------------

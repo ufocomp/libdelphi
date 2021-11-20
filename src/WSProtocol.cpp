@@ -240,14 +240,14 @@ namespace Delphi {
 
             pHandler->Action() = Action;
 
-            CString LResult;
+            CString Result;
 
-            CWSProtocol::Call(pHandler->UniqueId(), Action, Payload, LResult);
+            CWSProtocol::Call(pHandler->UniqueId(), Action, Payload, Result);
 
             auto pWSReply = pConnection->WSReply();
 
             pWSReply->Clear();
-            pWSReply->SetPayload(LResult);
+            pWSReply->SetPayload(Result);
 
             pConnection->SendWebSocket(true);
 
@@ -258,8 +258,8 @@ namespace Delphi {
         CMessageHandler *CMessageManager::FindMessageById(const CString &Value) {
             CMessageHandler *Handler = nullptr;
 
-            for (int I = 0; I < Count(); ++I) {
-                Handler = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                Handler = Get(i);
                 if (Handler->UniqueId() == Value)
                     return Handler;
             }
@@ -367,8 +367,8 @@ namespace Delphi {
 
         CSession *CSessionManager::Find(const CString &Session, const CString &Identity) {
             CSession *pSession;
-            for (int I = 0; I < Count(); ++I) {
-                pSession = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                pSession = Get(i);
                 if (pSession->Session() == Session && pSession->Identity() == Identity)
                     return pSession;
             }
@@ -379,8 +379,8 @@ namespace Delphi {
 
         CSession *CSessionManager::FindByIP(const CString &Value) {
             CSession *pSession;
-            for (int I = 0; I < Count(); ++I) {
-                pSession = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                pSession = Get(i);
                 if (pSession->IP() == Value)
                     return pSession;
             }
@@ -391,8 +391,8 @@ namespace Delphi {
 
         CSession *CSessionManager::FindBySession(const CString &Value) {
             CSession *pSession;
-            for (int I = 0; I < Count(); ++I) {
-                pSession = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                pSession = Get(i);
                 if (pSession->Session() == Value)
                     return pSession;
             }
@@ -403,8 +403,8 @@ namespace Delphi {
 
         CSession *CSessionManager::FindByIdentity(const CString &Value) {
             CSession *pSession;
-            for (int I = 0; I < Count(); ++I) {
-                pSession = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                pSession = Get(i);
                 if (pSession->Identity() == Value)
                     return pSession;
             }
@@ -415,8 +415,8 @@ namespace Delphi {
 
         CSession *CSessionManager::FindByConnection(CHTTPServerConnection *Value) {
             CSession *pSession;
-            for (int I = 0; I < Count(); ++I) {
-                pSession = Get(I);
+            for (int i = 0; i < Count(); ++i) {
+                pSession = Get(i);
                 if (pSession->Connection() == Value)
                     return pSession;
             }

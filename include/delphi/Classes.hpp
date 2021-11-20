@@ -481,7 +481,7 @@ namespace Delphi {
             size_t Position() const { return GetPosition(); };
             void Position(size_t Value) { SetPosition(Value); };
 
-            size_t Size() const { return GetSize(); };
+            virtual size_t Size() const { return GetSize(); };
             void Size(size_t Value) { SetSize(Value); };
 
         }; // CStream
@@ -780,7 +780,7 @@ namespace Delphi {
 
             size_t Length() const noexcept { return GetLength(); };
 
-            size_t Size() const noexcept { return GetSize(); };
+            size_t Size() const noexcept override { return GetSize(); };
 
             TCHAR GetChar(size_t Index) const;
 
@@ -894,8 +894,8 @@ namespace Delphi {
 
             operator std::basic_string<char>() const {
                 if (IsEmpty())
-                    return std::basic_string<char>();
-                return std::basic_string<char>(Data(), Size());
+                    return {};
+                return { Data(), Size() };
             };
 
             explicit operator const char *() const {
@@ -1122,9 +1122,6 @@ namespace Delphi {
         #define sNameValueSeparator _T('=')
 
         class CStrings;
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CStringsEnumerator;
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CStrings: public CPersistent {

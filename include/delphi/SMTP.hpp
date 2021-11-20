@@ -209,25 +209,13 @@ namespace Delphi {
 
             CSMTPCommand m_Command;
 
-            CConnectionStatus m_ConnectionStatus;
-
-            CNotifyEvent m_OnWaitReply;
-            CNotifyEvent m_OnRequest;
-            CNotifyEvent m_OnReply;
-
-        protected:
-
-            void DoWaitReply();
-            void DoRequest();
-            void DoReply();
-
         public:
 
             explicit CSMTPConnection(CPollSocketClient *AClient);
 
             ~CSMTPConnection() override;
 
-            virtual void Clear();
+            void Clear() override;
 
             bool ParseInput();
             bool SendCommand();
@@ -236,18 +224,6 @@ namespace Delphi {
 
             CSMTPCommand &Command() { return m_Command; }
             const CSMTPCommand &Command() const { return m_Command; }
-
-            CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; };
-            void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; };
-
-            const CNotifyEvent &OnWaitReply() { return m_OnWaitReply; }
-            void OnWaitReply(CNotifyEvent && Value) { m_OnWaitReply = Value; }
-
-            const CNotifyEvent &OnRequest() { return m_OnRequest; }
-            void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
-
-            const CNotifyEvent &OnReply() { return m_OnReply; }
-            void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
         }; // CHTTPServerConnection
 

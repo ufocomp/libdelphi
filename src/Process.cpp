@@ -101,7 +101,7 @@ namespace Delphi {
                 }
 
                 if (setuid(m_pwd.uid) == -1) {
-                    throw EOSError(errno, "setuid(%d) failed.", m_pwd.username, m_pwd.gid);
+                    throw EOSError(errno, "setuid(%d) failed.", m_pwd.gid);
                 }
             }
         }
