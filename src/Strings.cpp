@@ -411,7 +411,7 @@ namespace Delphi {
         char *ld_sprintf(char *buf, LPCSTR fmt, ...)
         {
             char   *p;
-            va_list   args;
+            va_list args;
 
             va_start(args, fmt);
             p = ld_vslprintf(buf, (char *) -1, fmt, args);
@@ -424,7 +424,7 @@ namespace Delphi {
         char *ld_slprintf(char *buf, char *last, LPCSTR fmt, ...) {
 
             char   *p;
-            va_list   args;
+            va_list args;
 
             va_start(args, fmt);
             p = ld_vslprintf(buf, last, fmt, args);
@@ -437,7 +437,7 @@ namespace Delphi {
         char *ld_snprintf(char *buf, size_t max, LPCSTR fmt, ...) {
 
             char   *p;
-            va_list   args;
+            va_list args;
 
             va_start(args, fmt);
             p = ld_vslprintf(buf, buf + max, fmt, args);
