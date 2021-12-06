@@ -167,6 +167,7 @@ namespace Delphi {
             COnPQConnectionNotifyEvent m_OnNotify;
 
             COnPQConnectionEvent m_OnError;
+            COnPQConnectionEvent m_OnTimeOut;
             COnPQConnectionEvent m_OnStatus;
             COnPQConnectionEvent m_OnPollingStatus;
 
@@ -180,6 +181,7 @@ namespace Delphi {
             void DoNotify(CPQConnection *AConnection, PGnotify *ANotify);
 
             void DoError(CPQConnection *AConnection);
+            void DoTimeOut(CPQConnection *AConnection);
             void DoStatus(CPQConnection *AConnection);
             void DoPollingStatus(CPQConnection *AConnection);
             void DoConnected(CPQConnection *AConnection);
@@ -205,6 +207,9 @@ namespace Delphi {
 
             const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
+
+            const COnPQConnectionEvent &OnTimeOut() const { return m_OnTimeOut; }
+            void OnTimeOut(COnPQConnectionEvent && Value) { m_OnTimeOut = Value; }
 
             const COnPQConnectionEvent &OnStatus() const { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }
@@ -648,6 +653,7 @@ namespace Delphi {
             COnPQConnectionNotifyEvent m_OnNotify;
 
             COnPQConnectionEvent m_OnError;
+            COnPQConnectionEvent m_OnTimeOut;
             COnPQConnectionEvent m_OnStatus;
             COnPQConnectionEvent m_OnPollingStatus;
 
@@ -660,6 +666,7 @@ namespace Delphi {
             virtual void DoNotify(CPQConnection *AConnection, PGnotify *ANotify);
 
             virtual void DoError(CPQConnection *AConnection);
+            virtual void DoPQTimeOut(CPQConnection *AConnection);
             virtual void DoStatus(CPQConnection *AConnection);
             virtual void DoPollingStatus(CPQConnection *AConnection);
 
@@ -681,6 +688,9 @@ namespace Delphi {
 
             const COnPQConnectionEvent &OnError() const { return m_OnError; }
             void OnError(COnPQConnectionEvent && Value) { m_OnError = Value; }
+
+            const COnPQConnectionEvent &OnTimeOut() const { return m_OnTimeOut; }
+            void OnTimeOut(COnPQConnectionEvent && Value) { m_OnTimeOut = Value; }
 
             const COnPQConnectionEvent &OnStatus() const { return m_OnStatus; }
             void OnStatus(COnPQConnectionEvent && Value) { m_OnStatus = Value; }

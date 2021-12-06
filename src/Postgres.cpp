@@ -305,6 +305,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnectionEvent::DoTimeOut(CPQConnection *APQConnection) {
+            if (m_OnTimeOut != nullptr) {
+                m_OnTimeOut(APQConnection);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPQConnectionEvent::DoStatus(CPQConnection *APQConnection) {
             if (m_OnStatus != nullptr) {
                 m_OnStatus(APQConnection);
@@ -1100,6 +1107,7 @@ namespace Delphi {
             m_OnNotify = nullptr;
 
             m_OnError = nullptr;
+            m_OnTimeOut = nullptr;
             m_OnStatus = nullptr;
             m_OnPollingStatus = nullptr;
 
@@ -1132,6 +1140,13 @@ namespace Delphi {
         void CPQConnectPollEvent::DoError(CPQConnection *AConnection) {
             if (m_OnError != nullptr) {
                 m_OnError(AConnection);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectPollEvent::DoPQTimeOut(CPQConnection *AConnection) {
+            if (m_OnTimeOut != nullptr) {
+                m_OnTimeOut(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1354,6 +1369,10 @@ namespace Delphi {
                     pConnection->OnError([this](auto && AConnection) { DoError(AConnection); });
                 }
 
+                if (m_OnTimeOut != nullptr) {
+                    pConnection->OnTimeOut([this](auto && AConnection) { DoPQTimeOut(AConnection); });
+                }
+
                 if (m_OnStatus != nullptr) {
                     pConnection->OnStatus([this](auto && AConnection) { DoStatus(AConnection); });
                 }
@@ -1511,7 +1530,7 @@ namespace Delphi {
             auto pConnection = GetHandlerConnection(AHandler);
             if (Assigned(pConnection)) {
                 if (PQstatus(pConnection->Handle()) != CONNECTION_OK) {
-                    DoError(pConnection);
+                    DoPQTimeOut(pConnection);
                     AHandler->Stop();
                 }
             }
@@ -1519,7 +1538,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoConnect(CPollEventHandler *AHandler) {
-
+            if (m_OnConnected != nullptr) {
+                m_OnConnected(AHandler);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
