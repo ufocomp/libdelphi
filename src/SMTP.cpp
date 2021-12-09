@@ -603,7 +603,9 @@ namespace Delphi {
             auto& command = pConnection->Command();
             if (command.LastCode() == 220) {
                 if (Assigned(pSocket)) {
+#ifdef WITH_SSL
                     m_bStartTls = pSocket->SSLMethod() == sslClient;
+#endif
                 }
                 pConnection->NewCommand("HELLO", CString().Format("EHLO %s", pConnection->Socket()->Binding()->IP()));
             } else {
