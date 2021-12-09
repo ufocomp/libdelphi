@@ -243,6 +243,8 @@ namespace Delphi {
             int m_MessageIndex;
             int m_ToIndex;
 
+            bool m_bStartTls;
+
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 

@@ -46,6 +46,8 @@ namespace Delphi {
         class CMessage: public CObject {
         private:
 
+            CString m_Session;
+
             CString m_MessageId;
             CString m_MsgId;
 
@@ -82,6 +84,9 @@ namespace Delphi {
 
             bool Submitted() const { return m_Submitted; }
             void Submitted(bool Value) { m_Submitted = Value; }
+
+            CString &Session() { return m_Session; };
+            const CString &Session() const { return m_Session; };
 
             CString &MessageId() { return m_MessageId; };
             const CString &MessageId() const { return m_MessageId; };

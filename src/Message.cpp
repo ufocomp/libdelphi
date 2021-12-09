@@ -53,11 +53,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CMessage::Assign(const CMessage &Message) {
+            m_Session = Message.m_Session;
             m_MessageId = Message.m_MessageId;
             m_From = Message.m_From;
             m_To = Message.m_To;
             m_Subject = Message.m_Subject;
             m_Body = Message.m_Body;
+            m_Content = Message.m_Content;
 
             m_Submitted = Message.m_Submitted;
 
@@ -67,11 +69,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CMessage::Clear() {
+            m_Session.Clear();
             m_MessageId.Clear();
             m_From.Clear();
             m_To.Clear();
             m_Subject.Clear();
             m_Body.Clear();
+            m_Content.Clear();
+            m_Submitted = false;
         }
         //--------------------------------------------------------------------------------------------------------------
 

@@ -293,6 +293,7 @@ namespace Delphi {
         CSMTPClient::CSMTPClient(): CAsyncClient() {
             m_MessageIndex = 0;
             m_ToIndex = 0;
+            m_bStartTls = false;
             m_OnRequest = nullptr;
             m_OnReply = nullptr;
         }
@@ -598,8 +599,12 @@ namespace Delphi {
 
         void CSMTPClient::DoCONNECT(CCommand *ACommand) {
             auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
+            auto pSocket = pConnection->Socket()->Binding();
             auto& command = pConnection->Command();
             if (command.LastCode() == 220) {
+                if (Assigned(pSocket)) {
+                    m_bStartTls = pSocket->SSLMethod() == sslClient;
+                }
                 pConnection->NewCommand("HELLO", CString().Format("EHLO %s", pConnection->Socket()->Binding()->IP()));
             } else {
                 command.ErrorMessage() = command.LastMessage();
@@ -612,19 +617,15 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CSMTPConnection *> (ACommand->Connection());
             auto& command = pConnection->Command();
             if (command.LastCode() == 250) {
-                int Index = 0;
-                while (Index < command.Reply().Count() && command.Reply()[Index].Find("STARTTLS") == -1)
-                    Index++;
+                if (m_bStartTls) {
+                    CString plain;
 
-                if (Index == command.Reply().Count()) {
-                    CString Plain;
+                    plain.Write("\0", 1);
+                    plain << m_Config.UserName();
+                    plain.Write("\0", 1);
+                    plain << m_Config.Password();
 
-                    Plain.Write("\0", 1);
-                    Plain << m_Config.UserName();
-                    Plain.Write("\0", 1);
-                    Plain << m_Config.Password();
-
-                    pConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(Plain));
+                    pConnection->NewCommand("AUTH", "AUTH PLAIN " + base64_encode(plain));
                 } else {
 #ifdef WITH_SSL
                     pConnection->NewCommand("STARTTLS");
@@ -644,12 +645,16 @@ namespace Delphi {
             auto& command = pConnection->Command();
             if (command.LastCode() == 220) {
 #ifdef WITH_SSL
-                auto Socket = pConnection->Socket()->Binding();
-                if (Assigned(Socket)) {
-                    Socket->SSLMethod(sslClient);
-                    Socket->AllocateSSL();
-                    Socket->ConnectSSL();
+                auto pSocket = pConnection->Socket()->Binding();
+                if (Assigned(pSocket)) {
+                    if (pSocket->SSLMethod() == sslNotUsed) {
+                        pSocket->SSLMethod(sslClient);
+                        pSocket->AllocateSSL();
+                        pSocket->ConnectSSL();
+                    }
                 }
+
+                m_bStartTls = pSocket->SSLMethod() == sslClient;
 #endif
                 pConnection->NewCommand("HELLO", CString().Format("EHLO %s", pConnection->Socket()->Binding()->IP()));
             } else {
