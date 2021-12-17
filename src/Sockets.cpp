@@ -1299,7 +1299,7 @@ namespace Delphi {
 
         ssize_t CIOHandlerSocket::Send(void *ABuf, size_t ALen) {
             if (Connected())
-                return Binding()->Send(ABuf, ALen);
+                return Binding()->Send(ABuf, ALen, MSG_NOSIGNAL);
             else
                 throw ESocketError(_T("Disconnected."));
         }
