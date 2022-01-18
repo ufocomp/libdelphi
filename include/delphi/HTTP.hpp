@@ -365,9 +365,6 @@ namespace Delphi {
                     Username = Passphrase.SubString(0, pos);
                     Password = Passphrase.SubString(pos + 1);
 
-                    if (Username.IsEmpty())
-                        throw CAuthorizationError("Username has not be empty.");
-
                 } else if (String.SubString(0, 6).Lower() == "bearer") {
 
                     Schema = asBearer;
