@@ -637,11 +637,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CPQServer;
+        class CPQClient;
         //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CPQConnection *AConnection, const Delphi::Exception::Exception &E)> COnPQConnectionExceptionEvent;
-        typedef std::function<void (CPQServer *AServer, const Delphi::Exception::Exception &E)> COnPQServerExceptionEvent;
+        typedef std::function<void (CPQClient *AClient, const Delphi::Exception::Exception &E)> COnPQClientExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQConnectPollEvent: public CObject {
@@ -658,7 +658,7 @@ namespace Delphi {
             COnPQConnectionEvent m_OnPollingStatus;
 
             COnPQConnectionExceptionEvent m_OnConnectException;
-            COnPQServerExceptionEvent m_OnServerException;
+            COnPQClientExceptionEvent m_OnServerException;
 
             virtual void DoReceiver(CPQConnection *AConnection, const PGresult *AResult);
             virtual void DoProcessor(CPQConnection *AConnection, LPCSTR AMessage);
@@ -701,8 +701,8 @@ namespace Delphi {
             const COnPQConnectionExceptionEvent &OnConnectException() const { return m_OnConnectException; }
             void OnConnectException(COnPQConnectionExceptionEvent && Value) { m_OnConnectException = Value; }
 
-            const COnPQServerExceptionEvent &OnServerException() const { return m_OnServerException; }
-            void OnServerException(COnPQServerExceptionEvent && Value) { m_OnServerException = Value; }
+            const COnPQClientExceptionEvent &OnServerException() const { return m_OnServerException; }
+            void OnServerException(COnPQClientExceptionEvent && Value) { m_OnServerException = Value; }
 
         };
 
@@ -802,11 +802,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //- CPQServer --------------------------------------------------------------------------------------------------
+        //- CPQClient --------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CPQServer: public CPQConnectPoll {
+        class CPQClient: public CPQConnectPoll {
         protected:
 
             bool DoCommand(CTCPConnection *AConnection) override;
@@ -816,9 +816,9 @@ namespace Delphi {
 
         public:
 
-            explicit CPQServer(size_t ASizeMin = 5, size_t ASizeMax = 10): CPQConnectPoll(ASizeMin, ASizeMax) {};
+            explicit CPQClient(size_t ASizeMin = 5, size_t ASizeMax = 10): CPQConnectPoll(ASizeMin, ASizeMax) {};
 
-            ~CPQServer() override = default;
+            ~CPQClient() override = default;
 
             CPQPollQuery *GetQuery();
 

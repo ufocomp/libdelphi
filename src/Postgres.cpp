@@ -1652,16 +1652,16 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //- CPQServer --------------------------------------------------------------------------------------------------
+        //- CPQClient --------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollQuery *CPQServer::GetQuery() {
+        CPQPollQuery *CPQClient::GetQuery() {
             return new CPQPollQuery(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollQuery *CPQServer::FindQueryByConnection(CPollConnection *APollConnection) {
+        CPQPollQuery *CPQClient::FindQueryByConnection(CPollConnection *APollConnection) {
             for (int i = 0; i < PollQueryManager()->QueryCount(); ++i) {
                 if (PollQueryManager()->Queries(i)->Binding() == APollConnection)
                     return PollQueryManager()->Queries(i);
@@ -1670,19 +1670,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQServer::DoServerException(const Delphi::Exception::Exception &E) {
+        void CPQClient::DoServerException(const Delphi::Exception::Exception &E) {
             if (m_OnServerException != nullptr) {
                 m_OnServerException(this, E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CPQServer::DoCommand(CTCPConnection *AConnection) {
+        bool CPQClient::DoCommand(CTCPConnection *AConnection) {
             return false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        bool CPQServer::DoExecute(CTCPConnection *AConnection) {
+        bool CPQClient::DoExecute(CTCPConnection *AConnection) {
             return CEPollClient::DoExecute(AConnection);
         }
     }
