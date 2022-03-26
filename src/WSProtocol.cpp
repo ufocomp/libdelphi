@@ -314,10 +314,14 @@ namespace Delphi {
         void CSession::SwitchConnection(CHTTPServerConnection *AConnection) {
             if (m_pConnection != AConnection) {
                 BeginUpdate();
-                m_pConnection->Disconnect();
-                DeleteFromConnection(m_pConnection);
+                if (Assigned(AConnection)) {
+                    if (Assigned(m_pConnection)) {
+                        m_pConnection->Disconnect();
+                        DeleteFromConnection(m_pConnection);
+                    }
+                    AddToConnection(AConnection);
+                }
                 m_pConnection = AConnection;
-                AddToConnection(m_pConnection);
                 EndUpdate();
             }
         }
@@ -332,11 +336,7 @@ namespace Delphi {
             if (Object == nullptr)
                 throw Delphi::Exception::ExceptionFrm("Object in connection data is null");
 
-            auto Session = dynamic_cast<CSession *> (Object);
-            if (Session == nullptr)
-                throw Delphi::Exception::Exception("Session is null");
-
-            return Session;
+            return dynamic_cast<CSession *> (Object);
         }
 
         //--------------------------------------------------------------------------------------------------------------
