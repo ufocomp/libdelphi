@@ -167,35 +167,49 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWSProtocol::Call(const CString &UniqueId, const CString &Action, const CJSON &Payload, CString &Result) {
-            CWSMessage Message;
-            Message.MessageTypeId = mtCall;
-            Message.UniqueId = UniqueId;
-            Message.Action = Action;
-            Message.Payload = Payload;
-            Response(Message, Result);
+        CWSMessage CWSProtocol::Call(const CString &UniqueId, const CString &Action, const CJSON &Payload) {
+            CWSMessage Result;
+            Result.MessageTypeId = mtCall;
+            Result.UniqueId = UniqueId;
+            Result.Action = Action;
+            Result.Payload = Payload;
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWSProtocol::CallResult(const CString &UniqueId, const CJSON &Payload, CString &Result) {
-            CWSMessage Message;
-            Message.MessageTypeId = mtCallResult;
-            Message.UniqueId = UniqueId;
-            Message.Payload = Payload;
-            Response(Message, Result);
+        CWSMessage CWSProtocol::CallResult(const CString &UniqueId, const CJSON &Payload) {
+            CWSMessage Result;
+            Result.MessageTypeId = mtCallResult;
+            Result.UniqueId = UniqueId;
+            Result.Payload = Payload;
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWSProtocol::CallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage,
+        CWSMessage CWSProtocol::CallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage, const CJSON &Payload) {
+            CWSMessage Result;
+            Result.MessageTypeId = mtCallError;
+            Result.UniqueId = UniqueId;
+            Result.ErrorCode = ErrorCode;
+            Result.ErrorMessage = ErrorMessage;
+            Result.Payload = Payload;
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWSProtocol::ResponseCall(const CString &UniqueId, const CString &Action, const CJSON &Payload, CString &Result) {
+            Response(Call(UniqueId, Action, Payload), Result);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWSProtocol::ResponseCallResult(const CString &UniqueId, const CJSON &Payload, CString &Result) {
+            Response(CallResult(UniqueId, Payload), Result);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWSProtocol::ResponseCallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage,
                 const CJSON &Payload, CString &Result) {
-
-            CWSMessage Message;
-            Message.MessageTypeId = mtCallError;
-            Message.UniqueId = UniqueId;
-            Message.ErrorCode = ErrorCode;
-            Message.ErrorMessage = ErrorMessage;
-            Message.Payload = Payload;
-            Response(Message, Result);
+            Response(CallError(UniqueId, ErrorCode, ErrorMessage, Payload), Result);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -242,7 +256,7 @@ namespace Delphi {
 
             CString Result;
 
-            CWSProtocol::Call(pHandler->UniqueId(), Action, Payload, Result);
+            CWSProtocol::ResponseCall(pHandler->UniqueId(), Action, Payload, Result);
 
             auto pWSReply = pConnection->WSReply();
 

@@ -41,11 +41,28 @@ namespace Delphi {
 
         typedef struct CWSMessage {
             CWSMessageType MessageTypeId = mtOpen;
-            CString UniqueId;
-            CString Action;
+            CString UniqueId {};
+            CString Action {};
             int ErrorCode = -1;
-            CString ErrorMessage;
-            CJSON Payload;
+            CString ErrorMessage {};
+            CJSON Payload {};
+
+            static CString MessageTypeIdToString(CWSMessageType Value) {
+                switch (Value) {
+                    case mtOpen:
+                        return {"Open"};
+                    case mtClose:
+                        return {"Close"};
+                    case mtCall:
+                        return {"Call"};
+                    case mtCallResult:
+                        return {"CallResult"};
+                    case mtCallError:
+                        return {"CallError"};
+                    default:
+                        throw ExceptionFrm("Invalid \"MessageType\" value: %d", Value);
+                }
+            }
 
             size_t Size() const {
                 return UniqueId.Size() + Action.Size() + ErrorMessage.Size();
@@ -74,9 +91,13 @@ namespace Delphi {
 
             static void PrepareResponse(const CWSMessage &Request, CWSMessage &Response);
 
-            static void Call(const CString &UniqueId, const CString &Action, const CJSON &Payload, CString &Result);
-            static void CallResult(const CString &UniqueId, const CJSON &Payload, CString &Result);
-            static void CallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage, const CJSON &Payload, CString &Result);
+            static void ResponseCall(const CString &UniqueId, const CString &Action, const CJSON &Payload, CString &Result);
+            static void ResponseCallResult(const CString &UniqueId, const CJSON &Payload, CString &Result);
+            static void ResponseCallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage, const CJSON &Payload, CString &Result);
+
+            static CWSMessage Call(const CString &UniqueId, const CString &Action, const CJSON &Payload);
+            static CWSMessage CallResult(const CString &UniqueId, const CJSON &Payload);
+            static CWSMessage CallError(const CString &UniqueId, int ErrorCode, const CString &ErrorMessage, const CJSON &Payload);
 
         };
 
