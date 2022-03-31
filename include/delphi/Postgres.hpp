@@ -623,11 +623,11 @@ namespace Delphi {
 
             ~CPQPollQueryManager() override = default;
 
-            int QueryCount() { return CPollManager::Count(); };
+            int QueryCount() const { return CPollManager::Count(); }
 
-            CPQPollQuery *Queries(int Index) const { return (CPQPollQuery *) CPollManager::Items(Index); };
+            CPQPollQuery *Queries(int Index) const { return (CPQPollQuery *) CPollManager::Items(Index); }
 
-            CPQPollQuery *operator[] (int Index) const override { return Queries(Index); };
+            CPQPollQuery *operator[] (int Index) const override { return Queries(Index); }
 
         };
 
@@ -717,11 +717,10 @@ namespace Delphi {
 
         private:
 
-            CQueue *m_pQueue;
+            CQueue m_Queue;
 
-            CPollManager *m_pPollManager;
-
-            CPQPollQueryManager *m_pPollQueryManager;
+            CPollManager m_PollManager;
+            CPQPollQueryManager m_PollQueryManager;
 
             CEPollTimer *m_pTimer;
 
@@ -786,9 +785,16 @@ namespace Delphi {
             bool Active() const { return m_Active; };
             void Active(bool Value) { SetActive(Value); };
 
-            CQueue *Queue() const { return m_pQueue; };
-            CPollManager *PollManager() const { return m_pPollManager; };
-            CPQPollQueryManager *PollQueryManager() const { return m_pPollQueryManager; };
+            int AddToQueue(CPQPollQuery *AQuery);
+            void RemoveFromQueue(CPQPollQuery *AQuery);
+
+            const CQueue &Queue() const { return m_Queue; }
+            const CPollManager &PollManager() const { return m_PollManager; }
+
+            CPQPollQueryManager &PollQueryManager() { return m_PollQueryManager; }
+            const CPQPollQueryManager &PollQueryManager() const { return m_PollQueryManager; }
+
+            CPQPollQueryManager *ptrPollQueryManager() { return &m_PollQueryManager; }
 
             size_t SizeMin() const { return m_SizeMin; }
             void SizeMin(size_t Value) { m_SizeMin = Value; }
@@ -796,7 +802,7 @@ namespace Delphi {
             size_t SizeMax() const { return m_SizeMax; }
             void SizeMax(size_t Value) { m_SizeMax = Value; }
 
-            CPQPollConnection *Connections(int Index) const { return GetConnection(Index); };
+            CPQPollConnection *Connections(int Index) const { return GetConnection(Index); }
 
         };
 
@@ -822,7 +828,7 @@ namespace Delphi {
 
             CPQPollQuery *GetQuery();
 
-            CPQPollQuery *FindQueryByConnection(CPollConnection *APollConnection);
+            CPQPollQuery *FindQueryByConnection(CPollConnection *APollConnection) const;
 
         };
     }

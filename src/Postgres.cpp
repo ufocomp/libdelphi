@@ -1018,7 +1018,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollQuery::CPQPollQuery(CPQConnectPoll *AServer): CPQQuery(), CPollConnection(AServer->PollQueryManager()) {
+        CPQPollQuery::CPQPollQuery(CPQConnectPoll *AServer): CPQQuery(), CPollConnection(AServer->ptrPollQueryManager()) {
             m_pServer = AServer;
 
             m_OnExecuted = nullptr;
@@ -1039,7 +1039,7 @@ namespace Delphi {
                     }
                 } else {
 
-                    if (m_pServer->Queue()->Count() == 0x0FFF)
+                    if (m_pServer->Queue().Count() == 0x0FFF)
                         throw EPollServerError(_T("Query queue is full."));
 
                     return AddToQueue();
@@ -1060,18 +1060,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CPQPollQuery::AddToQueue() {
-            if (Binding() == nullptr)
-                return m_pServer->Queue()->AddToQueue(m_pServer, this);
-            return m_pServer->Queue()->AddToQueue(Binding(), this);;
+            return m_pServer->AddToQueue(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQPollQuery::RemoveFromQueue() {
-            if (Binding() == nullptr) {
-                m_pServer->Queue()->RemoveFromQueue(m_pServer, this);
-            } else {
-                m_pServer->Queue()->RemoveFromQueue(Binding(), this);
-            }
+            m_pServer->RemoveFromQueue(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1187,10 +1181,6 @@ namespace Delphi {
             m_SizeMin = ASizeMin;
             m_SizeMax = ASizeMax;
 
-            m_pQueue = new CQueue();
-            m_pPollQueryManager = new CPQPollQueryManager();
-            m_pPollManager = new CPollManager();
-
             m_OnEventHandlerException = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1203,14 +1193,11 @@ namespace Delphi {
 
         CPQConnectPoll::~CPQConnectPoll() {
             StopAll();
-            FreeAndNil(m_pQueue);
-            FreeAndNil(m_pPollManager);
-            FreeAndNil(m_pPollQueryManager);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CPQPollConnection *CPQConnectPoll::GetConnection(int Index) const {
-            return dynamic_cast<CPQPollConnection *> (m_pPollManager->Items(Index));
+            return dynamic_cast<CPQPollConnection *> (m_PollManager[Index]);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1274,6 +1261,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CPQConnectPoll::AddToQueue(CPQPollQuery *AQuery) {
+            return m_Queue.AddToQueue(this, AQuery);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPQConnectPoll::RemoveFromQueue(CPQPollQuery *AQuery) {
+            m_Queue.RemoveFromQueue(this, AQuery);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CPollEventHandler *CPQConnectPoll::NewEventHandler(CPQConnection *AConnection) {
             CPollEventHandler *pEventHandler = nullptr;
 
@@ -1319,7 +1316,7 @@ namespace Delphi {
 
         bool CPQConnectPoll::NewConnection() {
             int PingCount = 0;
-            auto pConnection = new CPQPollConnection(m_ConnInfo, m_pPollManager);
+            auto pConnection = new CPQPollConnection(m_ConnInfo, &m_PollManager);
 
             try {
                 m_ConnInfo.PingValid(m_ConnInfo.Ping() == PQPING_OK);
@@ -1478,7 +1475,7 @@ namespace Delphi {
                 }
             }
 
-            if (pResult == nullptr && (m_pPollManager->Count() < (int) m_SizeMax)) {
+            if (pResult == nullptr && (m_PollManager.Count() < (int) m_SizeMax)) {
                 if (!NewConnection())
                     throw Exception::EDBConnectionError(_T("Unable to create new database connection."));
             }
@@ -1610,8 +1607,7 @@ namespace Delphi {
                         case qsReady:
                             pConnection->Flush();
 
-                            if ((m_pQueue->Count() == 0) && !pConnection->Listener() &&
-                                (m_pPollManager->Count() > (int) m_SizeMax)) {
+                            if ((m_Queue.Count() == 0) && !pConnection->Listener() && (m_PollManager.Count() > (int) m_SizeMax)) {
                                 pConnection->Disconnect();
                             }
 
@@ -1643,8 +1639,8 @@ namespace Delphi {
 
         void CPQConnectPoll::CheckQueue() {
             CPQPollQuery *pPollQuery;
-            if (m_pQueue->Count() > 0) {
-                pPollQuery = (CPQPollQuery *) m_pQueue->First()->First();
+            if (m_Queue.Count() > 0) {
+                pPollQuery = (CPQPollQuery *) m_Queue.FirstItem(this);
                 pPollQuery->RemoveFromQueue();
                 pPollQuery->Start();
             }
@@ -1661,10 +1657,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQPollQuery *CPQClient::FindQueryByConnection(CPollConnection *APollConnection) {
-            for (int i = 0; i < PollQueryManager()->QueryCount(); ++i) {
-                if (PollQueryManager()->Queries(i)->Binding() == APollConnection)
-                    return PollQueryManager()->Queries(i);
+        CPQPollQuery *CPQClient::FindQueryByConnection(CPollConnection *APollConnection) const {
+            for (int i = 0; i < PollQueryManager().QueryCount(); ++i) {
+                if (PollQueryManager().Queries(i)->Binding() == APollConnection)
+                    return PollQueryManager().Queries(i);
             }
             return nullptr;
         }
