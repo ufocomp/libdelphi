@@ -1238,6 +1238,9 @@ namespace Delphi {
             CNotifyEvent m_OnRequest;
             CNotifyEvent m_OnReply;
 
+            CNotifyEvent m_OnPing;
+            CNotifyEvent m_OnPong;
+
         protected:
 
             CConnectionStatus m_ConnectionStatus;
@@ -1252,6 +1255,9 @@ namespace Delphi {
 
             void DoRequest();
             void DoReply();
+
+            void DoPing();
+            void DoPong();
 
             virtual void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
@@ -1291,6 +1297,12 @@ namespace Delphi {
 
             const CNotifyEvent &OnReply() { return m_OnReply; }
             void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
+
+            const CNotifyEvent &OnPing() { return m_OnPing; }
+            void OnPing(CNotifyEvent && Value) { m_OnPing = Value; }
+
+            const CNotifyEvent &OnPong() { return m_OnPong; }
+            void OnPong(CNotifyEvent && Value) { m_OnPong = Value; }
 
         }; // CWebSocketConnection
 
@@ -1469,7 +1481,7 @@ namespace Delphi {
 
         protected:
 
-            pthread_mutex_t m_Lock;
+            pthread_mutex_t m_Lock {};
             CThreadStopMode m_StopMode;
             bool m_Stopped;
 

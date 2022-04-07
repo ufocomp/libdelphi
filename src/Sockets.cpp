@@ -211,7 +211,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CStack::SSLShutdown(SSL *ssl) {
-            return ::SSL_shutdown(ssl);
+            auto err = ::ERR_get_error();
+            if (err != SSL_ERROR_SYSCALL && err != SSL_ERROR_SSL)
+                return ::SSL_shutdown(ssl);
+            return 1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2381,6 +2384,9 @@ namespace Delphi {
 
             m_OnRequest = nullptr;
             m_OnReply = nullptr;
+
+            m_OnPing = nullptr;
+            m_OnPong = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2427,11 +2433,13 @@ namespace Delphi {
                         break;
 
                     case WS_OPCODE_PING:
+                        DoPing();
                         DoRequest();
                         SendWebSocketPong();
                         break;
 
                     case WS_OPCODE_PONG:
+                        DoPong();
                         DoRequest();
                         m_ConnectionStatus = csRequestOk;
                         break;
@@ -2563,6 +2571,21 @@ namespace Delphi {
         void CWebSocketConnection::DoReply() {
             if (m_OnReply != nullptr) {
                 m_OnReply(this);
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocketConnection::DoPing() {
+            if (m_OnPing != nullptr) {
+                m_OnPing(this);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocketConnection::DoPong() {
+            if (m_OnPong != nullptr) {
+                m_OnPong(this);
             }
         }
 
@@ -4387,7 +4410,7 @@ namespace Delphi {
             m_Host = Host;
             m_Port = Port;
 #ifdef WITH_SSL
-            m_UsedSSL = Port == 443;
+            m_UsedSSL = Port == HTTP_SSL_PORT;
 #endif
         }
         //--------------------------------------------------------------------------------------------------------------

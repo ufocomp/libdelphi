@@ -43,6 +43,15 @@ Author:
 
 #define HTTPS_PREFIX "https"
 #define HTTPS_PREFIX_SIZE 5
+
+#define WS_PREFIX "ws"
+#define WS_PREFIX_SIZE 2
+
+#define WSS_PREFIX "wss"
+#define WSS_PREFIX_SIZE 3
+
+#define HTTP_PORT 80
+#define HTTP_SSL_PORT 443
 //----------------------------------------------------------------------------------------------------------------------
 
 extern "C++" {
@@ -137,8 +146,8 @@ namespace Delphi {
                     protocol = URL.SubString(pos, end);
                     pos = end + 3;
 
-                    if (protocol == HTTPS_PREFIX) {
-                        port = 443;
+                    if (protocol == HTTPS_PREFIX || protocol == WSS_PREFIX) {
+                        port = HTTP_SSL_PORT;
                     }
                 }
 
@@ -191,7 +200,7 @@ namespace Delphi {
                     Result << ":";
                     Result << portStr;
                 } else {
-                    if (port != 80 && port != 443) {
+                    if (port != HTTP_PORT && port != HTTP_SSL_PORT) {
                         Result << ":";
                         Result << port;
                     }
