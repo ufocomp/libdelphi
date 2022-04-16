@@ -876,7 +876,21 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONMembers::AddPair(const CString &String, bool Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONMembers::AddPair(reference String, bool Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CJSONMembers::AddPair(const CString &String, int Value) {
             int Result = GetCount();
             InsertPair(Result, String, Value);
             return Result;
@@ -890,7 +904,21 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONMembers::AddPair(const CString &String, float Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONMembers::AddPair(reference String, float Value) {
+            int Result = GetCount();
+            InsertPair(Result, String, Value);
+            return Result;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CJSONMembers::AddPair(const CString &String, double Value) {
             int Result = GetCount();
             InsertPair(Result, String, Value);
             return Result;
@@ -1571,7 +1599,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONObject::AddPair(const CString &String, bool Value) {
+            return m_pList.Add(CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONObject::AddPair(CJSONObject::reference String, bool Value) {
+            return m_pList.Add(CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CJSONObject::AddPair(const CString &String, int Value) {
             return m_pList.Add(CJSONMember(String, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1581,7 +1619,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CJSONObject::AddPair(const CString &String, float Value) {
+            return m_pList.Add(CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         int CJSONObject::AddPair(reference String, float Value) {
+            return m_pList.Add(CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CJSONObject::AddPair(const CString &String, double Value) {
             return m_pList.Add(CJSONMember(String, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1646,7 +1694,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSONObject::InsertPair(int Index, const CString &String, bool Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CJSONObject::InsertPair(int Index, reference String, bool Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSONObject::InsertPair(int Index, const CString &String, int Value) {
             m_pList.Insert(Index, CJSONMember(String, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1656,7 +1714,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CJSONObject::InsertPair(int Index, const CString &String, float Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CJSONObject::InsertPair(int Index, reference String, float Value) {
+            m_pList.Insert(Index, CJSONMember(String, Value));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CJSONObject::InsertPair(int Index, const CString &String, double Value) {
             m_pList.Insert(Index, CJSONMember(String, Value));
         }
         //--------------------------------------------------------------------------------------------------------------
