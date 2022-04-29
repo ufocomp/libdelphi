@@ -2344,6 +2344,7 @@ namespace Delphi {
 
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            chASSERT(pConnection);
             try {
                 if (pConnection->Connected()) {
                     if (pConnection->Protocol() == pHTTP) {
@@ -2353,8 +2354,9 @@ namespace Delphi {
                         }
                     }
 
-                    if (pConnection->CloseConnection())
+                    if (pConnection->CloseConnection()) {
                         pConnection->Disconnect();
+                    }
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
@@ -2386,11 +2388,9 @@ namespace Delphi {
 
                     pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
                     pEventHandler->Binding(pConnection);
-                    pEventHandler->Start(etIO);
+                    pEventHandler->Start(etServerIO);
 
                     DoConnected(pConnection);
-                } else {
-                    throw ETCPServerError(_T("TCP Server Error..."));
                 }
             } catch (Delphi::Exception::Exception &E) {
                 delete pConnection;
@@ -2406,6 +2406,7 @@ namespace Delphi {
             };
 
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            chASSERT(pConnection);
             try {
                 pConnection->ParseInput(OnExecuted);
                 if (pConnection->ConnectionStatus() == csRequestError) {
@@ -2423,6 +2424,7 @@ namespace Delphi {
 
         void CHTTPServer::DoWrite(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            chASSERT(pConnection);
             try {
                 if (pConnection->WriteAsync()) {
                     if (pConnection->ConnectionStatus() == csReplyReady) {
@@ -2446,6 +2448,7 @@ namespace Delphi {
             CCommandHandler *pHandler;
 
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
+            chASSERT(pConnection);
             auto pRequest = pConnection->Request();
 
             bool Result = CommandHandlers()->Count() > 0;
@@ -2530,7 +2533,7 @@ namespace Delphi {
                     DoConnected(pConnection);
                     DoRequest(pConnection);
 
-                    AHandler->Start(etIO);
+                    AHandler->Start(etServerIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
@@ -2686,7 +2689,7 @@ namespace Delphi {
             m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
 
-            SetPollStack(Server()->PollStack());
+            AllocateEventHandlers(Server());
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2718,7 +2721,7 @@ namespace Delphi {
                     DoConnected(pConnection);
                     DoRequest(pConnection);
 
-                    AHandler->Start(etIO);
+                    AHandler->Start(etServerIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);

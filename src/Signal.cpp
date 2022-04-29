@@ -95,10 +95,10 @@ namespace Delphi {
             CSignal *Signal;
             struct sigaction sa = {};
 
-            for (int I = 0; I < Count(); ++I) {
+            for (int i = 0; i < Count(); ++i) {
                 ZeroMemory(&sa, sizeof(struct sigaction));
 
-                Signal = Get(I);
+                Signal = Get(i);
 
                 if (Signal->Handler()) {
                     sa.sa_sigaction = Signal->Handler();
@@ -122,8 +122,8 @@ namespace Delphi {
         sigset_t *CSignals::SigAddSet(sigset_t *set) {
             if (Assigned(set)) {
                 sigemptyset(set);
-                for (int I = 0; I < Count(); ++I) {
-                    if (sigaddset(set, Get(I)->SigNo()) == -1) {
+                for (int i = 0; i < Count(); ++i) {
+                    if (sigaddset(set, Get(i)->SigNo()) == -1) {
                         throw EOSError(errno, _T("call sigaddset() failed"));
                     }
                 }
@@ -144,9 +144,9 @@ namespace Delphi {
 
         int CSignals::IndexOfSigNo(int SigNo) {
 
-            for (int I = 0; I < Count(); ++I) {
-                if (Get(I)->SigNo() == SigNo)
-                    return I;
+            for (int i = 0; i < Count(); ++i) {
+                if (Get(i)->SigNo() == SigNo)
+                    return i;
             }
 
             return -1;

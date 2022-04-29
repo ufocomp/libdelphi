@@ -443,7 +443,7 @@ namespace Delphi {
 #endif
                     DoConnected(pConnection);
 
-                    AHandler->Start(etIO);
+                    AHandler->Start(etServerIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);

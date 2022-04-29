@@ -1051,15 +1051,10 @@ namespace Delphi {
             CSites m_Sites;
 
             void DoTimeOut(CPollEventHandler *AHandler) override;
-
             void DoAccept(CPollEventHandler *AHandler) override;
-
             void DoRead(CPollEventHandler *AHandler) override;
-
             void DoWrite(CPollEventHandler *AHandler) override;
-
             bool DoCommand(CTCPConnection *AConnection) override;
-
             bool DoExecute(CTCPConnection *AConnection) override;
 
             void DoReply(CObject *Sender);

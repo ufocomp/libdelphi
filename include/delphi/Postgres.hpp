@@ -241,7 +241,8 @@ namespace Delphi {
 
             bool m_TryConnect;
             bool m_Connected;
-            bool m_Listener;
+
+            CStringList m_Listeners;
 
             CDateTime m_AntiFreeze;
 
@@ -250,14 +251,9 @@ namespace Delphi {
             void CheckSocket(bool AsyncMode = false);
 
             void SetReceiver();
-
             void SetProcessor();
 
-            void SetListener(bool Value);
-
         protected:
-
-            void Clear();
 
             void Finish();
 
@@ -277,6 +273,8 @@ namespace Delphi {
             explicit CPQConnection(const CPQConnInfo &AConnInfo, CPollManager *AManager);
 
             ~CPQConnection() override;
+
+            void Clear();
 
             void ConnInfo(const CPQConnInfo &AConnInfo) { m_ConnInfo = AConnInfo; }
 
@@ -335,10 +333,11 @@ namespace Delphi {
 
             bool Connected() { return GetConnected(); }
 
-            bool Listener() const { return m_Listener; }
-            void Listener(bool Value) { SetListener(Value); }
+            CStringList &Listeners() { return m_Listeners; }
+            const CStringList &Listeners() const { return m_Listeners; }
 
             CDateTime AntiFreeze() const { return m_AntiFreeze; }
+            void AntiFreeze(CDateTime Value) { m_AntiFreeze = Value; }
 
         };
 
@@ -351,7 +350,7 @@ namespace Delphi {
         class CPQQuery;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CPollConnectionStatus { qsConnect, qsReset, qsReady, qsBusy, qsError };
+        enum CPollConnectionStatus { qsConnect, qsReset, qsReady, qsWait, qsError };
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQPollConnection: public CPQConnection {
@@ -368,8 +367,7 @@ namespace Delphi {
             void QueryStart(CPQQuery *AQuery);
             void QueryStop();
 
-            CPollConnectionStatus ConnectionStatus() { return m_ConnectionStatus; };
-
+            CPollConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; };
             void ConnectionStatus(CPollConnectionStatus Value) { m_ConnectionStatus = Value; };
 
             CPQQuery *WorkQuery() const { return m_WorkQuery; }
@@ -493,6 +491,8 @@ namespace Delphi {
 
             CStringList m_SQL;
 
+            CDateTime m_StartTime;
+
             COnPQQueryExecutedEvent m_OnSendQuery;
             COnPQQueryExecutedEvent m_OnExecuted;
 
@@ -525,15 +525,16 @@ namespace Delphi {
 
             void Clear() override;
 
-            bool CheckResult();
+            void GetResult();
 
             int ResultCount() { return inherited::Count(); };
 
             void SendQuery();
             bool CancelQuery(CString &Error);
 
-            CStringList& SQL() { return m_SQL; }
+            CDateTime StartTime() const { return m_StartTime; }
 
+            CStringList& SQL() { return m_SQL; }
             const CStringList& SQL() const { return m_SQL; }
 
             CPQResult *Results(int Index) { return GetResult(Index); };
@@ -566,13 +567,13 @@ namespace Delphi {
         typedef std::function<void (CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E)> COnPQPollQueryExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        #define POLL_QUERY_START_ERROR 0x10000u
+        #define POLL_QUERY_START_ERROR (-2)
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQPollQuery: public CPollConnection, public CPQQuery {
         private:
 
-            CPQConnectPoll *m_pServer;
+            CPQConnectPoll *m_pConnectPoll;
 
             CStringList m_Data;
 
@@ -587,7 +588,7 @@ namespace Delphi {
 
         public:
 
-            explicit CPQPollQuery(CPQConnectPoll *AServer);
+            explicit CPQPollQuery(CPQConnectPoll *AConnectPoll);
 
             int Start();
 
@@ -596,7 +597,7 @@ namespace Delphi {
             int AddToQueue();
             void RemoveFromQueue();
 
-            CPQConnectPoll *Server() const { return m_pServer; };
+            CPQConnectPoll *ConnectPoll() const { return m_pConnectPoll; };
 
             CStringList &Data() { return m_Data; }
             const CStringList &Data() const { return m_Data; }
@@ -660,18 +661,18 @@ namespace Delphi {
             COnPQConnectionExceptionEvent m_OnConnectException;
             COnPQClientExceptionEvent m_OnServerException;
 
-            virtual void DoReceiver(CPQConnection *AConnection, const PGresult *AResult);
-            virtual void DoProcessor(CPQConnection *AConnection, LPCSTR AMessage);
+            virtual void DoPQReceiver(CPQConnection *AConnection, const PGresult *AResult);
+            virtual void DoPQProcessor(CPQConnection *AConnection, LPCSTR AMessage);
 
-            virtual void DoNotify(CPQConnection *AConnection, PGnotify *ANotify);
+            virtual void DoPQNotify(CPQConnection *AConnection, PGnotify *ANotify);
 
-            virtual void DoError(CPQConnection *AConnection);
+            virtual void DoPQError(CPQConnection *AConnection);
             virtual void DoPQTimeOut(CPQConnection *AConnection);
-            virtual void DoStatus(CPQConnection *AConnection);
-            virtual void DoPollingStatus(CPQConnection *AConnection);
+            virtual void DoPQStatus(CPQConnection *AConnection);
+            virtual void DoPQPollingStatus(CPQConnection *AConnection);
 
-            virtual void DoConnectException(CPQConnection *AConnection, const Delphi::Exception::Exception &E);
-            virtual void DoServerException(const Delphi::Exception::Exception &E) abstract;
+            virtual void DoPQConnectException(CPQConnection *AConnection, const Delphi::Exception::Exception &E);
+            virtual void DoPQServerException(const Delphi::Exception::Exception &E) abstract;
 
         public:
 
@@ -719,18 +720,15 @@ namespace Delphi {
 
             CQueue m_Queue;
 
-            CPollManager m_PollManager;
-            CPQPollQueryManager m_PollQueryManager;
-
             CEPollTimer *m_pTimer;
 
             bool m_Active;
 
-            COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
-
             void CheckQueue();
 
             void UpdateTimer();
+
+            void Fault(CPollEventHandler *AHandler);
 
             CPollEventHandler *NewEventHandler(CPQConnection *AConnection);
 
@@ -743,6 +741,8 @@ namespace Delphi {
         protected:
 
             CPQConnInfo m_ConnInfo;
+            CPollManager m_ConnectManager;
+            CPQPollQueryManager m_QueryManager;
 
             int m_TimerInterval;
 
@@ -759,12 +759,15 @@ namespace Delphi {
 
             bool NewConnection();
 
+            void PackConnections(CDateTime Now, CDateTime Period);
+
             void DoTimer(CPollEventHandler *AHandler);
 
             void DoTimeOut(CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
-            void DoRead(CPollEventHandler *AHandler) override;
             void DoWrite(CPollEventHandler *AHandler) override;
+            void DoRead(CPollEventHandler *AHandler) override;
+            void DoError(CPollEventHandler *AHandler) override;
 
             void SetActive(bool Value);
             void SetTimerInterval(int Value);
@@ -789,12 +792,11 @@ namespace Delphi {
             void RemoveFromQueue(CPQPollQuery *AQuery);
 
             const CQueue &Queue() const { return m_Queue; }
-            const CPollManager &PollManager() const { return m_PollManager; }
 
-            CPQPollQueryManager &PollQueryManager() { return m_PollQueryManager; }
-            const CPQPollQueryManager &PollQueryManager() const { return m_PollQueryManager; }
+            const CPollManager &ConnectManager() const { return m_ConnectManager; }
 
-            CPQPollQueryManager *ptrPollQueryManager() { return &m_PollQueryManager; }
+            const CPQPollQueryManager &QueryManager() const { return m_QueryManager; }
+            CPQPollQueryManager *ptrQueryManager() { return &m_QueryManager; }
 
             size_t SizeMin() const { return m_SizeMin; }
             void SizeMin(size_t Value) { m_SizeMin = Value; }
@@ -818,7 +820,7 @@ namespace Delphi {
             bool DoCommand(CTCPConnection *AConnection) override;
             bool DoExecute(CTCPConnection *AConnection) override;
 
-            void DoServerException(const Delphi::Exception::Exception &E) override;
+            void DoPQServerException(const Delphi::Exception::Exception &E) override;
 
         public:
 
@@ -827,6 +829,8 @@ namespace Delphi {
             ~CPQClient() override = default;
 
             CPQPollQuery *GetQuery();
+
+            bool CheckListen(const CString &Listen);
 
             CPQPollQuery *FindQueryByConnection(CPollConnection *APollConnection) const;
 

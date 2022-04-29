@@ -636,33 +636,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        //-- CPollManager ----------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class LIB_DELPHI CPollManager: public CCollection {
-        public:
-
-            explicit CPollManager(): CCollection(this) {
-
-            };
-
-            explicit CPollManager(CCollection *AOwner): CCollection(AOwner) {
-
-            };
-
-            ~CPollManager() override = default;
-
-            void CloseAllConnection() { Clear(); };
-
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
         //-- CPollConnection -------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
 
+        class LIB_DELPHI CPollManager;
         class LIB_DELPHI CPollEventHandler;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -672,7 +650,11 @@ namespace Delphi {
             CPollConnection *m_pBinding;
             CPollEventHandler *m_pEventHandler;
 
+            void SetTimeOut(CDateTime Value);
+
         protected:
+
+            CDateTime m_TimeOut;
 
             bool m_AutoFree;
             bool m_CloseConnection;
@@ -696,6 +678,11 @@ namespace Delphi {
             CPollEventHandler *EventHandler() const { return m_pEventHandler; }
             void EventHandler(CPollEventHandler *Value) { SetEventHandler(Value); }
 
+            CDateTime TimeOut() const { return m_TimeOut; };
+            void TimeOut(CDateTime Value) { SetTimeOut(Value); };
+
+            void UpdateTimeOut(CDateTime DateTime, double Interval, double Period = MSecsPerDay);
+
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
 
@@ -703,6 +690,31 @@ namespace Delphi {
             void CloseConnection(bool Value) { m_CloseConnection = Value; }
 
         }; // CPollConnection
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CPollManager ----------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CPollManager: public CCollection {
+        public:
+
+            explicit CPollManager(): CCollection(this) {
+
+            };
+
+            explicit CPollManager(CCollection *AOwner): CCollection(AOwner) {
+
+            };
+
+            ~CPollManager() override = default;
+
+            void CloseAllConnection() { Clear(); };
+
+            CPollConnection *operator[] (int Index) const override { return dynamic_cast<CPollConnection *> (Items(Index)); };
+
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -868,21 +880,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CSocketEvent *Sender, CTCPConnection *AConnection, LPCTSTR AFormat, va_list args)> COnSocketVerboseEvent;
-
         typedef std::function<bool (CTCPConnection *AConnection)> COnSocketExecuteEvent;
-
         typedef std::function<void (CTCPConnection *AConnection)> COnSocketConnectionEvent;
-
         typedef std::function<void (CSocketEvent *Sender, const Delphi::Exception::Exception &E)> COnSocketListenExceptionEvent;
-
         typedef std::function<void (CTCPConnection *AConnection, const Delphi::Exception::Exception &E)> COnSocketExceptionEvent;
-
         typedef std::function<void (CSocketEvent *Sender, const CString &Data, CTCPConnection *AConnection)> COnSocketBeforeCommandHandlerEvent;
-
         typedef std::function<void (CSocketEvent *Sender, const CString &Data, CTCPConnection *AConnection)> COnSocketNoCommandHandlerEvent;
-
         typedef std::function<void (CSocketEvent *Sender, CTCPConnection *AConnection)> COnSocketAfterCommandHandlerEvent;
-
         typedef std::function<void (CCommand *ACommand)> COnSocketCommandEvent;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1938,7 +1942,6 @@ namespace Delphi {
             CPollEvent *m_pEventList;
 
             int m_EventSize;
-
             int m_TimeOut;
 
         protected:
@@ -1949,11 +1952,15 @@ namespace Delphi {
 
         public:
 
-            explicit CPollStack(size_t AEventSize = 512);
+            CPollStack(int AEventSize = 512);
+
+            CPollStack(const CPollStack &Source): CPollStack() {
+                Assign(Source);
+            };
 
             ~CPollStack() override;
 
-            void Assign(CPollStack *Source);
+            void Assign(const CPollStack &Source);
 
             CSocketPoll Create(int AFlags = 0);
 
@@ -1972,11 +1979,18 @@ namespace Delphi {
 
             CPollEvent *EventList() { return m_pEventList; };
 
-            size_t EventSize() const { return m_EventSize; };
+            int EventSize() const { return m_EventSize; };
 
             CPollEvent *Events(int Index) { return GetEvent(Index); };
 
             CPollEvent *operator[] (int Index) { return Events(Index); };
+
+            CPollStack& operator= (const CPollStack &Source) {
+                if (this != &Source) {
+                    Assign(Source);
+                }
+                return *this;
+            };
 
         };
 
@@ -1989,7 +2003,7 @@ namespace Delphi {
         typedef std::function<void (CPollEventHandler *AHandler)> COnPollEventHandlerEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CPollEventType { etNull, etAccept, etConnect, etIO, etDelete, etTimer };
+        enum CPollEventType { etNull, etAccept, etConnect, etServerIO, etClientIO, etDelete, etTimer };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CEPoll;
@@ -2008,6 +2022,10 @@ namespace Delphi {
 
             uint32_t m_Events;
 
+            TCHAR m_szTimeStamp[25] = {0};
+
+            CDateTime m_TimeStamp;
+
             CPollEventType m_EventType;
 
             CPollConnection *m_pBinding;
@@ -2020,14 +2038,16 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnConnectEvent;
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
+            COnPollEventHandlerEvent m_OnErrorEvent;
 
             void ClearBinding();
+            void UpdateTimeOut();
 
         protected:
 
             void SetEventType(CPollEventType Value);
-
             void SetBinding(CPollConnection *Value);
+            void SetTimeStamp(CDateTime Value);
 
             void DoTimerEvent();
             void DoTimeOutEvent();
@@ -2035,7 +2055,8 @@ namespace Delphi {
             void DoConnectEvent();
             void DoReadEvent();
             void DoWriteEvent();
-            
+            void DoErrorEvent();
+
         public:
 
             explicit CPollEventHandler(CPollEventHandlers *AEventHandlers, CSocket ASocket);
@@ -2049,12 +2070,20 @@ namespace Delphi {
             CPollConnection *Binding() const { return m_pBinding; }
             void Binding(CPollConnection *Value) { SetBinding(Value); }
 
-            void Start(CPollEventType AEventType = etIO);
+            void Start(CPollEventType AEventType = etServerIO);
             void Stop();
+
+            void Fault();
 
             bool Stopped() const { return m_EventType == etDelete; };
 
             CPollEventType EventType() const { return m_EventType; }
+            void EventType(CPollEventType Value) { SetEventType(Value); }
+
+            CDateTime TimeStamp() const { return m_TimeStamp; }
+            void TimeStamp(CDateTime Value) { SetTimeStamp(Value); }
+
+            LPCTSTR TimeStampStr() const { return m_szTimeStamp; }
 
             const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
@@ -2070,6 +2099,9 @@ namespace Delphi {
 
             const COnPollEventHandlerEvent &OnWriteEvent() const { return m_OnWriteEvent; }
             void OnWriteEvent(COnPollEventHandlerEvent && Value) { m_OnWriteEvent = Value; }
+
+            const COnPollEventHandlerEvent &OnErrorEvent() const { return m_OnErrorEvent; }
+            void OnErrorEvent(COnPollEventHandlerEvent && Value) { m_OnErrorEvent = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2091,7 +2123,7 @@ namespace Delphi {
 
         private:
 
-            CPollStack *m_pPollStack;
+            CPollStack m_PollStack;
 
             COnPollEventHandlerExceptionEvent m_OnException;
 
@@ -2108,10 +2140,12 @@ namespace Delphi {
 
         public:
 
-            explicit CPollEventHandlers(CPollStack *APollStack);
+            CPollEventHandlers();
 
-            CPollStack *PollStack() { return m_pPollStack; };
-            void PollStack(CPollStack *Value) { m_pPollStack = Value; };
+            CPollStack &PollStack() { return m_PollStack; };
+            const CPollStack &PollStack() const { return m_PollStack; };
+
+            CPollStack *ptrPollStack() { return &m_PollStack; };
 
             CPollEventHandler *Add(CSocket ASocket);
 
@@ -2183,43 +2217,29 @@ namespace Delphi {
         class LIB_DELPHI CEPoll {
         private:
 
-            CPollStack *m_pPollStack;
-
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
             bool m_FreeEventHandlers;
-            bool m_FreePollStack;
-
-            CDateTime m_Timer;
-
-            void FreePollStack();
 
             void CreateEventHandlers();
             void FreeEventHandlers();
-            void PackEventHandlers();
 
-            void UpdateTimer();
+            void CheckTimeOut(CPollEventHandler *AHandler, CDateTime DateTime);
 
         protected:
 
             CPollEventHandlers *m_pEventHandlers;
 
-            void SetPollStack(CPollStack *Value);
             void SetEventHandlers(CPollEventHandlers *Value);
 
-            int GetTimeOut();
-
-            void SetTimeOut(int Value);
+            virtual void PackEventHandlers(CDateTime DateTime);
 
             virtual void DoTimeOut(CPollEventHandler *AHandler) abstract;
-
             virtual void DoAccept(CPollEventHandler *AHandler) abstract;
-
             virtual void DoConnect(CPollEventHandler *AHandler) abstract;
-
             virtual void DoRead(CPollEventHandler *AHandler) abstract;
-
             virtual void DoWrite(CPollEventHandler *AHandler) abstract;
+            virtual void DoError(CPollEventHandler *AHandler) abstract;
 
             void DoEventHandlersException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E);
 
@@ -2229,20 +2249,15 @@ namespace Delphi {
 
             ~CEPoll();
 
-            CPollStack *PollStack() const { return m_pPollStack; };
-            void PollStack(CPollStack *Value) { SetPollStack(Value); };
-
-            bool ExternalPollStack() const { return !m_FreePollStack; };
-
-            int TimeOut() { return GetTimeOut(); };
-            void TimeOut(int Value) { SetTimeOut(Value); };
-
-            void Wait();
-
-            static void CheckHandler(CPollEventHandler *AHandler);
+            void Wait(const sigset_t *ASigMask = nullptr);
 
             CPollEventHandlers *EventHandlers() const { return m_pEventHandlers; }
             void EventHandlers(CPollEventHandlers *Value) { SetEventHandlers(Value); }
+
+            void AllocateEventHandlers(const CEPoll &EPoll) { SetEventHandlers(EPoll.EventHandlers()); }
+            void AllocateEventHandlers(CEPoll *EPoll) { SetEventHandlers(EPoll->EventHandlers()); }
+
+            bool ExternalEventHandlers() const { return !m_FreeEventHandlers; };
 
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() const { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
@@ -2259,11 +2274,9 @@ namespace Delphi {
         protected:
 
             void DoTimeOut(CPollEventHandler *AHandler) override {};
-
             void DoAccept(CPollEventHandler *AHandler) override {};
-
             void DoConnect(CPollEventHandler *AHandler) override {};
-
+            void DoError(CPollEventHandler *AHandler) override {};
             bool DoExecute(CTCPConnection *AConnection) override;
 
         public:
@@ -2284,13 +2297,10 @@ namespace Delphi {
         protected:
 
             void DoTimeOut(CPollEventHandler *AHandler) override;
-
             void DoAccept(CPollEventHandler *AHandler) override {};
-
             void DoRead(CPollEventHandler *AHandler) override;
-
             void DoWrite(CPollEventHandler *AHandler) override;
-
+            void DoError(CPollEventHandler *AHandler) override {};
             bool DoExecute(CTCPConnection *AConnection) override;
 
         public:
@@ -2493,11 +2503,8 @@ namespace Delphi {
         protected:
 
             void DoTimeOut(CPollEventHandler *AHandler) override;
-
             void DoAccept(CPollEventHandler *AHandler) override;
-
             void DoRead(CPollEventHandler *AHandler) override;
-
             void DoWrite(CPollEventHandler *AHandler) override;
 
         public:

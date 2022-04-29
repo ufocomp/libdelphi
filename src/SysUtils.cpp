@@ -47,7 +47,7 @@ namespace Delphi {
                 lpMsgBuf = ::strerror_l(errno, DefaultLocale.Locale());
             }
 
-            DebugMessage(_T("[%04i] %s: %s"), ::getpid(), lpFunctionName, lpMsgBuf);
+            DebugMessage(_T("[%04i] %s: %s\n"), ::getpid(), lpFunctionName, lpMsgBuf);
         }
         //--------------------------------------------------------------------------------------------------------------
 
