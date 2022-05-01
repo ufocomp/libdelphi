@@ -167,7 +167,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStack::SSLFinalize() {
-            FIPS_mode_set(0);
             EVP_cleanup();
             CRYPTO_cleanup_all_ex_data();
             ERR_free_strings();
@@ -4086,9 +4085,7 @@ namespace Delphi {
 
         CEPoll::CEPoll() {
             m_pEventHandlers = nullptr;
-            //m_pPollStack = new CPollStack();
             m_FreeEventHandlers = true;
-            //m_FreePollStack = true;
             m_OnEventHandlerException = nullptr;
 
             CreateEventHandlers();
@@ -4096,7 +4093,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CEPoll::~CEPoll() {
-            //FreePollStack();
             FreeEventHandlers();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4119,14 +4115,6 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-//        void CEPoll::FreePollStack() {
-//            if (m_FreePollStack) {
-//                delete m_pPollStack;
-//            }
-//            m_pPollStack = nullptr;
-//        }
-        //--------------------------------------------------------------------------------------------------------------
-
         void CEPoll::SetEventHandlers(CPollEventHandlers *Value) {
             if (m_pEventHandlers != Value) {
                 FreeEventHandlers();
@@ -4134,16 +4122,6 @@ namespace Delphi {
                 m_FreeEventHandlers = false;
             }
         }
-        //--------------------------------------------------------------------------------------------------------------
-
-//        void CEPoll::SetPollStack(CPollStack *Value) {
-//            if (m_pPollStack != Value) {
-//                FreePollStack();
-//                m_pPollStack = Value;
-//                m_pEventHandlers->PollStack(Value);
-//                m_FreePollStack = false;
-//            }
-//        }
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPoll::CheckTimeOut(CPollEventHandler *AHandler, CDateTime DateTime) {
