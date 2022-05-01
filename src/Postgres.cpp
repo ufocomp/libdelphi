@@ -1183,11 +1183,6 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CPQConnectPoll::~CPQConnectPoll() {
-            StopAll();
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         CPQPollConnection *CPQConnectPoll::GetConnection(int Index) const {
             return dynamic_cast<CPQPollConnection *> (m_ConnectManager[Index]);
         }

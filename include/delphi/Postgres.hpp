@@ -778,7 +778,7 @@ namespace Delphi {
 
             explicit CPQConnectPoll(const CPQConnInfo &AConnInfo, size_t ASizeMin = 5, size_t ASizeMax = 10);
 
-            ~CPQConnectPoll() override;
+            ~CPQConnectPoll() override = default;
 
             void ConnInfo(const CPQConnInfo &AConnInfo) { m_ConnInfo = AConnInfo; };
 

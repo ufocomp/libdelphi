@@ -234,7 +234,7 @@ namespace Delphi {
             CString PublicKey(const CString &KeyId) const {
                 if (m_KeyStatus == ksSuccess)
                     return m_Keys[KeyId].AsString();
-                return CString();
+                return {};
             }
         };
 
