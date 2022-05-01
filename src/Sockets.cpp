@@ -150,9 +150,11 @@ namespace Delphi {
             if (AResult <= 0) {
                 m_SSLError = GetSSLError();
                 ERR_error_string(m_SSLError, m_szBuffer);
-                for (int i = 0; i < ACount; ++i)
-                    if (m_SSLError == AIgnore[i])
+                for (int i = 0; i < ACount; ++i) {
+                    if (m_SSLError == AIgnore[i]) {
                         return true;
+                    }
+                }
                 RaiseSSLError();
             }
             return false;
@@ -830,7 +832,7 @@ namespace Delphi {
 
         void CSocketHandle::ShutdownSSL() {
             if (m_pSSL != nullptr) {
-                GStack->CheckForSSLError(CStack::SSLShutdown(m_pSSL));
+                CStack::SSLShutdown(m_pSSL);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1941,7 +1943,7 @@ namespace Delphi {
             if (!ClosedGracefully()) {
 #ifdef WITH_SSL
                 if (m_pIOHandler != nullptr && m_pIOHandler->UsedSSL()) {
-                    unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL };
+                    unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL, SSL_R_UNEXPECTED_EOF_WHILE_READING };
                     if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
                         AByteCount = 0;
                         if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
