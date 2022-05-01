@@ -1943,7 +1943,7 @@ namespace Delphi {
             if (!ClosedGracefully()) {
 #ifdef WITH_SSL
                 if (m_pIOHandler != nullptr && m_pIOHandler->UsedSSL()) {
-                    unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL, SSL_R_UNEXPECTED_EOF_WHILE_READING };
+                    unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL };
                     if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
                         AByteCount = 0;
                         if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
