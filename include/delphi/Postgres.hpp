@@ -373,7 +373,7 @@ namespace Delphi {
             CPQQuery *WorkQuery() const { return m_WorkQuery; }
 
             bool CheckResult();
-            int CheckNotify();
+            int CheckNotify(bool doNotify = false);
 
         };
 
@@ -567,7 +567,8 @@ namespace Delphi {
         typedef std::function<void (CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E)> COnPQPollQueryExceptionEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        #define POLL_QUERY_START_ERROR (-2)
+        #define POLL_QUERY_START_OK (-1)
+        #define POLL_QUERY_START_FAIL (-2)
         //--------------------------------------------------------------------------------------------------------------
 
         class CPQPollQuery: public CPollConnection, public CPQQuery {

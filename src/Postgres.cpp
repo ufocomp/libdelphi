@@ -506,7 +506,8 @@ namespace Delphi {
 
             m_TryConnect = true;
 
-            m_Status = PQstatus(m_pHandle);
+            //m_Status = PQstatus(m_pHandle);
+            GetStatus();
 
             if (m_Status == CONNECTION_BAD)
                 throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
@@ -688,11 +689,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CPQPollConnection::CheckResult() {
+            if (m_WorkQuery == nullptr)
+                return false;
+
 //            if (IsBusy()) {
+//                ConsumeInput();
 //                return false;
 //            }
 
-            chASSERT(m_WorkQuery);
             m_WorkQuery->GetResult();
             QueryStop();
 
@@ -700,13 +704,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CPQPollConnection::CheckNotify() {
+        int CPQPollConnection::CheckNotify(bool doNotify) {
             PGnotify *pNotify;
             int nNotifies = 0;
 
             ConsumeInput();
             while ((pNotify = Notify()) != nullptr) {
-                DoNotify(this, pNotify);
+                if (doNotify) {
+                    DoNotify(this, pNotify);
+                }
                 PQfreemem(pNotify);
                 nNotifies++;
                 ConsumeInput();
@@ -1039,12 +1045,12 @@ namespace Delphi {
                     return AddToQueue();
                 }
 
-                return -1;
+                return POLL_QUERY_START_OK;
             } catch (Delphi::Exception::Exception &E) {
                 DoException(E);
             }
 
-            return POLL_QUERY_START_ERROR;
+            return POLL_QUERY_START_FAIL;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1514,6 +1520,10 @@ namespace Delphi {
                             break;
 
                         case qsReady:
+                            pConnection->CheckNotify(true);
+                            pConnection->AntiFreeze(AHandler->TimeStamp());
+                            break;
+
                         case qsWait:
                         case qsError:
                             pConnection->AntiFreeze(AHandler->TimeStamp());
@@ -1544,16 +1554,13 @@ namespace Delphi {
                             break;
 
                         case qsReady:
-                            pConnection->CheckNotify();
-                            break;
-
                         case qsWait:
                             pConnection->ConsumeInput();
                             if (pConnection->Flush()) {
                                 if (pConnection->CheckResult()) {
                                     CheckQueue();
                                 }
-                                pConnection->CheckNotify();
+                                pConnection->CheckNotify(false);
                             }
                             break;
 
