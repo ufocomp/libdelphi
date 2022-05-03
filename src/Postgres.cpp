@@ -506,7 +506,7 @@ namespace Delphi {
 
             m_TryConnect = true;
 
-            GetStatus();
+            m_Status = PQstatus(m_pHandle);
 
             if (m_Status == CONNECTION_BAD)
                 throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
