@@ -1579,11 +1579,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoError(CPollEventHandler *AHandler) {
-            auto pConnection = GetHandlerConnection(AHandler);
-            chASSERT(pConnection);
-            if (Assigned(pConnection)) {
-                pConnection->ConnectionStatus(qsError);
-            }
+//            auto pConnection = GetHandlerConnection(AHandler);
+//            chASSERT(pConnection);
+//            if (Assigned(pConnection)) {
+//                pConnection->ConnectionStatus(qsError);
+//            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
