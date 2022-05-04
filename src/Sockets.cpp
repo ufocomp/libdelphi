@@ -3811,8 +3811,7 @@ namespace Delphi {
                         m_Events = EPOLLOUT;
                         m_pEventHandlers->PollAdd(this);
                         break;
-                    case etServerIO:
-                    case etClientIO:
+                    case etIO:
                         m_Events = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR;
                         if (m_EventType == etNull)
                             m_pEventHandlers->PollAdd(this);
@@ -4146,7 +4145,7 @@ namespace Delphi {
             for (int i = m_pEventHandlers->Count() - 1; i >= 0; i--) {
                 pHandler = m_pEventHandlers->Handlers(i);
 
-                if (pHandler->EventType() == etServerIO) {
+                if (pHandler->EventType() == etIO) {
                     CheckTimeOut(pHandler, DateTime);
                 }
 
@@ -4219,7 +4218,7 @@ namespace Delphi {
                         }
                     }
 
-                } else if (pHandler->EventType() == etServerIO) {
+                } else if (pHandler->EventType() == etIO) {
 
                     if (uEvents & EPOLLIN) {
                         if (pHandler->OnReadEvent() != nullptr) {
@@ -4234,24 +4233,6 @@ namespace Delphi {
                             pHandler->DoWriteEvent();
                         } else {
                             DoWrite(pHandler);
-                        }
-                    }
-
-                } else if (pHandler->EventType() == etClientIO) {
-
-                    if (uEvents & EPOLLOUT) {
-                        if (pHandler->OnWriteEvent() != nullptr) {
-                            pHandler->DoWriteEvent();
-                        } else {
-                            DoWrite(pHandler);
-                        }
-                    }
-
-                    if ((uEvents & EPOLLIN) && !pHandler->Stopped()) {
-                        if (pHandler->OnReadEvent() != nullptr) {
-                            pHandler->DoReadEvent();
-                        } else {
-                            DoRead(pHandler);
                         }
                     }
 
@@ -4595,7 +4576,7 @@ namespace Delphi {
 
                         if (AValue == alActive) {
                             pEventHandler = m_pEventHandlers->Add(SocketHandle->Handle());
-                            pEventHandler->Start(etServerIO);
+                            pEventHandler->Start(etIO);
                         }
                     }
 
@@ -4836,7 +4817,7 @@ namespace Delphi {
 
                     pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
                     pEventHandler->Binding(pConnection);
-                    pEventHandler->Start(etServerIO);
+                    pEventHandler->Start(etIO);
 
                     DoConnected(pConnection);
                 } else {
@@ -4890,7 +4871,7 @@ namespace Delphi {
 #else
                     pConnection->OnDisconnected(std::bind(&CTCPAsyncClient::DoDisconnected, this, _1));
 #endif
-                    AHandler->Start(etServerIO);
+                    AHandler->Start(etIO);
                     DoConnected(pConnection);
                 }
             } catch (Delphi::Exception::Exception &E) {

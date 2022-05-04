@@ -2003,7 +2003,7 @@ namespace Delphi {
         typedef std::function<void (CPollEventHandler *AHandler)> COnPollEventHandlerEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CPollEventType { etNull, etAccept, etConnect, etServerIO, etClientIO, etDelete, etTimer };
+        enum CPollEventType { etNull, etAccept, etConnect, etIO, etDelete, etTimer };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CEPoll;
@@ -2070,7 +2070,7 @@ namespace Delphi {
             CPollConnection *Binding() const { return m_pBinding; }
             void Binding(CPollConnection *Value) { SetBinding(Value); }
 
-            void Start(CPollEventType AEventType = etServerIO);
+            void Start(CPollEventType AEventType = etIO);
             void Stop();
 
             void Fault();

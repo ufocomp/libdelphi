@@ -347,6 +347,7 @@ namespace Delphi {
         CPQConnection::CPQConnection(CPollManager *AManager): CPQConnectionEvent(AManager) {
             m_pHandle = nullptr;
             m_Socket = INVALID_SOCKET;
+            m_TimeOut = INFINITE;
             m_TryConnect = false;
             m_Connected = false;
             m_Status = CONNECTION_BAD;
@@ -368,6 +369,7 @@ namespace Delphi {
         void CPQConnection::Clear() {
             m_pHandle = nullptr;
             m_Socket = INVALID_SOCKET;
+            m_TimeOut = INFINITE;
             m_TryConnect = false;
             m_Connected = false;
             m_Status = CONNECTION_BAD;
@@ -1288,7 +1290,7 @@ namespace Delphi {
                 }
 
                 pEventHandler->Binding(AConnection);
-                pEventHandler->Start(etClientIO);
+                pEventHandler->Start(etIO);
             } catch (Delphi::Exception::Exception &E) {
                 DoPQServerException(E);
                 FreeAndNil(pEventHandler);
@@ -1508,10 +1510,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQConnectPoll::DoWrite(CPollEventHandler *AHandler) {
+        void CPQConnectPoll::DoRead(CPollEventHandler *AHandler) {
             auto pConnection = GetHandlerConnection(AHandler);
             chASSERT(pConnection);
-            if (Assigned(pConnection) && pConnection->PollingStatus() != PGRES_POLLING_READING) {
+            if (Assigned(pConnection)) {
                 try {
                     switch (pConnection->ConnectionStatus()) {
                         case qsConnect:
@@ -1523,11 +1525,22 @@ namespace Delphi {
                             break;
 
                         case qsReady:
+                            pConnection->CheckNotify();
+                            break;
+
                         case qsWait:
+                            pConnection->ConsumeInput();
+                            if (pConnection->Flush()) {
+                                pConnection->CheckResult();
+                                pConnection->CheckNotify();
+                            }
+                            break;
+
                         case qsError:
-                            pConnection->AntiFreeze(AHandler->TimeStamp());
                             break;
                     }
+
+                    pConnection->AntiFreeze(AHandler->TimeStamp());
                 } catch (Delphi::Exception::Exception &E) {
                     DoPQConnectException(pConnection, E);
                     pConnection->ConnectionStatus(qsError);
@@ -1537,35 +1550,35 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPQConnectPoll::DoRead(CPollEventHandler *AHandler) {
+        void CPQConnectPoll::DoWrite(CPollEventHandler *AHandler) {
             auto pConnection = GetHandlerConnection(AHandler);
             chASSERT(pConnection);
-            if (Assigned(pConnection) && pConnection->PollingStatus() != PGRES_POLLING_WRITING) {
+            if (Assigned(pConnection)) {
                 try {
                     switch (pConnection->ConnectionStatus()) {
                         case qsConnect:
-                        case qsReset:
-                            pConnection->ConnectPoll();
                             if (pConnection->Connected()) {
                                 pConnection->ConnectionStatus(qsReady);
                                 CheckQueue();
+                            } else {
+                                pConnection->ConnectPoll();
+                            }
+                            break;
+
+                        case qsReset:
+                            if (pConnection->Connected()) {
+                                pConnection->ConnectionStatus(qsReady);
+                                CheckQueue();
+                            } else {
+                                pConnection->ResetPoll();
                             }
                             break;
 
                         case qsReady:
-                            pConnection->CheckNotify();
+                            CheckQueue();
                             break;
 
                         case qsWait:
-                            pConnection->ConsumeInput();
-                            if (pConnection->Flush()) {
-                                if (pConnection->CheckResult()) {
-                                    pConnection->CheckNotify();
-                                    CheckQueue();
-                                }
-                            }
-                            break;
-
                         case qsError:
                             break;
                     }
@@ -1579,11 +1592,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPoll::DoError(CPollEventHandler *AHandler) {
-//            auto pConnection = GetHandlerConnection(AHandler);
-//            chASSERT(pConnection);
-//            if (Assigned(pConnection)) {
-//                pConnection->ConnectionStatus(qsError);
-//            }
+            auto pConnection = GetHandlerConnection(AHandler);
+            chASSERT(pConnection);
+            if (Assigned(pConnection)) {
+                pConnection->ConnectionStatus(qsError);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 

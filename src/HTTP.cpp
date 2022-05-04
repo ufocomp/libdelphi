@@ -2388,7 +2388,7 @@ namespace Delphi {
 
                     pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
                     pEventHandler->Binding(pConnection);
-                    pEventHandler->Start(etServerIO);
+                    pEventHandler->Start(etIO);
 
                     DoConnected(pConnection);
                 }
@@ -2533,7 +2533,7 @@ namespace Delphi {
                     DoConnected(pConnection);
                     DoRequest(pConnection);
 
-                    AHandler->Start(etServerIO);
+                    AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
@@ -2721,7 +2721,7 @@ namespace Delphi {
                     DoConnected(pConnection);
                     DoRequest(pConnection);
 
-                    AHandler->Start(etServerIO);
+                    AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
