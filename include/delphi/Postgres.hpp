@@ -373,7 +373,7 @@ namespace Delphi {
             CPQQuery *WorkQuery() const { return m_WorkQuery; }
 
             bool CheckResult();
-            int CheckNotify(bool doNotify = false);
+            int CheckNotify();
 
         };
 

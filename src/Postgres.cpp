@@ -506,8 +506,7 @@ namespace Delphi {
 
             m_TryConnect = true;
 
-            //m_Status = PQstatus(m_pHandle);
-            GetStatus();
+            m_Status = PQstatus(m_pHandle);
 
             if (m_Status == CONNECTION_BAD)
                 throw EDBConnectionError(_T("[%d] Connection failed: %s"), m_Socket, GetErrorMessage());
@@ -704,19 +703,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CPQPollConnection::CheckNotify(bool doNotify) {
+        int CPQPollConnection::CheckNotify() {
             PGnotify *pNotify;
             int nNotifies = 0;
 
+            CPollConnectionStatus status = m_ConnectionStatus;
+
+            m_ConnectionStatus = qsWait;
+
             ConsumeInput();
             while ((pNotify = Notify()) != nullptr) {
-                if (doNotify) {
-                    DoNotify(this, pNotify);
-                }
+                DoNotify(this, pNotify);
                 PQfreemem(pNotify);
                 nNotifies++;
                 ConsumeInput();
             }
+
+            m_ConnectionStatus = status;
 
             return nNotifies;
         }
@@ -1520,10 +1523,6 @@ namespace Delphi {
                             break;
 
                         case qsReady:
-                            pConnection->CheckNotify(true);
-                            pConnection->AntiFreeze(AHandler->TimeStamp());
-                            break;
-
                         case qsWait:
                         case qsError:
                             pConnection->AntiFreeze(AHandler->TimeStamp());
@@ -1554,13 +1553,16 @@ namespace Delphi {
                             break;
 
                         case qsReady:
+                            pConnection->CheckNotify();
+                            break;
+
                         case qsWait:
                             pConnection->ConsumeInput();
                             if (pConnection->Flush()) {
                                 if (pConnection->CheckResult()) {
+                                    pConnection->CheckNotify();
                                     CheckQueue();
                                 }
-                                pConnection->CheckNotify(false);
                             }
                             break;
 
