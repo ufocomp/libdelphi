@@ -1067,7 +1067,9 @@ namespace Delphi {
             }
 #ifdef WITH_SSL
             ConnectSSL();
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
             SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
+#endif
 #endif
             return SocketError;
         }
