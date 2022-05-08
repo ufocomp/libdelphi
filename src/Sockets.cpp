@@ -224,12 +224,22 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CStack::SSLRecv(SSL *ssl, void *ABuffer, size_t ABufferLength) {
+        ssize_t CStack::SSLRecv(SSL *ssl, void *ABuffer, int ABufferLength) {
             return ::SSL_read(ssl, ABuffer, ABufferLength);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CStack::SSLSend(SSL *ssl, void *ABuffer, size_t ABufferLength) {
+        uint64_t CStack::SSLGetOptions(SSL *ssl) {
+            return ::SSL_get_options(ssl);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        uint64_t CStack::SSLSetOptions(SSL *ssl, uint64_t op) {
+            return ::SSL_set_options(ssl, op);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SSLSend(SSL *ssl, void *ABuffer, int ABufferLength) {
             return ::SSL_write(ssl, ABuffer, ABufferLength);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -244,12 +254,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CStack::RecvPacket(SSL *ssl, void *ABuffer, size_t ABufferSize) {
+        ssize_t CStack::RecvPacket(SSL *ssl, void *ABuffer, int ABufferSize) {
             return SSLRecv(ssl, ABuffer, ABufferSize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CStack::SendPacket(SSL *ssl, void *ABuffer, size_t ABufferSize) {
+        ssize_t CStack::SendPacket(SSL *ssl, void *ABuffer, int ABufferSize) {
             return SSLSend(ssl, ABuffer, ABufferSize);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -856,6 +866,16 @@ namespace Delphi {
             if (m_pSSL != nullptr) {
                 GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
             }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::GetOptionsSSL() {
+
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketHandle::SetOptionsSSL() {
+
         }
         //--------------------------------------------------------------------------------------------------------------
 #endif

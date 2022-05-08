@@ -181,17 +181,19 @@ namespace Delphi {
             static int SSLClear(SSL *ssl);
             static int SSLShutdown(SSL *ssl);
             static int SSLConnect(SSL *ssl);
+            static uint64_t SSLGetOptions(SSL *ssl);
+            static uint64_t SSLSetOptions(SSL *ssl, uint64_t op);
 
-            static ssize_t SSLRecv(SSL *ssl, void *ABuffer, size_t ABufferLength);
-            static ssize_t SSLSend(SSL *ssl, void *ABuffer, size_t ABufferLength);
+            static ssize_t SSLRecv(SSL *ssl, void *ABuffer, int ABufferLength);
+            static ssize_t SSLSend(SSL *ssl, void *ABuffer, int ABufferLength);
 
             virtual unsigned long GetSSLError();
 
             bool CheckForSSLError(ssize_t AResult);
             bool CheckForSSLError(ssize_t AResult, unsigned long const AIgnore[], int ACount);
 
-            static ssize_t RecvPacket(SSL *ssl, void *ABuffer, size_t ABufferSize);
-            static ssize_t SendPacket(SSL * ssl, void *ABuffer, size_t ABufferSize);
+            static ssize_t RecvPacket(SSL *ssl, void *ABuffer, int ABufferSize);
+            static ssize_t SendPacket(SSL * ssl, void *ABuffer, int ABufferSize);
 
             void RaiseSSLError();
 
@@ -430,6 +432,8 @@ namespace Delphi {
             void ShutdownSSL();
             void ClearSSL();
             void ConnectSSL();
+            void GetOptionsSSL();
+            void SetOptionsSSL();
 
             CSSLMethod SSLMethod() const { return m_SSLMethod; }
             void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
