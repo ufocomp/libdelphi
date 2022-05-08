@@ -869,13 +869,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::GetOptionsSSL() {
-
+        uint64_t CSocketHandle::GetOptionsSSL() {
+            if (m_pSSL != nullptr) {
+                return CStack::SSLGetOptions(m_pSSL);
+            }
+            return 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSocketHandle::SetOptionsSSL() {
-
+        uint64_t CSocketHandle::SetOptionsSSL(uint64_t op) {
+            if (m_pSSL != nullptr) {
+                return CStack::SSLSetOptions(m_pSSL, op);
+            }
+            return 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 #endif
@@ -1061,6 +1067,7 @@ namespace Delphi {
             }
 #ifdef WITH_SSL
             ConnectSSL();
+            SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
 #endif
             return SocketError;
         }

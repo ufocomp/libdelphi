@@ -432,8 +432,8 @@ namespace Delphi {
             void ShutdownSSL();
             void ClearSSL();
             void ConnectSSL();
-            void GetOptionsSSL();
-            void SetOptionsSSL();
+            uint64_t GetOptionsSSL();
+            uint64_t SetOptionsSSL(uint64_t op);
 
             CSSLMethod SSLMethod() const { return m_SSLMethod; }
             void SSLMethod(CSSLMethod Value) { m_SSLMethod = Value; }
