@@ -476,8 +476,10 @@ namespace Delphi {
                     return "Negotiating GSSAPI.";
                 case CONNECTION_CHECK_TARGET:
                     return "Check if we have a proper target connection.";
+#ifdef POSTGRESQL_VERSION_14
                 case CONNECTION_CHECK_STANDBY:
                     return "Checking if server is in standby mode.";
+#endif
             }
 
             return nullptr;
