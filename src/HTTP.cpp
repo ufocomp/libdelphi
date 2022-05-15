@@ -2093,6 +2093,7 @@ namespace Delphi {
 
             RecvBufferSize(256 * 1024);
 
+            TimeOut(INFINITE);
             CloseConnection(false);
 
             auto pReply = GetReply();
