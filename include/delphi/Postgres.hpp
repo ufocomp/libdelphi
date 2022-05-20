@@ -523,8 +523,6 @@ namespace Delphi {
 
             void Connection(CPQConnection *Value) { SetConnection(Value); };
 
-            void Clear() override;
-
             void GetResult();
 
             int ResultCount() { return inherited::Count(); };
