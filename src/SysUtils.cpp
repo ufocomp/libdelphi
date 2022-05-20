@@ -23,6 +23,10 @@ Author:
 
 #include "delphi.hpp"
 #include "delphi/SysUtils.hpp"
+//----------------------------------------------------------------------------------------------------------------------
+
+#include <random>
+//----------------------------------------------------------------------------------------------------------------------
 
 extern "C++" {
 
@@ -998,7 +1002,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default, LPCSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default, LPCSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
             int tz = 0;
@@ -1012,7 +1016,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format) {
             struct tm TM = {};
             struct timespec TS = {};
             int tz = 0;
@@ -1023,6 +1027,15 @@ namespace Delphi {
             TM.tm_mon -= 1;
             TM.tm_gmtoff = tz * 60 * 60;
             return SystemTimeToDateTime(&TM, &TS);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> time(a, b);
+            CDateTime delta = time(gen);
+            return Date + (CDateTime) (delta / SecsPerDay);
         }
     }
 }

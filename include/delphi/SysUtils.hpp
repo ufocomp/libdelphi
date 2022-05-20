@@ -204,6 +204,9 @@ namespace Delphi {
         LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format = SFormatDateTimeW);
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date);
+        //--------------------------------------------------------------------------------------------------------------
+
 #ifdef UNICODE
 
     #define Val                 ValW

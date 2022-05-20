@@ -343,7 +343,7 @@ namespace Delphi {
 
         private:
 
-            CList *m_Items;
+            CList m_Items;
 
             int m_UpdateCount;
             int m_NextId;
@@ -381,7 +381,7 @@ namespace Delphi {
             virtual void BeginUpdate();
             virtual void EndUpdate();
 
-            virtual void Clear();
+            void Clear();
             virtual void Delete(int Index);
 
             CCollectionItem *FindItemId(int Id);

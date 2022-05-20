@@ -708,25 +708,22 @@ namespace Delphi {
         CCollection::CCollection(CPersistent *AOwner): CPersistent(AOwner) {
             m_NextId = 0;
             m_UpdateCount = 0;
-            m_Items = new CList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CCollection::~CCollection() {
             m_UpdateCount = 1;
-            if (m_Items != nullptr)
-                CCollection::Clear();
-            delete m_Items;
+            Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CCollection::GetCount() const {
-            return m_Items->Count();
+            return m_Items.Count();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCollection::InsertItem(CCollectionItem *Item) {
-            m_Items->Add(Item);
+            m_Items.Add(Item);
             Item->m_Collection = this;
             Item->m_Id = m_NextId++;
             SetItemName(Item);
@@ -737,10 +734,10 @@ namespace Delphi {
 
         void CCollection::RemoveItem(CCollectionItem *Item) {
             Notify(Item, cnExtracting);
-            if (Item == m_Items->Last())
-                m_Items->Delete(m_Items->Count() - 1);
+            if (Item == m_Items.Last())
+                m_Items.Delete(m_Items.Count() - 1);
             else
-                m_Items->Remove(Item);
+                m_Items.Remove(Item);
             Item->m_Collection = nullptr;
             //NotifyDesigner(this, Item, opRemove);
             Changed();
@@ -793,12 +790,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CCollectionItem *CCollection::GetItem(int Index) const {
-            return (CCollectionItem *) m_Items->Items(Index);
+            return (CCollectionItem *) m_Items.Items(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCollection::SetItem(int Index, CCollectionItem *Value) {
-            m_Items->Items(Index, Value);
+            m_Items.Items(Index, Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -813,11 +810,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CCollection::Clear() {
-            if (m_Items->Count() > 0) {
+            if (m_Items.Count() > 0) {
                 BeginUpdate();
                 try {
-                    while (m_Items->Count() > 0) {
-                        delete (CCollectionItem *) m_Items->Last();
+                    while (m_Items.Count() > 0) {
+                        delete (CCollectionItem *) m_Items.Last();
                     }
                 } catch (...) {
                     EndUpdate();
@@ -829,8 +826,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CCollection::Delete(int Index) {
-            Notify((CCollectionItem *) m_Items->Items(Index), cnDeleting);
-            delete (CCollectionItem *) m_Items->Items(Index);
+            Notify((CCollectionItem *) m_Items.Items(Index), cnDeleting);
+            delete (CCollectionItem *) m_Items.Items(Index);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -843,8 +840,8 @@ namespace Delphi {
         CCollectionItem *CCollection::FindItemId(int Id) {
             CCollectionItem *Item = nullptr;
 
-            for (int I = 0; I < m_Items->Count(); I++) {
-                Item = static_cast<CCollectionItem *> (m_Items->Items(I));
+            for (int I = 0; I < m_Items.Count(); I++) {
+                Item = static_cast<CCollectionItem *> (m_Items.Items(I));
                 if (Item->Id() == Id)
                     return Item;
             }
@@ -873,7 +870,7 @@ namespace Delphi {
 
         int CCollectionItem::GetIndex() {
             if (m_Collection != nullptr)
-                return m_Collection->m_Items->IndexOf(this);
+                return m_Collection->m_Items.IndexOf(this);
             else
                 return -1;
         }
@@ -912,7 +909,7 @@ namespace Delphi {
             int CurIndex;
             CurIndex = GetIndex();
             if ((CurIndex >= 0) && (CurIndex != Value)) {
-                m_Collection->m_Items->Move(CurIndex, Value);
+                m_Collection->m_Items.Move(CurIndex, Value);
                 Changed(true);
             }
         }
