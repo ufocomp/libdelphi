@@ -1190,6 +1190,15 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPQConnectPoll::Assign(const CPQConnectPoll &Other) {
+            m_TimerInterval = Other.m_TimerInterval;
+            m_Active = Other.m_Active;
+            m_SizeMin = Other.m_SizeMin;
+            m_SizeMax = Other.m_SizeMax;
+            m_ConnInfo = Other.m_ConnInfo;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CPQPollConnection *CPQConnectPoll::GetConnection(int Index) const {
             return dynamic_cast<CPQPollConnection *> (m_ConnectManager[Index]);
         }

@@ -2256,8 +2256,8 @@ namespace Delphi {
             void Wait(const sigset_t *ASigMask = nullptr);
 
             CPollEventHandlers *EventHandlers() const { return m_pEventHandlers; }
-            void EventHandlers(CPollEventHandlers *Value) { SetEventHandlers(Value); }
 
+            void AllocateEventHandlers(CPollEventHandlers *Value) { SetEventHandlers(Value); }
             void AllocateEventHandlers(const CEPoll &EPoll) { SetEventHandlers(EPoll.EventHandlers()); }
             void AllocateEventHandlers(CEPoll *EPoll) { SetEventHandlers(EPoll->EventHandlers()); }
 

@@ -773,11 +773,18 @@ namespace Delphi {
 
         public:
 
-            explicit CPQConnectPoll(size_t ASizeMin, size_t ASizeMax);
-
+            explicit CPQConnectPoll(size_t ASizeMin = 5, size_t ASizeMax = 10);
             explicit CPQConnectPoll(const CPQConnInfo &AConnInfo, size_t ASizeMin = 5, size_t ASizeMax = 10);
 
+            CPQConnectPoll(const CPQConnectPoll &Other): CPQConnectPoll() {
+                if (this != &Other) {
+                    Assign(Other);
+                }
+            };
+
             ~CPQConnectPoll() override = default;
+
+            void Assign(const CPQConnectPoll &Other);
 
             void ConnInfo(const CPQConnInfo &AConnInfo) { m_ConnInfo = AConnInfo; };
 
@@ -825,6 +832,12 @@ namespace Delphi {
 
             explicit CPQClient(size_t ASizeMin = 5, size_t ASizeMax = 10): CPQConnectPoll(ASizeMin, ASizeMax) {};
 
+            CPQClient(const CPQClient &Other): CPQClient() {
+                if (this != &Other) {
+                    Assign(Other);
+                }
+            };
+
             ~CPQClient() override = default;
 
             CPQPollQuery *GetQuery();
@@ -832,6 +845,13 @@ namespace Delphi {
             bool CheckListen(const CString &Listen);
 
             CPQPollQuery *FindQueryByConnection(CPollConnection *APollConnection) const;
+
+            CPQClient& operator= (const CPQClient& Client) {
+                if (this != &Client) {
+                    Assign(Client);
+                }
+                return *this;
+            };
 
         };
     }
