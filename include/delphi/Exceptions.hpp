@@ -107,7 +107,7 @@ namespace Delphi {
 
             int ErrorCode() const { return m_SysError; };
 
-            LPCSTR what() const noexcept override { return m_Message.c_str(); };
+            LPCSTR what() const noexcept override { return m_Message.IsEmpty() ? "(empty)" : m_Message.c_str(); };
         };
         //--------------------------------------------------------------------------------------------------------------
 
