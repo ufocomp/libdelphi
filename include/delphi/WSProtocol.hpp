@@ -188,7 +188,7 @@ namespace Delphi {
 
             CHTTPServerConnection *m_pConnection;
 
-            CMessageManager *m_pMessages;
+            CMessageManager m_Messages {this};
 
             CAuthorization m_Authorization;
 
@@ -222,7 +222,8 @@ namespace Delphi {
 
             void Connection(CHTTPServerConnection *Value) { m_pConnection = Value; };
 
-            CMessageManager *Messages() { return m_pMessages; };
+            CMessageManager &Messages() { return m_Messages; };
+            const CMessageManager &Messages() const { return m_Messages; };
 
             CAuthorization &Authorization() { return m_Authorization; };
             const CAuthorization &Authorization() const { return m_Authorization; };
@@ -244,8 +245,6 @@ namespace Delphi {
 
             bool Authorized() const { return m_Authorized; };
             void Authorized(bool Value) { m_Authorized = Value; };
-
-            static CSession *FindOfConnection(CHTTPServerConnection *AConnection);
 
         };
 

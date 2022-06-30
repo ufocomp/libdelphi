@@ -1235,6 +1235,8 @@ namespace Delphi {
 
         private:
 
+            CObject *m_Session;
+
             CWebSocket *m_WSRequest;
             CWebSocket *m_WSReply;
 
@@ -1267,6 +1269,8 @@ namespace Delphi {
             void DoPing();
             void DoPong();
 
+            void SetSession(CObject *Value);
+
             virtual void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         public:
@@ -1290,6 +1294,9 @@ namespace Delphi {
             void SendWebSocketClose(bool ASendNow = false);
 
             virtual void Clear();
+
+            CObject *Session() { return m_Session; }
+            void Session(CObject *Value) { SetSession(Value); }
 
             CStringList &Data() { return m_Data; }
             const CStringList &Data() const { return m_Data; }

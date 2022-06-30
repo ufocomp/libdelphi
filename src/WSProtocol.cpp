@@ -291,7 +291,6 @@ namespace Delphi {
             m_UpdateCount = 0;
             m_Authorized = false;
             m_pConnection = AConnection;
-            m_pMessages = new CMessageManager(this);
             AddToConnection(AConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -299,28 +298,19 @@ namespace Delphi {
         CSession::~CSession() {
             DeleteFromConnection(m_pConnection);
             m_pConnection = nullptr;
-            FreeAndNil(m_pMessages);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSession::AddToConnection(CHTTPServerConnection *AConnection) {
             if (Assigned(AConnection)) {
-                int Index = AConnection->Data().IndexOfName("session");
-                if (Index == -1) {
-                    AConnection->Data().AddObject("session", this);
-                } else {
-                    delete AConnection->Data().Objects(Index);
-                    AConnection->Data().Objects(Index, this);
-                }
+                AConnection->Session(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSession::DeleteFromConnection(CHTTPServerConnection *AConnection) {
             if (Assigned(AConnection)) {
-                int Index = AConnection->Data().IndexOfObject(this);
-                if (Index == -1)
-                    AConnection->Data().Delete(Index);
+                AConnection->Session(nullptr);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -338,19 +328,6 @@ namespace Delphi {
                 m_pConnection = AConnection;
                 EndUpdate();
             }
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CSession *CSession::FindOfConnection(CHTTPServerConnection *AConnection) {
-            int Index = AConnection->Data().IndexOfName("session");
-            if (Index == -1)
-                throw Delphi::Exception::ExceptionFrm("Not found session in connection");
-
-            auto Object = AConnection->Data().Objects(Index);
-            if (Object == nullptr)
-                throw Delphi::Exception::ExceptionFrm("Object in connection data is null");
-
-            return dynamic_cast<CSession *> (Object);
         }
 
         //--------------------------------------------------------------------------------------------------------------

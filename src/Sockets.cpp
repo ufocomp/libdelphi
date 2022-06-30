@@ -2422,6 +2422,8 @@ namespace Delphi {
             m_Protocol = pHTTP;
             m_ConnectionStatus = csConnected;
 
+            m_Session = nullptr;
+
             m_WSRequest = nullptr;
             m_WSReply = nullptr;
 
@@ -2439,6 +2441,13 @@ namespace Delphi {
         void CWebSocketConnection::Clear() {
             FreeAndNil(m_WSRequest);
             FreeAndNil(m_WSReply);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CWebSocketConnection::SetSession(CObject *Value) {
+            if (Value != m_Session) {
+                m_Session = Value;
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
