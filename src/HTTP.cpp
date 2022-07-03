@@ -2550,6 +2550,12 @@ namespace Delphi {
             };
 
             auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+            if (pConnection == nullptr) {
+                AHandler->Stop();
+                return;
+            }
+
             try {
                 if (pConnection->ParseInput(OnExecuted)) {
                     switch (pConnection->ConnectionStatus()) {
@@ -2579,6 +2585,12 @@ namespace Delphi {
 
         void CHTTPClient::DoWrite(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+            if (pConnection == nullptr) {
+                AHandler->Stop();
+                return;
+            }
+
             try {
                 if (pConnection->WriteAsync()) {
                     if (pConnection->ConnectionStatus() == csRequestReady) {

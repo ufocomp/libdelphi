@@ -303,14 +303,14 @@ namespace Delphi {
 
         void CSession::AddToConnection(CHTTPServerConnection *AConnection) {
             if (Assigned(AConnection)) {
-                AConnection->Session(this);
+                AConnection->Object(this);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CSession::DeleteFromConnection(CHTTPServerConnection *AConnection) {
             if (Assigned(AConnection)) {
-                AConnection->Session(nullptr);
+                AConnection->Object(nullptr);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
