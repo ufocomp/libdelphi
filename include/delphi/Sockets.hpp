@@ -651,6 +651,8 @@ namespace Delphi {
         class LIB_DELPHI CPollConnection: public CSocketComponent, public CCollectionItem {
         private:
 
+            CList m_Bindings;
+
             CPollConnection *m_pBinding;
             CPollEventHandler *m_pEventHandler;
 
@@ -664,6 +666,7 @@ namespace Delphi {
             bool m_CloseConnection;
 
             void ClosePoll();
+            void ClearBindingList();
 
             void SetBinding(CPollConnection *AValue);
             void SetEventHandler(CPollEventHandler *AValue);
@@ -676,7 +679,10 @@ namespace Delphi {
 
             virtual void Close() abstract;
 
-            CPollConnection *Binding() const { return m_pBinding; };
+            CList &Bindings() { return m_Bindings; };
+            const CList &Bindings() const { return m_Bindings; };
+
+            CPollConnection *Binding() { return m_pBinding; };
             void Binding(CPollConnection *Value) { SetBinding(Value); };
 
             CPollEventHandler *EventHandler() const { return m_pEventHandler; }

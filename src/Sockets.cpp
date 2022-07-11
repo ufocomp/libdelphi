@@ -452,8 +452,6 @@ namespace Delphi {
 
             Socket = ::socket(ADomain, AType, AProtocol);
 
-            //DebugMessage(_T("create socket: %d - domain: %d, type: %d, protocol: %d, flag: %d \n"), Socket, ADomain, AType, AProtocol, AFlag);
-
             if (Socket == INVALID_SOCKET)
                 throw ESocketError(_T("Cannot allocate socket."));
 
@@ -1354,26 +1352,24 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollConnection::~CPollConnection() {
-            if (m_pBinding != nullptr) {
-                if (m_pBinding->Binding() == this) {
-                    if (m_pBinding->CloseConnection())
-                        m_pBinding->Close();
-                    m_pBinding->Binding(nullptr);
-                }
-            }
-
-            if (m_pEventHandler != nullptr) {
-                m_pEventHandler->Binding(nullptr);
-            }
+            SetBinding(nullptr);
+            SetEventHandler(nullptr);
+            ClearBindingList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollConnection::SetBinding(CPollConnection *Value) {
-            if (m_pBinding != Value) {
-                m_pBinding = Value;
-                if (m_pBinding != nullptr) {
-                    m_pBinding->Binding(this);
+        void CPollConnection::SetBinding(CPollConnection *AValue) {
+            if (m_pBinding != AValue) {
+                if (AValue != nullptr) {
+                    AValue->Bindings().Add(this);
+                } else {
+                    if (m_pBinding != nullptr) {
+                        const auto index = m_pBinding->Bindings().IndexOf(this);
+                        if (index != -1)
+                            m_pBinding->Bindings().Delete(index);
+                    }
                 }
+                m_pBinding = AValue;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1381,9 +1377,6 @@ namespace Delphi {
         void CPollConnection::SetEventHandler(CPollEventHandler *AValue) {
             if (m_pEventHandler != AValue) {
                 m_pEventHandler = AValue;
-                if (m_pEventHandler != nullptr) {
-                    m_pEventHandler->Binding(this);
-                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1391,6 +1384,16 @@ namespace Delphi {
         void CPollConnection::ClosePoll() {
             if (Assigned(m_pEventHandler))
                 m_pEventHandler->Stop();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPollConnection::ClearBindingList() {
+            for (int i = m_Bindings.Count() - 1; i >= 0; i--) {
+                auto pBinding = (CPollConnection *) m_Bindings.Items(i);
+                if (pBinding->Binding() == this)
+                    pBinding->Binding(nullptr);
+            }
+            m_Bindings.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
