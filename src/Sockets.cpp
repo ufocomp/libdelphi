@@ -1377,6 +1377,9 @@ namespace Delphi {
         void CPollConnection::SetEventHandler(CPollEventHandler *AValue) {
             if (m_pEventHandler != AValue) {
                 m_pEventHandler = AValue;
+                if (m_pEventHandler != nullptr) {
+                    m_pEventHandler->Binding(this);
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
