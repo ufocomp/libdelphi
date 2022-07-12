@@ -1353,8 +1353,11 @@ namespace Delphi {
 
         CPollConnection::~CPollConnection() {
             SetBinding(nullptr);
-            SetEventHandler(nullptr);
             ClearBindingList();
+
+            if (m_pEventHandler != nullptr) {
+                m_pEventHandler->Binding(nullptr);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
