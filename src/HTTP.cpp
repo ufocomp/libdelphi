@@ -1997,9 +1997,9 @@ namespace Delphi {
 
         void CHTTPServerConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
             CHTTPContext Context = CHTTPContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
-            const int ParseResult = CHTTPRequestParser::Parse(GetRequest(), Context);
+            const int result = CHTTPRequestParser::Parse(GetRequest(), Context);
 
-            switch (ParseResult) {
+            switch (result) {
                 case 0:
                     m_ConnectionStatus = csRequestError;
                     break;
@@ -2049,32 +2049,25 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendStockReply(CHTTPReply::CStatusType AStatus, bool ASendNow) {
-
             GetReply()->CloseConnection = CloseConnection();
-
             CHTTPReply::GetStockReply(m_Reply, AStatus);
-
             SendReply(ASendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType, bool ASendNow) {
-
             if (AStatus == CHTTPReply::ok) {
-                const CString &Value = GetRequest()->Headers[_T("Connection")].Lower();
-                CloseConnection(!(Value == _T("keep-alive") || Value == _T("upgrade")));
+                const auto &caConnection = GetRequest()->Headers[_T("Connection")].Lower();
+                CloseConnection(!(caConnection == _T("keep-alive") || caConnection == _T("upgrade")));
             }
 
             GetReply()->CloseConnection = CloseConnection();
-
             CHTTPReply::GetReply(m_Reply, AStatus, AContentType);
-
             SendReply(ASendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendReply(bool ASendNow) {
-
             GetReply()->ToBuffers(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
@@ -2090,7 +2083,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SwitchingProtocols(const CString &Accept, const CString &Protocol) {
-
             RecvBufferSize(256 * 1024);
 
             TimeOut(INFINITE);
@@ -2358,6 +2350,8 @@ namespace Delphi {
                     if (pConnection->CloseConnection()) {
                         pConnection->Disconnect();
                     }
+                } else {
+                    pConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
@@ -2615,9 +2609,9 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             auto pRequest = pConnection->Request();
 
-            bool Result = CommandHandlers()->Count() > 0;
+            const bool bResult = CommandHandlers()->Count() > 0;
 
-            if (Result) {
+            if (bResult) {
                 DoBeforeCommandHandler(AConnection, pRequest->Method);
                 try {
                     int Index;
@@ -2637,7 +2631,7 @@ namespace Delphi {
                 DoAfterCommandHandler(AConnection);
             }
 
-            return Result;
+            return bResult;
         }
         //--------------------------------------------------------------------------------------------------------------
 

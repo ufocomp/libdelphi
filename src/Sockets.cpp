@@ -1344,6 +1344,7 @@ namespace Delphi {
 
         CPollConnection::CPollConnection(CPollManager *AManager): CCollectionItem(AManager) {
             m_TimeOut = 0;
+            m_TimeOutInterval = 5000;
             m_pBinding = nullptr;
             m_pEventHandler = nullptr;
             m_CloseConnection = false;
@@ -1410,9 +1411,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollConnection::UpdateTimeOut(CDateTime DateTime, double Interval, double Period) {
+        void CPollConnection::SetTimeOutInterval(int Value) {
+            if (m_TimeOutInterval != Value) {
+                m_TimeOutInterval = Value;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPollConnection::UpdateTimeOut(CDateTime DateTime) {
             if (m_TimeOut != INFINITE) {
-                m_TimeOut = DateTime + Interval / Period;
+                m_TimeOut = DateTime + m_TimeOutInterval / MSecsPerDay;
             }
         }
 
@@ -3879,8 +3887,9 @@ namespace Delphi {
         void CPollEventHandler::SetBinding(CPollConnection *Value) {
             if (m_pBinding != Value) {
                 m_pBinding = Value;
-                if (Value != nullptr) {
-                    Value->EventHandler(this);
+                if (m_pBinding != nullptr) {
+                    m_pBinding->EventHandler(this);
+                    m_pBinding->TimeOutInterval(m_pEventHandlers->PollStack().TimeOut());
                 }
             }
         }
@@ -3888,7 +3897,7 @@ namespace Delphi {
 
         void CPollEventHandler::UpdateTimeOut() {
             if (m_pBinding != nullptr ) {
-                m_pBinding->UpdateTimeOut(m_TimeStamp, m_pEventHandlers->PollStack().TimeOut(), MSecsPerDay);
+                m_pBinding->UpdateTimeOut(m_TimeStamp);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4181,7 +4190,7 @@ namespace Delphi {
                     } else {
                         DoTimeOut(AHandler);
                     }
-                    AHandler->TimeStamp(DateTime);
+                    pConnection->UpdateTimeOut(DateTime);
                 }
             }
         }

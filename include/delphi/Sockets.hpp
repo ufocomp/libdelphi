@@ -657,10 +657,12 @@ namespace Delphi {
             CPollEventHandler *m_pEventHandler;
 
             void SetTimeOut(CDateTime Value);
+            void SetTimeOutInterval(int Value);
 
         protected:
 
             CDateTime m_TimeOut;
+            double m_TimeOutInterval;
 
             bool m_AutoFree;
             bool m_CloseConnection;
@@ -691,7 +693,10 @@ namespace Delphi {
             CDateTime TimeOut() const { return m_TimeOut; };
             void TimeOut(CDateTime Value) { SetTimeOut(Value); };
 
-            void UpdateTimeOut(CDateTime DateTime, double Interval, double Period = MSecsPerDay);
+            double TimeOutInterval() const { return m_TimeOutInterval; };
+            void TimeOutInterval(double Value) { SetTimeOutInterval(Value); };
+
+            void UpdateTimeOut(CDateTime DateTime);
 
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
