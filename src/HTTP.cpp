@@ -2070,6 +2070,9 @@ namespace Delphi {
         void CHTTPServerConnection::SendReply(bool ASendNow) {
             GetReply()->ToBuffers(*OutputBuffer());
 
+            m_TimeOut = 0;
+            UpdateTimeOut(Now());
+
             m_ConnectionStatus = csReplyReady;
 
             DoReply();
