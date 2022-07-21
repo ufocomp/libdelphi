@@ -1471,11 +1471,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CTCPConnection::Connected() {
-            CheckForDisconnect(false);
-            bool bResult = (IOHandler() != nullptr);
-            if (bResult)
-                bResult = IOHandler()->Connected();
-            return bResult;
+            return CheckForDisconnect(false);
         }
         //--------------------------------------------------------------------------------------------------------------
 
