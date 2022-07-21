@@ -1954,6 +1954,7 @@ namespace Delphi {
         CHTTPServerConnection::CHTTPServerConnection(CPollSocketServer *AServer):
                 CTCPServerConnection(AServer) {
 
+            m_TimeOut = 0;
             m_State = Request::method_start;
             m_ContentLength = 0;
 
@@ -2070,8 +2071,11 @@ namespace Delphi {
         void CHTTPServerConnection::SendReply(bool ASendNow) {
             GetReply()->ToBuffers(*OutputBuffer());
 
-            m_TimeOut = 0;
-            UpdateTimeOut(Now());
+            if (EventHandler() != nullptr) {
+                UpdateTimeOut(EventHandler()->TimeStamp());
+            } else {
+                UpdateTimeOut(Now());
+            }
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2088,7 +2092,6 @@ namespace Delphi {
         void CHTTPServerConnection::SwitchingProtocols(const CString &Accept, const CString &Protocol) {
             RecvBufferSize(256 * 1024);
 
-            TimeOut(INFINITE);
             CloseConnection(false);
 
             auto pReply = GetReply();
