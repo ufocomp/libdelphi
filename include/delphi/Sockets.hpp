@@ -725,6 +725,8 @@ namespace Delphi {
 
             ~CPollManager() override = default;
 
+            int IndexOfConnection(CPollConnection *AConnection);
+
             void CloseAllConnection() { Clear(); };
 
             CPollConnection *operator[] (int Index) const override { return dynamic_cast<CPollConnection *> (Items(Index)); };
