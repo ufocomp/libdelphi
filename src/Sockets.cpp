@@ -4510,7 +4510,6 @@ namespace Delphi {
                         ConnectStart();
 
                 } else {
-                    m_pEventHandlers->Clear();
                     CloseAllConnection();
                 }
 
