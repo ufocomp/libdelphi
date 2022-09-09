@@ -657,7 +657,7 @@ namespace Delphi {
             CPollEventHandler *m_pEventHandler;
 
             void SetTimeOut(CDateTime Value);
-            void SetTimeOutInterval(int Value);
+            void SetTimeOutInterval(double Value);
 
         protected:
 
@@ -680,6 +680,7 @@ namespace Delphi {
             ~CPollConnection() override;
 
             virtual void Close() abstract;
+            virtual bool FreeClient() { return false; };
 
             CList &Bindings() { return m_Bindings; };
             const CList &Bindings() const { return m_Bindings; };
@@ -1042,6 +1043,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CSocketClient: public CSocketComponent {
+        private:
+
+            bool m_AutoFree;
+
+            void SetAutoFree(bool AValue);
+
         protected:
 
             CString m_ClientName;
@@ -1065,6 +1072,9 @@ namespace Delphi {
             unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
 
+            bool AutoFree() const { return m_AutoFree; }
+            void AutoFree(bool Value) { SetAutoFree(Value); }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1087,7 +1097,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEventSocketClient: public CSocketClient, public CSocketEvent  {
+        class LIB_DELPHI CEventSocketClient: public CSocketClient, public CSocketEvent {
         public:
 
             CEventSocketClient(): CSocketClient(), CSocketEvent() {};
@@ -1380,6 +1390,8 @@ namespace Delphi {
             ~CTCPClientConnection() override;
 
             virtual CPollSocketClient *Client() { return m_pClient; }
+
+            bool FreeClient() override;
 
         }; // CTCPClientConnection
 

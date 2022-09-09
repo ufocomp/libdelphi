@@ -1411,7 +1411,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollConnection::SetTimeOutInterval(int Value) {
+        void CPollConnection::SetTimeOutInterval(double Value) {
             if (m_TimeOutInterval != Value) {
                 m_TimeOutInterval = Value;
             }
@@ -2700,6 +2700,15 @@ namespace Delphi {
         CTCPClientConnection::~CTCPClientConnection() {
             m_pClient = nullptr;
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CTCPClientConnection::FreeClient() {
+            if (m_pClient != nullptr && m_pClient->AutoFree() && m_pClient->Count() == 1) {
+                FreeAndNil(m_pClient);
+                return true;
+            }
+            return false;
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2916,7 +2925,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSocketClient::CSocketClient(): CSocketComponent() {
+            m_AutoFree = false;
             m_Port = 0;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketClient::SetAutoFree(bool AValue) {
+            if (m_AutoFree != AValue ) {
+                m_AutoFree = AValue;
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -3854,8 +3872,11 @@ namespace Delphi {
                 pTemp = m_pBinding;
                 m_pBinding->Close();
                 m_pBinding = nullptr;
-                if (pTemp->AutoFree())
-                    delete pTemp;
+                if (!pTemp->FreeClient()) {
+                    if (pTemp->AutoFree()) {
+                        delete pTemp;
+                    }
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4481,6 +4502,7 @@ namespace Delphi {
 #endif
             m_pCommandHandlers = new CCommandHandlers(this);
         }
+        //--------------------------------------------------------------------------------------------------------------
 
         CAsyncClient::CAsyncClient(const CString &Host, unsigned short Port): CAsyncClient() {
             m_Host = Host;
