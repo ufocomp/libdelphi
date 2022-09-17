@@ -130,8 +130,17 @@ namespace Delphi {
 
             void Items(int Index, const ClassName &Value) { PutItem(Index, Value); }
 
-            ClassName &operator[](int Index) { return GetItem(Index); }
+            TList<ClassName> &operator=(const TList<ClassName> &Value) {
+                if (this != &Value) {
+                    Clear();
+                    SetCapacity(Value.GetCapacity());
+                    for (int i = 0; i < Value.GetCount(); i++)
+                        Add(Value.Items(i));
+                }
+                return *this;
+            }
 
+            ClassName &operator[](int Index) { return GetItem(Index); }
             const ClassName &operator[](int Index) const { return GetItem(Index); }
 
         }; // TList<ClassName>
