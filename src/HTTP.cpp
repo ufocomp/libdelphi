@@ -2693,12 +2693,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager),
-            CPollConnection(nullptr) {
-
+        CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager) {
             m_Request = nullptr;
-            AConnection->Binding(this);
-
             m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
 

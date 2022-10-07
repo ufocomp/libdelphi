@@ -1190,7 +1190,7 @@ namespace Delphi {
         class CHTTPProxyManager;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHTTPProxy: public CHTTPClientItem, public CPollConnection {
+        class CHTTPProxy: public CHTTPClientItem {
         private:
 
             CHTTPServerConnection *m_pConnection;
@@ -1215,10 +1215,6 @@ namespace Delphi {
             CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
             CHTTPRequest *Request() { return GetRequest(); }
-
-            void Close() override {
-                m_pConnection = nullptr;
-            };
 
         };
 
