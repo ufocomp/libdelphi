@@ -99,22 +99,26 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCurlApi::Send(const CString &url, const CString &Result) {
-            Send(url, Result, CStringList(), CString(), "GET");
+        CString CCurlApi::Get(const CString &URL) {
+            return Send(URL, "GET", CString(), CStringList());
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCurlApi::Send(const CString &url, const CString &Result, const CStringList &Headers,
-                const CString &PostData, const CString &Action) {
+        CString CCurlApi::Post(const CString &URL, const CString &Content) {
+            return Send(URL, "POST", Content, CStringList());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CCurlApi::Send(const CString &URL, const CString &Action, const CString &Content, const CStringList &Headers) {
+            CString Result;
 
             if ( m_curl ) {
                 curl_easy_reset(m_curl);
 
-                curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
+                curl_easy_setopt(m_curl, CURLOPT_URL, URL.c_str());
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &Result);
-                curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, false);
-                curl_easy_setopt(m_curl, CURLOPT_ENCODING, "gzip");
+                curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
 
                 if ( Headers.Count() > 0 ) {
 
@@ -135,16 +139,18 @@ namespace Delphi {
                     if ( Action == "PUT" || Action == "DELETE" ) {
                         curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Action.c_str() );
                     } else {
-                        curl_easy_setopt(m_curl, CURLOPT_HTTPPOST, TRUE);
+                        curl_easy_setopt(m_curl, CURLOPT_POST, TRUE);
 
-                        if (!PostData.IsEmpty()) {
-                            curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, PostData.c_str());
+                        if (!Content.IsEmpty()) {
+                            curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, Content.c_str());
                         }
                     }
                 }
 
                 m_Code = curl_easy_perform(m_curl);
             }
+
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 

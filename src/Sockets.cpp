@@ -3199,14 +3199,10 @@ namespace Delphi {
             inherited::Cleanup();
             if (Assigned(m_pConnection)) {
                 if (Assigned(m_pConnection->Server())) {
-
-                    auto LServer = (CTCPServer *) m_pConnection->Server();
-
-                    if (Assigned(LServer->Threads()))
-                        LServer->Threads()->Remove(this);
-
-                    if (Assigned(LServer->ThreadMgr()))
-                        LServer->ThreadMgr()->ReleaseThread(this);
+                    auto pServer = (CTCPServer *) m_pConnection->Server();
+                    pServer->Threads().Remove(this);
+                    if (Assigned(pServer->ThreadMgr()))
+                        pServer->ThreadMgr()->ReleaseThread(this);
                 }
                 FreeAndNil(m_pConnection);
             }
@@ -3247,13 +3243,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CThreadMgr::CThreadMgr() {
-            m_pActiveThreads = new CThreadList;
             m_ThreadPriority = tpNormal;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CThreadMgr::~CThreadMgr() {
-            FreeAndNil(m_pActiveThreads);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3303,7 +3293,7 @@ namespace Delphi {
                             pThread->m_pConnection = pPeer;
                             pThread->m_pConnection->IOHandler(pIOHandler);
 
-                            m_pServer->Threads()->Add(pThread);
+                            m_pServer->Threads().Add(pThread);
                             pThread->Start();
                         }
                     }
@@ -3495,11 +3485,7 @@ namespace Delphi {
 
         CTCPServer::CTCPServer(): CPollSocketServer() {
             m_pThreadMgr = nullptr;
-            m_pListenerThreads = nullptr;
             m_pIOHandler = nullptr;
-
-            m_pThreads = new CThreadSafeList();
-            m_pCommandHandlers = new CCommandHandlers(this);
 
             m_Active = false;
         }
@@ -3507,14 +3493,11 @@ namespace Delphi {
 
         CTCPServer::~CTCPServer() {
             SetActive(false);
-
-            FreeAndNil(m_pThreads);
-            FreeAndNil(m_pCommandHandlers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPServer::SetActive(bool AValue) {
-            CListenerThread *LListenerThread;
+            CListenerThread *pListenerThread;
 
             if (m_Active != AValue ) {
 
@@ -3522,7 +3505,6 @@ namespace Delphi {
                     InitializeCommandHandlers();
 
                     m_pIOHandler = new CServerIOHandler();
-                    m_pListenerThreads = new CThreadList;
 
                     if (Bindings()->Count() == 0)
                         Bindings()->Add();
@@ -3533,9 +3515,9 @@ namespace Delphi {
                         Bindings()->Handles(i)->Bind();
                         Bindings()->Handles(i)->Listen(SOMAXCONN);
 
-                        LListenerThread = new CListenerThread(this, Bindings()->Handles(i));
-                        m_pListenerThreads->Add(LListenerThread);
-                        LListenerThread->Resume();
+                        pListenerThread = new CListenerThread(this, Bindings()->Handles(i));
+                        m_ListenerThreads.Add(pListenerThread);
+                        pListenerThread->Resume();
                     }
                 } else {
                     TerminateListenerThreads();
@@ -3545,7 +3527,6 @@ namespace Delphi {
                     } catch (...) {
                     }
 
-                    FreeAndNil(m_pListenerThreads);
                     FreeAndNil(m_pIOHandler);
                 }
 
@@ -3572,21 +3553,17 @@ namespace Delphi {
             int index = 0;
             CList *pThreads;
 
-            if (Assigned(Threads())) {
-                pThreads = Threads()->LockList();
-                try {
-                    while ((index < pThreads->Count()) && (static_cast<CPeerThread *> (pThreads->Items(index))->ThreadId() != dwThreadId))
-                        index++;
-                    if ( index == pThreads->Count() )
-                        index = -1;
-                } catch (...) {
-                }
-                Threads()->UnlockList();
-
-                return index;
+            pThreads = Threads().ptrLockList();
+            try {
+                while ((index < pThreads->Count()) && (static_cast<CPeerThread *> (pThreads->Items(index))->ThreadId() != dwThreadId))
+                    index++;
+                if ( index == pThreads->Count() )
+                    index = -1;
+            } catch (...) {
             }
+            Threads().UnlockList();
 
-            return -1;
+            return index;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3596,13 +3573,13 @@ namespace Delphi {
 
             int index = IndexOfThreadId(dwThreadId);
 
-            if (index != -1 && Assigned(Threads())) {
-                pThreads = Threads()->LockList();
+            if (index != -1) {
+                pThreads = Threads().ptrLockList();
                 try {
                     pThread = static_cast<CPeerThread *> (pThreads->Items(index));
                 } catch (...) {
                 }
-                Threads()->UnlockList();
+                Threads().UnlockList();
             }
 
             return pThread;
@@ -3614,28 +3591,26 @@ namespace Delphi {
             useconds_t terminateWaitTime = 5000;
 
             CList *pThreads;
-            bool LTimedOut;
+            bool bTimedOut;
 
-            if (Assigned(Threads())) {
-                pThreads = Threads()->LockList();
-                try {
-                    for (int i = 0; i < pThreads->Count(); ++i )
-                        static_cast<CPeerThread *>(pThreads->Items(i))->Connection()->DisconnectSocket();
-                } catch (...) {
-                }
-                Threads()->UnlockList();
-
-                LTimedOut = true;
-                for (useconds_t i = 1; i < (terminateWaitTime / sleepTime); ++i) {
-                    usleep(sleepTime);
-                    if (Threads()->IsCountLessThan(1)) {
-                        LTimedOut = false;
-                        break;
-                    }
-                }
-                if (LTimedOut)
-                    throw ETCPServerError(_T("Terminate Thread Timeout."));
+            pThreads = Threads().ptrLockList();
+            try {
+                for (int i = 0; i < pThreads->Count(); ++i )
+                    static_cast<CPeerThread *>(pThreads->Items(i))->Connection()->DisconnectSocket();
+            } catch (...) {
             }
+            Threads().UnlockList();
+
+            bTimedOut = true;
+            for (useconds_t i = 1; i < (terminateWaitTime / sleepTime); ++i) {
+                usleep(sleepTime);
+                if (Threads().IsCountLessThan(1)) {
+                    bTimedOut = false;
+                    break;
+                }
+            }
+            if (bTimedOut)
+                throw ETCPServerError(_T("Terminate Thread Timeout."));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3643,20 +3618,18 @@ namespace Delphi {
             CListenerThread *pListenerThread;
             CList *pListenerThreads;
 
-            if (Assigned(m_pListenerThreads)) {
-                pListenerThreads = m_pListenerThreads->LockList();
-                try {
-                    for (int i = 0; i < pListenerThreads->Count(); ++i ) {
-                        pListenerThread = (CListenerThread *) pListenerThreads->Items(i);
-                        pListenerThread->Terminate();
-                        pListenerThread->Binding()->CloseSocket(false);
-                        pListenerThread->WaitFor();
-                        delete pListenerThread;
-                    }
-                } catch (...) {
+            pListenerThreads = m_ListenerThreads.ptrLockList();
+            try {
+                for (int i = 0; i < pListenerThreads->Count(); ++i ) {
+                    pListenerThread = (CListenerThread *) pListenerThreads->Items(i);
+                    pListenerThread->Terminate();
+                    pListenerThread->Binding()->CloseSocket(false);
+                    pListenerThread->WaitFor();
+                    delete pListenerThread;
                 }
-                m_pListenerThreads->UnlockList();
+            } catch (...) {
             }
+            m_ListenerThreads.UnlockList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3666,7 +3639,7 @@ namespace Delphi {
 
             CMemoryStream Stream;
 
-            if (CommandHandlers()->Count() > 0) {
+            if (CommandHandlers().Count() > 0) {
                 result = true;
 
                 if (AConnection->Connected()) {
@@ -3684,18 +3657,18 @@ namespace Delphi {
                         DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
 #endif
                         try {
-                            for (i = 0; i < CommandHandlers()->Count(); ++i) {
-                                if (CommandHandlers()->Commands(i)->Enabled()) {
+                            for (i = 0; i < CommandHandlers().Count(); ++i) {
+                                if (CommandHandlers().Commands(i)->Enabled()) {
 #ifdef _UNICODE
-                                    if (CommandHandlers()->Items(i)->Check(WLine, Stream.Size(), AThread))
+                                    if (CommandHandlers().Items(i)->Check(WLine, Stream.Size(), AThread))
 #else
-                                    if (CommandHandlers()->Commands(i)->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
+                                    if (CommandHandlers().Commands(i)->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
 #endif
                                         break;
                                 }
                             }
 
-                            if (i == CommandHandlers()->Count())
+                            if (i == CommandHandlers().Count())
 #ifdef _UNICODE
                                 DoNoCommandHandler(WLine, AThread);
 #else
@@ -4421,12 +4394,6 @@ namespace Delphi {
             m_ActiveLevel = alShutDown;
             m_pIOHandler = nullptr;
             m_FreeIOHandler = true;
-            m_pCommandHandlers = new CCommandHandlers(this);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CAsyncServer::~CAsyncServer() {
-            FreeAndNil(m_pCommandHandlers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4454,7 +4421,7 @@ namespace Delphi {
         bool CAsyncServer::DoCommand(CTCPConnection *AConnection) {
             CCommandHandler *pHandler;
 
-            bool result = m_pCommandHandlers->Count() > 0;
+            bool result = m_CommandHandlers.Count() > 0;
 
             if (result) {
                 if (AConnection->Connected()) {
@@ -4468,14 +4435,14 @@ namespace Delphi {
                         DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
                         try {
                             int index;
-                            for (index = 0; index < m_pCommandHandlers->Count(); ++index) {
-                                pHandler = m_pCommandHandlers->Commands(index);
+                            for (index = 0; index < m_CommandHandlers.Count(); ++index) {
+                                pHandler = m_CommandHandlers.Commands(index);
                                 if (pHandler->Enabled()) {
                                     if (pHandler->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
                                         break;
                                 }
                             }
-                            if (index == m_pCommandHandlers->Count())
+                            if (index == m_CommandHandlers.Count())
                                 DoNoCommandHandler((char *) Stream.Memory(), AConnection);
                         } catch (Delphi::Exception::Exception &E) {
                             DoException(AConnection, E);
@@ -4500,7 +4467,6 @@ namespace Delphi {
 #ifdef WITH_SSL
             m_UsedSSL = false;
 #endif
-            m_pCommandHandlers = new CCommandHandlers(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4515,7 +4481,6 @@ namespace Delphi {
 
         CAsyncClient::~CAsyncClient() {
             SetActive(false);
-            FreeAndNil(m_pCommandHandlers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4525,7 +4490,7 @@ namespace Delphi {
                 if (AValue) {
                     Initialize();
 
-                    if (CommandHandlers()->Count() == 0)
+                    if (CommandHandlers().Count() == 0)
                         InitializeCommandHandlers();
 
                     if (m_AutoConnect)
@@ -4580,7 +4545,7 @@ namespace Delphi {
         bool CAsyncClient::DoCommand(CTCPConnection *AConnection) {
             CCommandHandler *pHandler;
 
-            bool result = m_pCommandHandlers->Count() > 0;
+            bool result = m_CommandHandlers.Count() > 0;
 
             if (result) {
                 if (AConnection->Connected()) {
@@ -4594,14 +4559,14 @@ namespace Delphi {
                         DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
                         try {
                             int index;
-                            for (index = 0; index < m_pCommandHandlers->Count(); ++index) {
-                                pHandler = m_pCommandHandlers->Commands(index);
+                            for (index = 0; index < m_CommandHandlers.Count(); ++index) {
+                                pHandler = m_CommandHandlers.Commands(index);
                                 if (pHandler->Enabled()) {
                                     if (pHandler->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
                                         break;
                                 }
                             }
-                            if (index == m_pCommandHandlers->Count())
+                            if (index == m_CommandHandlers.Count())
                                 DoNoCommandHandler((char *) Stream.Memory(), AConnection);
                         } catch (Delphi::Exception::Exception &E) {
                             DoException(AConnection, E);
@@ -4644,7 +4609,7 @@ namespace Delphi {
 
                 if (m_ActiveLevel < AValue) {
 
-                    if (CommandHandlers()->Count() == 0)
+                    if (CommandHandlers().Count() == 0)
                         InitializeCommandHandlers();
 
                     if (Bindings()->Count() == 0)
@@ -4802,7 +4767,7 @@ namespace Delphi {
 
                 if (m_ActiveLevel < AValue) {
 
-                    if (CommandHandlers()->Count() == 0)
+                    if (CommandHandlers().Count() == 0)
                         InitializeCommandHandlers();
 
                     if (m_pIOHandler == nullptr)

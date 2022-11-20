@@ -118,7 +118,7 @@ namespace Delphi {
             bool Result = false;
 
             CSyncProc *SyncProc;
-            CList *LocalSyncList = nullptr;
+            CList LocalSyncList;
 
             if (::getpid() != MainThreadID)
                 throw Exception::Exception(_T("CheckSynchronize called from thread, which is NOT the main thread."));
@@ -130,34 +130,30 @@ namespace Delphi {
 
             pthread_mutex_lock(&GThreadLock);
             try {
-                LocalSyncList = new CList();
-                LocalSyncList->Assign(GSyncList, laCopy);
+                LocalSyncList.Assign(*GSyncList, laCopy);
 
-                Result = (LocalSyncList != nullptr) && (LocalSyncList->Count() > 0);
+                Result = (LocalSyncList.Count() > 0);
 
                 if (Result) {
-                    while (LocalSyncList->Count() > 0) {
-                        SyncProc = (CSyncProc *) LocalSyncList->Items(0);
+                    while (LocalSyncList.Count() > 0) {
+                        SyncProc = (CSyncProc *) LocalSyncList.Items(0);
 
-                        LocalSyncList->Delete(0);
+                        LocalSyncList.Delete(0);
 
                         pthread_mutex_unlock(&GThreadLock);
 
                         try {
-                            SyncProc->SyncRec->Method();
+                            SyncProc->SyncRec.Method();
                         } catch (...) {
                         }
 
                         pthread_mutex_lock(&GThreadLock);
-                        //TODO: SetEvent(SyncProc->Signal);
+                        pthread_cond_wait(&SyncProc->Signal, &GThreadLock);
                     }
                 }
             } catch (...) {
             }
-
             pthread_mutex_unlock(&GThreadLock);
-
-            delete LocalSyncList;
 
             return Result;
         }
@@ -335,40 +331,45 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
         
         void QuickSort(PPointerList SortList, int L, int R, ListSortCompare SCompare) {
-            int I, J;
+            int i, J;
             Pointer P, T;
 
             do {
-                I = L;
+                i = L;
                 J = R;
                 P = SortList[(L + R) >> 1];
 
                 do {
-                    while (SCompare(SortList[I], P) < 0)
-                        I++;
+                    while (SCompare(SortList[i], P) < 0)
+                        i++;
                     while (SCompare(SortList[J], P) > 0)
                         J--;
-                    if (I <= J) {
-                        T = SortList[I];
-                        SortList[I] = SortList[J];
+                    if (i <= J) {
+                        T = SortList[i];
+                        SortList[i] = SortList[J];
                         SortList[J] = T;
-                        I++;
+                        i++;
                         J--;
                     }
-                } while (I <= J);
+                } while (i <= J);
 
                 if (L < J)
                     QuickSort(SortList, L, J, SCompare);
 
-                L = I;
-            } while (I < R);
+                L = i;
+            } while (i < R);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CList::CList() : CHeapComponent() {
+        CList::CList(): CHeapComponent() {
             m_nCount = 0;
             m_nCapacity = 0;
             m_pList = nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CList::CList(const CList &List): CList() {
+            Assign(List);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -382,7 +383,6 @@ namespace Delphi {
         Pointer CList::Get(int Index) const {
             if ((Index < 0) || (m_pList == nullptr) || (Index >= m_nCount))
                 throw ExceptionFrm(SListIndexError, Index);
-
             return m_pList[Index];
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -528,27 +528,27 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         Pointer CList::Extract(Pointer Item) {
-            int I;
+            int i;
             Pointer Result = nullptr;
 
-            I = IndexOf(Item);
+            i = IndexOf(Item);
 
-            if (I >= 0) {
+            if (i >= 0) {
                 Result = Item;
-                m_pList[I] = nullptr;
-                Delete(I);
+                m_pList[i] = nullptr;
+                Delete(i);
                 Notify(Result, lnExtracted);
             }
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CList::First() {
+        Pointer CList::First() const {
             return Get(0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CList::IndexOf(Pointer Item) {
+        int CList::IndexOf(Pointer Item) const {
             int Result = 0;
 
             while ((Result < m_nCount) && (m_pList[Result] != Item))
@@ -579,7 +579,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CList::Last() {
+        Pointer CList::Last() const {
             return Get(m_nCount - 1);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -621,79 +621,71 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CList::Assign(CList *ListA, ListAssignOp AOperator, CList *ListB) {
-            int I;
-            CList *LSource;
-
-            // ListB given?
-            if (ListB != nullptr) {
-                LSource = ListB;
-                Assign(ListA);
-            } else
-                LSource = ListA;
+        void CList::Assign(const CList &Source, ListAssignOp Operator) {
+            int i;
 
             // on with the show
-            switch (AOperator) {
+            switch (Operator) {
                 // 12345, 346 = 346 : only those in the new list
                 case laCopy: {
                     Clear();
-                    SetCapacity(LSource->GetCapacity());
-                    for (I = 0; I < LSource->GetCount(); I++)
-                        Add(LSource->Items(I));
+                    SetCapacity(Source.GetCapacity());
+                    for (i = 0; i < Source.GetCount(); i++)
+                        Add(Source.Items(i));
                     break;
                 }
 
-                    // 12345, 346 = 34 : intersection of the two lists
+                // 12345, 346 = 34 : intersection of the two lists
                 case laAnd: {
-                    for (I = GetCount() - 1; I >= 0; I--)
-                        if (LSource->IndexOf(Get(I)) == -1)
-                            Delete(I);
+                    for (i = GetCount() - 1; i >= 0; i--)
+                        if (Source.IndexOf(Get(i)) == -1)
+                            Delete(i);
                     break;
                 }
 
-                    // 12345, 346 = 123456 : union of the two lists
+                // 12345, 346 = 123456 : union of the two lists
                 case laOr: {
-                    for (I = 0; I < LSource->GetCount(); I++)
-                        if (IndexOf(LSource->Items(I)) == -1)
-                            Add(LSource->Items(I));
+                    for (i = 0; i < Source.GetCount(); i++)
+                        if (IndexOf(Source.Items(i)) == -1)
+                            Add(Source.Items(i));
                     break;
                 }
 
-                    // 12345, 346 = 1256 : only those not in both lists
+                // 12345, 346 = 1256 : only those not in both lists
                 case laXor: {
                     CList LTemp; // Temp holder of 4 byte values
-                    LTemp.SetCapacity(LSource->Count());
-                    for (I = 0; I < LSource->Count(); I++)
-                        if (IndexOf(LSource->Items(I)) == -1)
-                            LTemp.Add(LSource->Items(I));
+                    LTemp.SetCapacity(Source.Count());
+                    for (i = 0; i < Source.Count(); i++)
+                        if (IndexOf(Source.Items(i)) == -1)
+                            LTemp.Add(Source.Items(i));
 
-                    for (I = Count() - 1; I >= 0; I--)
-                        if (LSource->IndexOf(Get(I)) != -1)
-                            Delete(I);
-                    I = Count() + LTemp.Count();
-                    if (GetCapacity() < I)
-                        SetCapacity(I);
-                    for (I = 0; I < LTemp.Count(); I++)
-                        Add(LTemp[I]);
+                    for (i = Count() - 1; i >= 0; i--)
+                        if (Source.IndexOf(Get(i)) != -1)
+                            Delete(i);
+                    i = Count() + LTemp.Count();
+                    if (GetCapacity() < i)
+                        SetCapacity(i);
+                    for (i = 0; i < LTemp.Count(); i++)
+                        Add(LTemp[i]);
                     break;
                 }
 
-                    // 12345, 346 = 125 : only those unique to source
+                // 12345, 346 = 125 : only those unique to source
                 case laSrcUnique: {
-                    for (I = Count() - 1; I >= 0; I--)
-                        if (LSource->IndexOf(Get(I)) != -1)
-                            Delete(I);
+                    for (i = Count() - 1; i >= 0; i--)
+                        if (Source.IndexOf(Get(i)) != -1)
+                            Delete(i);
                     break;
                 }
 
-                    // 12345, 346 = 6 : only those unique to dest
+                // 12345, 346 = 6 : only those unique to dest
                 case laDestUnique: {
                     CList LTemp;
-                    LTemp.SetCapacity(LSource->Count());
-                    for (I = LSource->Count() - 1; I >= 0; I--)
-                        if (IndexOf(LSource->Items(I)) == -1)
-                            LTemp.Add(LSource->Items(I));
-                    Assign(&LTemp);
+                    LTemp.SetCapacity(Source.Count());
+                    for (i = Source.Count() - 1; i >= 0; i--)
+                        if (IndexOf(Source.Items(i)) == -1)
+                            LTemp.Add(Source.Items(i));
+                    Assign(LTemp);
                     break;
                 }
             }
@@ -840,8 +832,8 @@ namespace Delphi {
         CCollectionItem *CCollection::FindItemId(int Id) {
             CCollectionItem *Item = nullptr;
 
-            for (int I = 0; I < m_Items.Count(); I++) {
-                Item = static_cast<CCollectionItem *> (m_Items.Items(I));
+            for (int i = 0; i < m_Items.Count(); i++) {
+                Item = static_cast<CCollectionItem *> (m_Items.Items(i));
                 if (Item->Id() == Id)
                     return Item;
             }
@@ -1488,7 +1480,7 @@ namespace Delphi {
         void CCustomString::AddChar(TCHAR C, size_t Length) {
             Seek(0, soEnd);
             SetLength(m_Length + Length);
-            for (size_t I = 0; I < Length; ++I)
+            for (size_t i = 0; i < Length; ++i)
                 Write(&C, sizeof(TCHAR));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1496,7 +1488,7 @@ namespace Delphi {
         void CCustomString::SetChar(TCHAR C, size_t Length) {
             m_Length = Length;
             Seek(0, soBeginning);
-            for (size_t I = 0; I < Length; ++I)
+            for (size_t i = 0; i < Length; ++i)
                 Write(&C, sizeof(TCHAR));
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1724,39 +1716,39 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CString CString::Trim(TCHAR TrimChar) const {
-            size_t I, L;
+            size_t i, L;
             L = Length() - 1;
-            I = 0;
-            if (IsEmpty() || ((GetChar(I) > TrimChar) && (GetChar(L) > TrimChar)))
+            i = 0;
+            if (IsEmpty() || ((GetChar(i) > TrimChar) && (GetChar(L) > TrimChar)))
                 return *this;
-            while ((I <= L) && (GetChar(I) <= TrimChar)) I++;
-                if (I > L) {
+            while ((i <= L) && (GetChar(i) <= TrimChar)) i++;
+                if (i > L) {
                     CString S;
                     return S;
                 }
             while (GetChar(L) <= TrimChar) L--;
-            return SubString(I, L - I + 1);
+            return SubString(i, L - i + 1);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CString CString::TrimLeft(TCHAR TrimChar) const {
-            size_t I;
-            I = 0;
-            while (!IsEmpty() && ((GetChar(I) <= TrimChar))) I++;
-            if (I > 0)
-                return SubString(I);
+            size_t i;
+            i = 0;
+            while (!IsEmpty() && ((GetChar(i) <= TrimChar))) i++;
+            if (i > 0)
+                return SubString(i);
             return *this;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CString CString::TrimRight(TCHAR TrimChar) const {
-            int I;
-            I = (int) Length() - 1;
-            if (IsEmpty() || (GetChar(I) > TrimChar)) {
+            int i;
+            i = (int) Length() - 1;
+            if (IsEmpty() || (GetChar(i) > TrimChar)) {
                 return *this;
             } else {
-                while ((I >= 0) && (GetChar(I) <= TrimChar)) I--;
-                return SubString(0, I + 1);
+                while ((i >= 0) && (GetChar(i) <= TrimChar)) i--;
+                return SubString(0, i + 1);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1783,14 +1775,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetValue(const CString &Name, const CString &Value) {
-            int I = IndexOfName(Name);
+            int i = IndexOfName(Name);
 
             if (!Value.IsEmpty()) {
-                if (I < 0) I = Add(CString());
-                Put(I, Name + NameValueSeparator() + Value);
+                if (i < 0) i = Add(CString());
+                Put(i, Name + NameValueSeparator() + Value);
             } else {
-                if (I >= 0)
-                    Delete(I);
+                if (i >= 0)
+                    Delete(i);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1798,14 +1790,14 @@ namespace Delphi {
         void CStrings::SetValue(CStrings::reference Name, CStrings::reference Value) {
             CString LName(Name);
 
-            int I = IndexOfName(Name);
+            int i = IndexOfName(Name);
 
             if (Assigned(Value)) {
-                if (I < 0) I = Add(CString());
-                Put(I, LName + NameValueSeparator() + Value);
+                if (i < 0) i = Add(CString());
+                Put(i, LName + NameValueSeparator() + Value);
             } else {
-                if (I >= 0)
-                    Delete(I);
+                if (i >= 0)
+                    Delete(i);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1938,7 +1930,7 @@ namespace Delphi {
         CString CStrings::GetText() const {
             CString Result;
 
-            int I;
+            int i;
             size_t L, LineBreakLen;
             LPCTSTR LB = LineBreak();
 
@@ -1949,22 +1941,22 @@ namespace Delphi {
 
             const auto Count = GetCount();
 
-            for (I = 0; I < Count; ++I) {
-                const CString &S = Get(I);
+            for (i = 0; i < Count; ++i) {
+                const CString &S = Get(i);
                 if (!S.IsEmpty())
                     L += S.Size();
-                if (IsLineFeed || I < Count - 1)
+                if (IsLineFeed || i < Count - 1)
                     L += LineBreakLen;
             }
 
             Result.SetLength(L);
             Result.Position(0);
 
-            for (I = 0; I < Count; ++I) {
-                const CString &S = Get(I);
+            for (i = 0; i < Count; ++i) {
+                const CString &S = Get(i);
                 if (!S.IsEmpty())
                     Result.WriteBuffer(S.Data(), S.Size());
-                if (IsLineFeed || I < Count - 1)
+                if (IsLineFeed || i < Count - 1)
                     Result.WriteBuffer(LB, LineBreakLen);
             }
 
@@ -2099,8 +2091,8 @@ namespace Delphi {
         void CStrings::AddStrings(const CStrings& AStrings) {
             BeginUpdate();
             try {
-                for (int I = 0; I < AStrings.Count(); ++I)
-                    AddObject(AStrings.Strings(I), AStrings.Objects(I));
+                for (int i = 0; i < AStrings.Count(); ++i)
+                    AddObject(AStrings.Strings(i), AStrings.Objects(i));
             } catch (...) {
                 EndUpdate();
                 throw;
@@ -2109,7 +2101,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::Assign(const CStrings& Source) {
+        void CStrings::Assign(const CStrings &Source) {
 
             BeginUpdate();
             try {
@@ -2127,8 +2119,6 @@ namespace Delphi {
                 throw;
             }
             EndUpdate();
-
-            //inherited::Assign(Source);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2158,12 +2148,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CStrings::Equals(CStrings *Strings) {
-            int I, Count;
+            int i, Count;
             Count = GetCount();
             if (Count != Strings->GetCount())
                 return false;
-            for (I = 0; I < Count; ++I)
-                if (Get(I) != Strings->Get(I))
+            for (i = 0; i < Count; ++i)
+                if (Get(i) != Strings->Get(i))
                     return false;
             return true;
         }
@@ -2189,45 +2179,45 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOf(const CString &S) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (Get(I) == S)
-                    return I;
+            for (int i = 0; i < GetCount(); ++i) {
+                if (Get(i) == S)
+                    return i;
             }
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOf(reference Str) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (Get(I) == Str)
-                    return I;
+            for (int i = 0; i < GetCount(); ++i) {
+                if (Get(i) == Str)
+                    return i;
             }
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOfName(const CString &Name) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (GetName(I) == Name)
-                    return I;
+            for (int i = 0; i < GetCount(); ++i) {
+                if (GetName(i) == Name)
+                    return i;
             }
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOfName(reference Name) const {
-            for (int I = 0; I < GetCount(); ++I) {
-                if (GetName(I) == Name)
-                    return I;
+            for (int i = 0; i < GetCount(); ++i) {
+                if (GetName(i) == Name)
+                    return i;
             }
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CStrings::IndexOfObject(CObject *AObject) const {
-            for (int I = 0; I < GetCount(); ++I)
-                if (GetObject(I) == AObject)
-                    return I;
+            for (int i = 0; i < GetCount(); ++i)
+                if (GetObject(i) == AObject)
+                    return i;
             return -1;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2544,7 +2534,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStringList::Clear() {
-            int I;
+            int i;
             int TempCount = 0;
 
             CObject** Temp = nullptr;
@@ -2554,22 +2544,22 @@ namespace Delphi {
                 // If the list owns the Objects gather them and free after the list is disposed
                 if (OwnsObjects()) {
                     Temp = new CObject* [m_nCount];
-                    for (I = 0; I < m_nCount; ++I) {
-                        Temp[I] = m_pList[I]->Object;
+                    for (i = 0; i < m_nCount; ++i) {
+                        Temp[i] = m_pList[i]->Object;
                         TempCount++;
                     }
                 }
 
-                for (I = 0; I < m_nCount; ++I)
-                    delete m_pList[I];
+                for (i = 0; i < m_nCount; ++i)
+                    delete m_pList[i];
 
                 m_nCount = 0;
                 SetCapacity(0);
 
                 // Free the objects that were owned by the list
                 if (Temp != nullptr) {
-                    for (I = 0; I < TempCount; ++I)
-                        FreeAndNil(Temp[I]);
+                    for (i = 0; i < TempCount; ++i)
+                        FreeAndNil(Temp[i]);
                     delete[] Temp;
                 }
             }
@@ -2892,12 +2882,12 @@ namespace Delphi {
 
         int CQueue::AddToQueue(Pointer Queue, Pointer P) {
             CQueueItem *Item = nullptr;
-            int I = IndexOf(Queue);
+            int i = IndexOf(Queue);
 
-            if (I == -1)
+            if (i == -1)
                 Item = Add(Queue);
             else
-                Item = GetItem(I);
+                Item = GetItem(i);
 
             return Item->Add(P);
         }
@@ -2905,12 +2895,12 @@ namespace Delphi {
 
         void CQueue::InsertToQueue(Pointer Queue, int Index, Pointer P) {
             CQueueItem *Item = nullptr;
-            int I = IndexOf(Queue);
+            int i = IndexOf(Queue);
 
-            if (I == -1)
+            if (i == -1)
                 Item = Add(Queue);
             else
-                Item = GetItem(I);
+                Item = GetItem(i);
 
             Item->Insert(Index, P);
         }
@@ -2918,13 +2908,13 @@ namespace Delphi {
 
         void CQueue::RemoveFromQueue(Pointer Queue, Pointer P) {
             CQueueItem *Item = nullptr;
-            int I = IndexOf(Queue);
+            int i = IndexOf(Queue);
 
-            if (I >= 0) {
-                Item = GetItem(I);
+            if (i >= 0) {
+                Item = GetItem(i);
                 Item->Remove(P);
                 if (Item->Count() == 0)
-                    Delete(I);
+                    Delete(i);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2987,11 +2977,11 @@ namespace Delphi {
             char *M;
             char S[MAX_ERROR_STR + 1];
 
-            for (int I = 0; I < SYS_ERRNO_COUNT; I++) {
+            for (int i = 0; i < SYS_ERRNO_COUNT; i++) {
                 if (DefaultLocale.Locale() == LC_GLOBAL_LOCALE) {
-                    M = ::strerror_r(I, S, MAX_ERROR_STR);
+                    M = ::strerror_r(i, S, MAX_ERROR_STR);
                 } else {
-                    M = ::strerror_l(I, DefaultLocale.Locale());
+                    M = ::strerror_l(i, DefaultLocale.Locale());
                 }
 
                 Add(M);
@@ -3028,40 +3018,34 @@ namespace Delphi {
 
         LPVOID ThreadProc(LPVOID lpParameter) {
 
-            auto Thread = static_cast<CThread *> (lpParameter);
+            auto pThread = static_cast<CThread *> (lpParameter);
 
-            bool FreeThread;
+            if (pThread->m_bCreateSuspended)
+                pThread->Suspend();
 
-            Thread->m_nThreadId = (pid_t) syscall(SYS_gettid);
-
-            pthread_mutex_lock(&Thread->m_Lock);
-            while (Thread->m_bSuspended) {
-                pthread_cond_wait(&Thread->m_Suspend, &Thread->m_Lock);
-            }
-            pthread_mutex_unlock(&Thread->m_Lock);
+            pThread->m_nThreadId = (pid_t) syscall(SYS_gettid);
 
             try {
-                if (!Thread->Terminated())
-                    Thread->Execute();
+                if (!pThread->Terminated())
+                    pThread->Execute();
             }
             catch (...) {
             }
 
-            FreeThread = Thread->m_bFreeOnTerminate;
-            //Result = Thread->m_nReturnValue;
+            auto bFreeThread = pThread->m_bFreeOnTerminate;
 
-            Thread->m_bFinished = true;
-            Thread->DoTerminate();
+            pThread->m_bFinished = true;
+            pThread->DoTerminate();
 
-            if (FreeThread) {
-                delete Thread;
+            if (bFreeThread) {
+                delete pThread;
             }
 
-            pthread_exit((LPVOID) "Success");
+            pthread_exit(nullptr);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CThread::CThread(bool CreateSuspended)
+        CThread::CThread(bool CreateSuspended): CObject()
         {
             AddThread();
 
@@ -3078,15 +3062,11 @@ namespace Delphi {
             m_bSuspended = CreateSuspended;
             m_bCreateSuspended = CreateSuspended;
 
-            m_Synchronize = new CSynchronizeRecord;
-
-            pthread_cond_init(&m_Suspend, nullptr);
-
-            pthread_mutex_init(&m_Lock, nullptr);
-            m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+            m_SuspendMutex = PTHREAD_MUTEX_INITIALIZER;
+            m_ResumeCond = PTHREAD_COND_INITIALIZER;
 
             pthread_attr_init(&m_hAttr);
-            pthread_attr_setdetachstate(&m_hAttr, PTHREAD_CREATE_DETACHED);
+            pthread_attr_setdetachstate(&m_hAttr, PTHREAD_CREATE_JOINABLE);
 
             m_nThreadId = pthread_create(&m_hHandle, &m_hAttr, &ThreadProc, (PVOID) this);
 
@@ -3105,11 +3085,12 @@ namespace Delphi {
                 WaitFor();
             }
 
-            pthread_attr_destroy(&m_hAttr);
-            pthread_mutex_destroy(&m_Lock);
-            pthread_cond_destroy(&m_Suspend);
+            while (pthread_cond_destroy(&m_ResumeCond) == EBUSY) {
+                pthread_cond_broadcast(&m_ResumeCond);
+            }
 
-            delete m_Synchronize;
+            pthread_attr_destroy(&m_hAttr);
+            pthread_mutex_destroy(&m_SuspendMutex);
 
             RemoveThread();
         }
@@ -3138,7 +3119,7 @@ namespace Delphi {
         void CThread::CallOnTerminate()
         {
             if ( m_OnTerminate != nullptr )
-                m_OnTerminate((CObject *) this);
+                m_OnTerminate(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3174,15 +3155,21 @@ namespace Delphi {
 
         void CThread::Suspend()
         {
-            m_bSuspended = true;
+            pthread_mutex_lock(&m_SuspendMutex);
+            while (m_bSuspended) {
+                pthread_cond_wait(&m_ResumeCond, &m_SuspendMutex);
+            }
+            pthread_mutex_unlock(&m_SuspendMutex);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CThread::Resume()
         {
             if (m_bSuspended) {
+                pthread_mutex_lock(&m_SuspendMutex);
                 m_bSuspended = false;
-                pthread_cond_signal(&m_Suspend);
+                pthread_cond_signal(&m_ResumeCond);
+                pthread_mutex_unlock(&m_SuspendMutex);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3199,56 +3186,56 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Synchronize(PSynchronizeRecord ASyncRec)
+        void CThread::Synchronize(const CSynchronizeRecord &ASyncRec)
         {
             auto SyncProc = new CSyncProc;
 
             if ( ::getppid() == MainThreadID )
             {
-                ASyncRec->Method();
+                ASyncRec.Method();
             }
             else
             {
                 if ( GSyncList != nullptr && SyncProc != nullptr )
                 {
-                    //SyncProc->Signal = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+                    SyncProc->Signal = PTHREAD_COND_INITIALIZER;
 
-                    if ( SyncProc->Signal != nullptr )
+                    try
                     {
+                        pthread_mutex_lock(&GThreadLock);
                         try
                         {
-                            pthread_mutex_lock(&GThreadLock);
+                            if ( GSyncList == nullptr )
+                                CreateSyncList();
+
+                            SyncProc->SyncRec = ASyncRec;
+                            GSyncList->Add(SyncProc);
+
+                            SignalSyncEvent();
+
+                            if ( WakeMainThread  )
+                                WakeMainThread((CObject *) SyncProc->SyncRec.Thread);
+
+                            pthread_mutex_unlock(&GThreadLock);
                             try
                             {
-                                if ( GSyncList == nullptr )
-                                    CreateSyncList();
-
-                                SyncProc->SyncRec = ASyncRec;
-                                GSyncList->Add(SyncProc);
-
-                                SignalSyncEvent();
-
-                                if ( WakeMainThread  )
-                                    WakeMainThread((CObject *) SyncProc->SyncRec->Thread);
-
-                                pthread_mutex_unlock(&GThreadLock);
-                                try
-                                {
-                                    //WaitForSingleObject(SyncProc->Signal, INFINITE);
-                                } catch (...) {
-                                }
-                                pthread_mutex_lock(&GThreadLock);
+                                pthread_cond_signal(&SyncProc->Signal);
                             } catch (...) {
                             }
-                            pthread_mutex_unlock(&GThreadLock);
-
+                            pthread_mutex_lock(&GThreadLock);
                         } catch (...) {
                         }
-                        //CloseHandle(SyncProc->Signal);
+                        pthread_mutex_unlock(&GThreadLock);
+
+                    } catch (...) {
                     }
 
-                    if ( ASyncRec->SynchronizeException != nullptr )
-                        throw ASyncRec->SynchronizeException;
+                    while (pthread_cond_destroy(&SyncProc->Signal) == EBUSY) {
+                        pthread_cond_broadcast(&SyncProc->Signal);
+                    }
+
+                    if ( ASyncRec.SynchronizeException != nullptr )
+                        throw ASyncRec.SynchronizeException;
                 }
             }
         }
@@ -3256,9 +3243,9 @@ namespace Delphi {
 
         void CThread::Synchronize(CThreadMethod *AMethod)
         {
-            m_Synchronize->Thread = this;
-            m_Synchronize->SynchronizeException = nullptr;
-            m_Synchronize->Method = AMethod;
+            m_Synchronize.Thread = this;
+            m_Synchronize.SynchronizeException = nullptr;
+            m_Synchronize.Method = AMethod;
 
             Synchronize(m_Synchronize);
         }
@@ -3277,15 +3264,13 @@ namespace Delphi {
                 SyncRec.Thread = nullptr;
                 SyncRec.SynchronizeException = nullptr;
                 SyncRec.Method = AMethod;
-                Synchronize(&SyncRec);
+                Synchronize(SyncRec);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CThread::WaitFor() {
-            void *Result;
-            pthread_join(m_hHandle, &Result);
-            DebugMessage("thread %d exited with '%s'\n", m_nThreadId, (char *) Result);
+            pthread_join(m_hHandle, nullptr);
             return ReturnValue();
         }
 
@@ -3298,29 +3283,13 @@ namespace Delphi {
         CThreadList::CThreadList()
         {
             pthread_mutex_init(&m_Lock, nullptr);
-            m_List = new CList;
             m_Duplicates = dupIgnore;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CThreadList::~CThreadList()
         {
-            FreeList();
             pthread_mutex_destroy(&m_Lock);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CThreadList::FreeList()
-        {
-            LockList();
-            try
-            {
-                FreeAndNil(m_List);
-            } catch (...) {
-                UnlockList();
-                throw;
-            }
-            UnlockList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3329,9 +3298,9 @@ namespace Delphi {
             LockList();
             try
             {
-                if ( Assigned(m_List) && ((Duplicates() == dupAccept) || (m_List->IndexOf(Item) == -1)) )
-                    m_List->Add(Item);
-                else if ( Duplicates() == dupError )
+                if ( (Duplicates() == dupAccept) || (m_List.IndexOf(Item) == -1) ) {
+                    m_List.Add(Item);
+                } else if ( Duplicates() == dupError )
                     throw Exception::Exception(_T("List does not allow duplicates"));
             } catch (...) {
                 UnlockList();
@@ -3346,7 +3315,7 @@ namespace Delphi {
             LockList();
             try
             {
-                m_List->Clear();
+                m_List.Clear();
             } catch (...) {
                 UnlockList();
                 throw;
@@ -3355,10 +3324,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CList *CThreadList::LockList()
+        const CList &CThreadList::LockList()
         {
             pthread_mutex_lock(&m_Lock);
             return m_List;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CList *CThreadList::ptrLockList()
+        {
+            pthread_mutex_lock(&m_Lock);
+            return &m_List;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3367,7 +3343,7 @@ namespace Delphi {
             LockList();
             try
             {
-                m_List->Remove(Item);
+                m_List.Remove(Item);
             } catch (...) {
                 UnlockList();
                 throw;

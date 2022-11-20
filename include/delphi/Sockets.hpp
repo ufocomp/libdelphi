@@ -1647,14 +1647,14 @@ namespace Delphi {
         class LIB_DELPHI CThreadMgr {
         protected:
 
-            CThreadList *m_pActiveThreads;
+            CThreadList m_ActiveThreads;
             CThreadPriority m_ThreadPriority;
 
         public:
 
             CThreadMgr();
 
-            ~CThreadMgr();
+            ~CThreadMgr() = default;
 
             virtual CPeerThread *GetThread();
 
@@ -1662,9 +1662,10 @@ namespace Delphi {
 
             virtual void TerminateThreads();
 
-            CThreadList *ActiveThreads() { return m_pActiveThreads; }
+            CThreadList &ActiveThreads() { return m_ActiveThreads; }
+            const CThreadList &ActiveThreads() const { return m_ActiveThreads; }
 
-            CThreadPriority ThreadPriority() { return m_ThreadPriority; }
+            CThreadPriority ThreadPriority() const { return m_ThreadPriority; }
             void ThreadPriority(CThreadPriority Value) { m_ThreadPriority = Value; }
 
         }; // CThreadMgr
@@ -1681,23 +1682,22 @@ namespace Delphi {
         public:
 
             CPeerThread *GetThread() override {
-              CPeerThread *Result = inherited::GetThread();
-              ActiveThreads()->Add(Result);
-              return Result;
+                auto *pThread = inherited::GetThread();
+                ActiveThreads().Add(pThread);
+                return pThread;
             };
 
             void ReleaseThread(CPeerThread *AThread) override {
-              if (!IsCurrentThread(AThread)) {
-                if (!AThread->Suspended())
-                  AThread->TerminateAndWaitFor();
-                FreeAndNil(AThread);
-              } else {
-                AThread->FreeOnTerminate(true);
-                AThread->Terminate();
-              };
-
-              ActiveThreads()->Remove(AThread);
-            };
+                ActiveThreads().Remove(AThread);
+                if (!IsCurrentThread(AThread)) {
+                    if (!AThread->Suspended())
+                        AThread->TerminateAndWaitFor();
+                    FreeAndNil(AThread);
+                } else {
+                    AThread->FreeOnTerminate(true);
+                    AThread->Terminate();
+                }
+            }
 
         };
 
@@ -1715,9 +1715,9 @@ namespace Delphi {
             bool IsCountLessThan(int AValue) {
               int Count = 0;
 
-              CList *LList = LockList();
+              const CList List(LockList());
               try {
-                Count = LList->Count();
+                Count = List.Count();
               } catch (...) {
               }
               UnlockList();
@@ -1910,9 +1910,11 @@ namespace Delphi {
 
             CThreadMgr *m_pThreadMgr;
             CServerIOHandler *m_pIOHandler;
-            CThreadSafeList *m_pThreads;
-            CThreadList *m_pListenerThreads;
-            CCommandHandlers *m_pCommandHandlers;
+
+            CThreadSafeList m_Threads;
+            CThreadList m_ListenerThreads;
+
+            CCommandHandlers m_CommandHandlers {this};
 
             bool m_Active;
 
@@ -1945,15 +1947,16 @@ namespace Delphi {
 
             CPeerThread *FindThread(pid_t  dwThreadId);
 
-            CThreadSafeList *Threads() { return m_pThreads; }
+            CThreadSafeList &Threads() { return m_Threads; }
+            const CThreadSafeList &Threads() const { return m_Threads; }
 
             CServerIOHandler *IOHandler() { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
 
             CThreadMgr *ThreadMgr() { return GetThreadMgr(); }
 
-            CCommandHandlers *CommandHandlers() { return m_pCommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
+            CCommandHandlers &CommandHandlers() { return m_CommandHandlers; }
+            const CCommandHandlers &CommandHandlers() const { return m_CommandHandlers; }
 
         };
 
@@ -2360,7 +2363,7 @@ namespace Delphi {
 
         private:
 
-            CCommandHandlers *m_pCommandHandlers;
+            CCommandHandlers m_CommandHandlers;
 
             CStringList m_Data;
 
@@ -2387,7 +2390,7 @@ namespace Delphi {
 
             CAsyncServer();
 
-            ~CAsyncServer() override;
+            ~CAsyncServer() override = default;
 
             CActiveLevel ActiveLevel() const { return m_ActiveLevel; }
             void ActiveLevel(CActiveLevel Value) { SetActiveLevel(Value); }
@@ -2395,8 +2398,8 @@ namespace Delphi {
             CServerIOHandler *IOHandler() const { return m_pIOHandler; }
             void IOHandler(CServerIOHandler *Value) { SetIOHandler(Value); }
 
-            CCommandHandlers *CommandHandlers() const { return m_pCommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
+            CCommandHandlers &CommandHandlers() { return m_CommandHandlers; }
+            const CCommandHandlers &CommandHandlers() const { return m_CommandHandlers; }
 
             CStringList& Data() { return m_Data; }
             const CStringList& Data() const { return m_Data; }
@@ -2414,7 +2417,7 @@ namespace Delphi {
 
         private:
 
-            CCommandHandlers *m_pCommandHandlers;
+            CCommandHandlers m_CommandHandlers;
 
         protected:
 
@@ -2456,8 +2459,9 @@ namespace Delphi {
             bool UsedSSL() const { return m_UsedSSL; }
             void UsedSSL(bool Value) { m_UsedSSL = Value; }
 #endif
-            CCommandHandlers *CommandHandlers() const { return m_pCommandHandlers; }
-            void CommandHandlers(CCommandHandlers *Value) { m_pCommandHandlers = Value; }
+
+            CCommandHandlers &CommandHandlers() { return m_CommandHandlers; }
+            const CCommandHandlers &CommandHandlers() const { return m_CommandHandlers; }
 
             CStringList& Data() { return m_Data; }
             const CStringList& Data() const { return m_Data; }

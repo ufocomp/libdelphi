@@ -57,14 +57,15 @@ namespace Delphi {
         class CCurlApi: public CCurlComponent {
         private:
 
-            CURL *m_curl;
-
-            CURLcode m_Code;
-
             void Init();
             void Cleanup();
 
         protected:
+
+            CURL *m_curl;
+            CURLcode m_Code;
+
+            CString m_Result;
 
             static size_t CallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
 
@@ -72,17 +73,18 @@ namespace Delphi {
 
             CCurlApi();
 
-            ~CCurlApi();
+            virtual ~CCurlApi();
 
             CURLcode Code() const { return m_Code; };
+            CString Result() const { return m_Result; };
 
             CString GetErrorMessage() const;
 
-            void Reset();
+            virtual void Reset();
 
-            void Send(const CString &url, const CString &Result);
-            void Send(const CString &url, const CString &Result,
-                      const CStringList &Headers, const CString &PostData, const CString &Action);
+            virtual CString Get(const CString &URL);
+            virtual CString Post(const CString &URL, const CString &Content);
+            virtual CString Send(const CString &URL, const CString &Action, const CString &Content, const CStringList &Headers);
 
         };
     }

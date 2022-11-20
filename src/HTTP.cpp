@@ -2452,21 +2452,21 @@ namespace Delphi {
             chASSERT(pConnection);
             auto pRequest = pConnection->Request();
 
-            bool Result = CommandHandlers()->Count() > 0;
+            bool Result = CommandHandlers().Count() > 0;
 
             if (Result) {
                 DoBeforeCommandHandler(AConnection, pRequest->Method);
                 try {
                     int Index;
-                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
-                        pHandler = CommandHandlers()->Commands(Index);
+                    for (Index = 0; Index < CommandHandlers().Count(); ++Index) {
+                        pHandler = CommandHandlers().Commands(Index);
                         if (pHandler->Enabled()) {
                             if (pHandler->Check(pRequest->Method, AConnection))
                                 break;
                         }
                     }
 
-                    if (Index == CommandHandlers()->Count())
+                    if (Index == CommandHandlers().Count())
                         DoNoCommandHandler(pRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);
@@ -2615,21 +2615,21 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             auto pRequest = pConnection->Request();
 
-            const bool bResult = CommandHandlers()->Count() > 0;
+            const bool bResult = CommandHandlers().Count() > 0;
 
             if (bResult) {
                 DoBeforeCommandHandler(AConnection, pRequest->Method);
                 try {
                     int Index;
-                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
-                        pHandler = CommandHandlers()->Commands(Index);
+                    for (Index = 0; Index < CommandHandlers().Count(); ++Index) {
+                        pHandler = CommandHandlers().Commands(Index);
                         if (pHandler->Enabled()) {
                             if (pHandler->Check(pRequest->Method, AConnection))
                                 break;
                         }
                     }
 
-                    if (Index == CommandHandlers()->Count())
+                    if (Index == CommandHandlers().Count())
                         DoNoCommandHandler(pRequest->Method, AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);

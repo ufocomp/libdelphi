@@ -309,9 +309,9 @@ namespace Delphi {
         void CSMTPClient::InitializeCommandHandlers() {
             CCommandHandler *pCommand;
 
-            CommandHandlers()->ParseParamsDefault(false);
+            CommandHandlers().ParseParamsDefault(false);
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("CONNECT");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -322,7 +322,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("HELLO");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -333,7 +333,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("STARTTLS");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -344,7 +344,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("AUTH");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -355,7 +355,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("FROM");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -366,7 +366,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("TO");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -377,7 +377,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("DATA");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -388,7 +388,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("CONTENT");
             pCommand->Disconnect(false);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -399,7 +399,7 @@ namespace Delphi {
             pCommand->OnException(std::bind(&CSMTPClient::DoException, this, _1, _2));
 #endif
 
-            pCommand = CommandHandlers()->Add();
+            pCommand = CommandHandlers().Add();
             pCommand->Command() = _T("QUIT");
             pCommand->Disconnect(true);
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -519,20 +519,20 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CSMTPConnection *> (AConnection);
             const auto& command = pConnection->Command();
 
-            bool Result = CommandHandlers()->Count() > 0;
+            bool Result = CommandHandlers().Count() > 0;
 
             if (Result) {
                 DoBeforeCommandHandler(AConnection, command.Command());
                 try {
                     int Index;
-                    for (Index = 0; Index < CommandHandlers()->Count(); ++Index) {
-                        Handler = CommandHandlers()->Commands(Index);
+                    for (Index = 0; Index < CommandHandlers().Count(); ++Index) {
+                        Handler = CommandHandlers().Commands(Index);
                         if (Handler->Enabled()) {
                             if (Handler->Check(command.Command(), AConnection))
                                 break;
                         }
                     }
-                    if (Index == CommandHandlers()->Count())
+                    if (Index == CommandHandlers().Count())
                         DoNoCommandHandler(command.Command(), AConnection);
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(AConnection, E);

@@ -228,6 +228,7 @@ namespace Delphi {
         protected:
 
             Pointer Get(int Index) const;
+
             void Put(int Index, Pointer Item);
 
             virtual void Grow();
@@ -236,6 +237,8 @@ namespace Delphi {
         public:
 
             CList();
+
+            CList(const CList &List);
 
             ~CList() override;
 
@@ -253,13 +256,13 @@ namespace Delphi {
 
             Pointer Extract(Pointer Item);
 
-            Pointer First();
+            Pointer First() const;
 
-            int IndexOf(Pointer Item);
+            int IndexOf(Pointer Item) const;
 
             void Insert(int Index, Pointer Item);
 
-            Pointer Last();
+            Pointer Last() const;
 
             void Move(int CurIndex, int NewIndex);
 
@@ -269,7 +272,7 @@ namespace Delphi {
 
             void Sort(ListSortCompare Compare);
 
-            void Assign(CList *ListA, ListAssignOp AOperator = laCopy, CList *ListB = nullptr);
+            void Assign(const CList &Source, ListAssignOp Operator = laCopy);
 
             int GetCapacity() const noexcept { return m_nCapacity; }
             void SetCapacity(int NewCapacity);
@@ -286,6 +289,13 @@ namespace Delphi {
             void Items(int Index, Pointer Value) { Put(Index, Value); }
 
             Pointer operator[](int Index) const { return Get(Index); }
+
+            CList& operator= (const CList& List) {
+                if (this != &List) {
+                    Assign(List);
+                }
+                return *this;
+            };
 
         }; // CList
 
@@ -1624,18 +1634,42 @@ namespace Delphi {
 
 #pragma pack (push, 4)
 
-        typedef struct tagSynchronizeRecord {
+        typedef struct SynchronizeRecord {
             PVOID Thread;
             CThreadMethod *Method;
             PVOID SynchronizeException;
+
+            SynchronizeRecord() {
+                Thread = nullptr;
+                Method = nullptr;
+                SynchronizeException = nullptr;
+            }
+
+            SynchronizeRecord(const SynchronizeRecord &Record): SynchronizeRecord() {
+                Assign(Record);
+            }
+
+            void Assign(const SynchronizeRecord &Record) {
+                Thread = Record.Thread;
+                Method = Record.Method;
+                SynchronizeException = Record.SynchronizeException;
+            }
+
+            SynchronizeRecord& operator= (const SynchronizeRecord &Record) {
+                if (this != &Record) {
+                    Assign(Record);
+                }
+                return *this;
+            };
+
         } CSynchronizeRecord, *PSynchronizeRecord;
         //--------------------------------------------------------------------------------------------------------------
 
 #pragma pack (pop)
 
         typedef struct tagSyncProc {
-            PSynchronizeRecord SyncRec;
-            HANDLE Signal;
+            CSynchronizeRecord SyncRec;
+            pthread_cond_t Signal;
         } CSyncProc, *PSyncProc;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1649,7 +1683,7 @@ namespace Delphi {
         void RemoveThread();
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CThread
+        class LIB_DELPHI CThread: public CObject
         {
             friend LPVOID ThreadProc(LPVOID lpParameter);
             //friend bool CheckSynchronize(int Timeout = 0);
@@ -1657,14 +1691,14 @@ namespace Delphi {
         private:
 
             pthread_t           m_hHandle;
-            pthread_attr_t      m_hAttr;
+            pthread_attr_t      m_hAttr {};
 
-            pthread_mutex_t     m_Lock;
-            pthread_cond_t      m_Suspend;
+            pthread_mutex_t     m_SuspendMutex {};
+            pthread_cond_t      m_ResumeCond {};
 
             pid_t               m_nThreadId;
 
-            CSynchronizeRecord *m_Synchronize;
+            CSynchronizeRecord  m_Synchronize;
             CNotifyEvent        m_OnTerminate;
 
             int                 m_nReturnValue;
@@ -1678,7 +1712,7 @@ namespace Delphi {
             void CallOnTerminate();
 
             static void CreateSyncList();
-            static void Synchronize(PSynchronizeRecord ASyncRec);
+            static void Synchronize(const CSynchronizeRecord &ASyncRec);
 
             static CThreadPriority GetPriority();
             void SetPriority(CThreadPriority Value);
@@ -1703,7 +1737,7 @@ namespace Delphi {
         public:
 
             explicit CThread(bool CreateSuspended);
-            virtual ~CThread();
+            ~CThread() override;
 
             void Resume();
             void Suspend();
@@ -1742,11 +1776,9 @@ namespace Delphi {
 
         private:
 
-            CList              *m_List;
-            pthread_mutex_t     m_Lock;
+            CList               m_List;
+            pthread_mutex_t     m_Lock {};
             CDuplicates         m_Duplicates;
-
-            void FreeList();
 
         public:
 
@@ -1755,9 +1787,14 @@ namespace Delphi {
 
             void Add(CThread *Item);
             void Clear();
-            CList *LockList();
+
+            const CList &LockList();
+            CList *ptrLockList();
+
             void Remove(CThread *Item);
             void UnlockList();
+
+            const CList &List() const { return m_List; };
 
             CDuplicates Duplicates() { return m_Duplicates; };
             void Duplicates(CDuplicates Value) { m_Duplicates = Value; };
