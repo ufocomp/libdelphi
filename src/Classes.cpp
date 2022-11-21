@@ -917,7 +917,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStream::SetPosition(off_t Pos) {
+        void CStream::SetPosition(off_t Pos) const {
             Seek(Pos, soBeginning);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -933,7 +933,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStream::SetSize(ssize_t NewSize) {
+        void CStream::SetSize(size_t NewSize) {
             if (NewSize < 0)
                 throw ERangeError(_T("Range check error"));
         }
@@ -1013,23 +1013,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHandleStream::SetSize(const ssize_t NewSize) {
-            Seek(NewSize, soBeginning);
+        void CHandleStream::SetSize(const size_t NewSize) {
+            Seek((off_t) NewSize, soBeginning);
             OSCheck((BOOL) Seek(0L, soFromEnd));
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CHandleStream::Read(void *Buffer, size_t Count) const {
+        size_t CHandleStream::Read(void *Buffer, size_t Count) const {
             ssize_t Result = ::read(m_Handle, Buffer, Count);
-            if (!Result)
+            if (Result == -1)
                 Result = 0;
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CHandleStream::Write(const void *Buffer, size_t Count) {
+        size_t CHandleStream::Write(const void *Buffer, size_t Count) {
             ssize_t Result = ::write(m_Handle, Buffer, Count);
-            if (!Result)
+            if (Result == -1)
                 Result = 0;
             return Result;
         }
@@ -1085,7 +1085,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CCustomMemoryStream::Read(void *Buffer, size_t Count) const {
+        size_t CCustomMemoryStream::Read(void *Buffer, size_t Count) const {
             size_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
@@ -1093,7 +1093,7 @@ namespace Delphi {
                     if (Result > Count)
                         Result = Count;
                     ::CopyMemory(Buffer, Pointer((size_t) m_Memory + m_Position), Result);
-                    m_Position += Result;
+                    m_Position += (off_t) Result;
                     return Result;
                 }
             }
@@ -1105,7 +1105,7 @@ namespace Delphi {
         off_t CCustomMemoryStream::Seek(off_t Offset, unsigned short Origin) const {
             switch (Origin) {
                 case soFromBeginning:
-                    m_Position = (size_t) Offset;
+                    m_Position = Offset;
                     break;
 
                 case soFromCurrent:
@@ -1114,9 +1114,9 @@ namespace Delphi {
 
                 case soFromEnd:
                     if (m_Size > labs(Offset))
-                        m_Position = m_Size + Offset;
+                        m_Position = (off_t) m_Size + Offset;
                     else
-                        m_Position = m_Size;
+                        m_Position = (off_t) m_Size;
 
                     break;
 
@@ -1187,9 +1187,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CMemoryStream::SetSize(ssize_t NewSize) {
+        void CMemoryStream::SetSize(size_t NewSize) {
             inherited::SetSize(NewSize);
-            ssize_t OldPosition = m_Position;
+            size_t OldPosition = m_Position;
             SetCapacity(NewSize);
             m_Size = NewSize;
             if (OldPosition > NewSize)
@@ -1221,7 +1221,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CMemoryStream::Write(const void *Buffer, size_t Count) {
+        size_t CMemoryStream::Write(const void *Buffer, size_t Count) {
             size_t Pos;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Pos = m_Position + Count;
@@ -1232,7 +1232,7 @@ namespace Delphi {
                         m_Size = Pos;
                     }
                     ::CopyMemory(Pointer((size_t) m_Memory + m_Position), Buffer, Count);
-                    m_Position = Pos;
+                    m_Position = (off_t) Pos;
                     return Count;
                 }
             }
@@ -1258,8 +1258,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CCustomStringStream::Read(void *Buffer, size_t Count) const {
-            ssize_t Result = 0;
+        size_t CCustomStringStream::Read(void *Buffer, size_t Count) const {
+            size_t Result = 0;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Result = m_Size - m_Position;
                 if (Result > 0) {
@@ -1365,9 +1365,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStringStream::SetSize(ssize_t NewSize) {
+        void CStringStream::SetSize(size_t NewSize) {
             inherited::SetSize(NewSize);
-            ssize_t OldPosition = m_Position;
+            size_t OldPosition = m_Position;
             SetCapacity(NewSize);
             m_Size = NewSize;
             if (OldPosition > NewSize)
@@ -1399,7 +1399,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CStringStream::Write(const void *Buffer, size_t Count) {
+        size_t CStringStream::Write(const void *Buffer, size_t Count) {
             size_t Pos;
             if ((m_Position >= 0) && (Count >= 0)) {
                 Pos = m_Position + Count;
@@ -1501,7 +1501,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomString::SetSize(ssize_t NewSize) {
+        void CCustomString::SetSize(size_t NewSize) {
             inherited::SetSize(NewSize);
         }
 

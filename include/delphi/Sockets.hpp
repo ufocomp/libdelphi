@@ -1962,6 +1962,69 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CTCPClient ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CTCPClient: public CPollSocketClient {
+            typedef CSocketHandle inherited;
+
+        private:
+
+            CCommandHandlers m_CommandHandlers;
+
+        protected:
+
+            bool m_AutoConnect;
+            bool m_Active;
+#ifdef WITH_SSL
+            bool m_UsedSSL;
+#endif
+            CStringList m_Data;
+
+            void SetActive(bool AValue);
+
+            virtual void Initialize() {};
+
+            virtual void InitializeCommandHandlers() {};
+
+            virtual void DoConnectStart(CClientIOHandler *AIOHandler);
+            virtual void DoConnect(CTCPClientConnection *AConnection);
+
+            bool DoCommand(CTCPConnection *AConnection) override;
+            bool DoExecute(CTCPConnection *AConnection) override;
+
+        public:
+
+            CTCPClient();
+
+            explicit CTCPClient(const CString &Host, unsigned short Port);
+
+            ~CTCPClient() override;
+
+            void ConnectStart();
+
+            void Disconnect() { SetActive(false); };
+
+            bool Active() const { return m_Active; }
+            void Active(bool Value) { SetActive(Value); }
+
+            bool AutoConnect() const { return m_AutoConnect; }
+            void AutoConnect(bool Value) { m_AutoConnect = Value; }
+#ifdef WITH_SSL
+            bool UsedSSL() const { return m_UsedSSL; }
+            void UsedSSL(bool Value) { m_UsedSSL = Value; }
+#endif
+            CCommandHandlers &CommandHandlers() { return m_CommandHandlers; }
+            const CCommandHandlers &CommandHandlers() const { return m_CommandHandlers; }
+
+            CStringList& Data() { return m_Data; }
+            const CStringList& Data() const { return m_Data; }
+
+        };
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CPollStack ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------

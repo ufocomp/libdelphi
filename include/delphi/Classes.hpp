@@ -465,20 +465,20 @@ namespace Delphi {
         private:
 
             off_t GetPosition() const;
-            void SetPosition(off_t Pos);
+            void SetPosition(off_t Pos) const;
 
         protected:
 
             virtual off_t GetSize() const;
-            virtual void SetSize(ssize_t NewSize);
+            virtual void SetSize(size_t NewSize);
 
         public:
 
             CStream(): CHeapComponent() {};
             ~CStream() override = default;
 
-            virtual ssize_t Read(void *Buffer, size_t Count) const abstract;
-            virtual ssize_t Write(const void *Buffer, size_t Count) abstract;
+            virtual size_t Read(void *Buffer, size_t Count) const abstract;
+            virtual size_t Write(const void *Buffer, size_t Count) abstract;
 
             virtual off_t Seek(off_t Offset, unsigned short Origin) const abstract;
             virtual off_t Seek(off_t Offset, CSeekOrigin Origin) const;
@@ -488,8 +488,8 @@ namespace Delphi {
 
             size_t CopyFrom(CStream *Source, size_t Count);
 
-            size_t Position() const { return GetPosition(); };
-            void Position(size_t Value) { SetPosition(Value); };
+            off_t Position() const { return GetPosition(); };
+            void Position(off_t Value) { SetPosition(Value); };
 
             virtual size_t Size() const { return GetSize(); };
             void Size(size_t Value) { SetSize(Value); };
@@ -515,7 +515,7 @@ namespace Delphi {
 
             void CreateHandle(int AHandle);
 
-            void SetSize(ssize_t NewSize) override;
+            void SetSize(size_t NewSize) override;
 
         public:
 
@@ -523,9 +523,9 @@ namespace Delphi {
 
             ~CHandleStream() override = default;
 
-            ssize_t Read(void *Buffer, size_t Count) const override;
+            size_t Read(void *Buffer, size_t Count) const override;
 
-            ssize_t Write(const void *Buffer, size_t Count) override;
+            size_t Write(const void *Buffer, size_t Count) override;
 
             off_t Seek(off_t Offset, unsigned short Origin) const override;
 
@@ -578,7 +578,7 @@ namespace Delphi {
             Pointer m_Memory;
 
             size_t m_Size;
-            mutable size_t m_Position;
+            mutable off_t m_Position;
 
         protected:
 
@@ -592,9 +592,9 @@ namespace Delphi {
 
             inline off_t Seek(off_t Offset, CSeekOrigin Origin) const override { return CStream::Seek(Offset, Origin); };
 
-            ssize_t Read(Pointer Buffer, size_t Count) const override;
+            size_t Read(Pointer Buffer, size_t Count) const override;
 
-            ssize_t Seek(off_t Offset, unsigned short Origin) const override;
+            off_t Seek(off_t Offset, unsigned short Origin) const override;
 
             void SaveToStream(CStream &Stream);
             void SaveToFile(LPCTSTR lpszFileName);
@@ -630,7 +630,7 @@ namespace Delphi {
 
             CMemoryStream();
 
-            explicit CMemoryStream(ssize_t ASize): CMemoryStream() {
+            explicit CMemoryStream(size_t ASize): CMemoryStream() {
                 CMemoryStream::SetSize(ASize);
             };
 
@@ -643,9 +643,9 @@ namespace Delphi {
             void LoadFromStream(CStream &Stream);
             void LoadFromFile(LPCTSTR lpszFileName);
 
-            void SetSize(ssize_t NewSize) override;
+            void SetSize(size_t NewSize) override;
 
-            ssize_t Write(const void *Buffer, size_t Count) override;
+            size_t Write(const void *Buffer, size_t Count) override;
 
         }; // CMemoryStream
 
@@ -687,9 +687,9 @@ namespace Delphi {
 
             inline off_t Seek(off_t Offset, CSeekOrigin Origin) const override { return CStream::Seek(Offset, Origin); };
 
-            ssize_t Read(Pointer Buffer, size_t Count) const override;
+            size_t Read(Pointer Buffer, size_t Count) const override;
 
-            ssize_t Seek(off_t Offset, unsigned short Origin) const override;
+            off_t Seek(off_t Offset, unsigned short Origin) const override;
 
             void SaveToStream(CStream &Stream) const;
             void SaveToFile(LPCTSTR lpszFileName) const;
@@ -722,7 +722,7 @@ namespace Delphi {
 
             virtual LPTSTR Realloc(size_t &NewCapacity);
 
-            void SetSize(ssize_t NewSize) override;
+            void SetSize(size_t NewSize) override;
 
             void Capacity(size_t Value) { SetCapacity(Value); };
 
@@ -741,7 +741,7 @@ namespace Delphi {
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromFile(const CString& FileName);
 
-            ssize_t Write(const void *Buffer, size_t Count) override;
+            size_t Write(const void *Buffer, size_t Count) override;
 
             size_t Capacity() const noexcept { return m_Capacity; };
 
@@ -762,7 +762,7 @@ namespace Delphi {
 
             void WriteStr(LPCTSTR Str, size_t Length = 0);
 
-            void SetSize(ssize_t NewSize) override;
+            void SetSize(size_t NewSize) override;
 
         protected:
 

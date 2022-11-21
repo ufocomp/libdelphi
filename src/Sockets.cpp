@@ -1821,7 +1821,7 @@ namespace Delphi {
             if (AWriteByteCount)
                 WriteInteger((int) size);
 
-            BeginWork(wmWrite, size);
+            BeginWork(wmWrite, (ssize_t) size);
             try {
                 pStream = CMemoryStream::Create();
                 try {
@@ -3690,6 +3690,145 @@ namespace Delphi {
                 if (m_OnExecute != nullptr) {
                     m_OnExecute(AConnection);
                     result = true;
+                }
+            }
+
+            return result;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CTCPClient ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        CTCPClient::CTCPClient(): CPollSocketClient() {
+            m_Active = false;
+            m_AutoConnect = true;
+#ifdef WITH_SSL
+            m_UsedSSL = false;
+#endif
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CTCPClient::CTCPClient(const CString &Host, unsigned short Port): CTCPClient() {
+            m_Host = Host;
+            m_Port = Port;
+#ifdef WITH_SSL
+            m_UsedSSL = Port == HTTP_SSL_PORT;
+#endif
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CTCPClient::~CTCPClient() {
+            SetActive(false);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPClient::SetActive(bool AValue) {
+            if (m_Active != AValue ) {
+
+                if (AValue) {
+                    Initialize();
+
+                    if (CommandHandlers().Count() == 0)
+                        InitializeCommandHandlers();
+
+                    if (m_AutoConnect)
+                        ConnectStart();
+
+                } else {
+                    CloseAllConnection();
+                }
+
+                m_Active = AValue;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPClient::ConnectStart() {
+            auto pIOHandler = new CClientIOHandler();
+#ifdef WITH_SSL
+            pIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
+#else
+            pIOHandler->Open();
+#endif
+            pIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, 0); //O_NONBLOCK
+            pIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+
+            if (pIOHandler->Connect(m_Host.IsEmpty() ? "localhost" : m_Host.c_str(), m_Port == 0 ? 80 : m_Port)) {
+                DoConnectStart(pIOHandler);
+            } else {
+                delete pIOHandler;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPClient::DoConnectStart(CClientIOHandler *AIOHandler) {
+            auto pConnection = new CTCPClientConnection(this);
+            pConnection->IOHandler(AIOHandler);
+            pConnection->AutoFree(false);
+            DoConnect(pConnection);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CTCPClient::DoConnect(CTCPClientConnection *AConnection) {
+            try {
+                auto pIOHandler = (CIOHandlerSocket *) AConnection->IOHandler();
+
+                if (pIOHandler->Binding()->CheckConnection()) {
+#if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
+                    AConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
+#else
+                    AConnection->OnDisconnected(std::bind(&CTCPClient::DoDisconnected, this, _1));
+#endif
+                    DoConnected(AConnection);
+                }
+            } catch (Delphi::Exception::Exception &E) {
+                DoException(AConnection, E);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CTCPClient::DoExecute(CTCPConnection *AConnection) {
+            if (m_OnExecute != nullptr) {
+                return m_OnExecute(AConnection);
+            }
+            return DoCommand(AConnection);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        bool CTCPClient::DoCommand(CTCPConnection *AConnection) {
+            CCommandHandler *pHandler;
+
+            bool result = m_CommandHandlers.Count() > 0;
+
+            if (result) {
+                if (AConnection->Connected()) {
+
+                    CMemoryStream Stream;
+
+                    Stream.SetSize(MaxLineLengthDefault);
+                    Stream.SetSize((ssize_t) AConnection->ReadLn((char *) Stream.Memory()));
+
+                    if (Stream.Size() > 0 && Stream.Size() < MaxLineLengthDefault) {
+                        DoBeforeCommandHandler(AConnection, (char *) Stream.Memory());
+                        try {
+                            int index;
+                            for (index = 0; index < m_CommandHandlers.Count(); ++index) {
+                                pHandler = m_CommandHandlers.Commands(index);
+                                if (pHandler->Enabled()) {
+                                    if (pHandler->Check((char *) Stream.Memory(), Stream.Size(), AConnection))
+                                        break;
+                                }
+                            }
+                            if (index == m_CommandHandlers.Count())
+                                DoNoCommandHandler((char *) Stream.Memory(), AConnection);
+                        } catch (Delphi::Exception::Exception &E) {
+                            DoException(AConnection, E);
+                        }
+                        DoAfterCommandHandler(AConnection);
+                    }
                 }
             }
 
