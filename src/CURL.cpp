@@ -61,7 +61,6 @@ namespace Delphi {
 
         CCurlApi::CCurlApi() {
             m_curl = nullptr;
-            m_Code = CURLE_OK;
             Init();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -89,8 +88,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CCurlApi::GetErrorMessage() const {
-            return curl_easy_strerror(m_Code);
+        CString CCurlApi::GetErrorMessage(CURLcode code) {
+            return curl_easy_strerror(code);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -99,18 +98,18 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CCurlApi::Get(const CString &URL) {
-            return Send(URL, "GET", CString(), CStringList());
+        CURLcode CCurlApi::Get(const CString &URL, CString &Result, const CStringList &Headers) const {
+            return Send(URL, Result, "GET", CString(), Headers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CCurlApi::Post(const CString &URL, const CString &Content) {
-            return Send(URL, "POST", Content, CStringList());
+        CURLcode CCurlApi::Post(const CString &URL, CString &Result, const CString &Content, const CStringList &Headers) const {
+            return CCurlApi::Send(URL, Result, "POST", Content, Headers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString CCurlApi::Send(const CString &URL, const CString &Action, const CString &Content, const CStringList &Headers) {
-            CString Result;
+        CURLcode CCurlApi::Send(const CString &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const {
+            CURLcode code = CURLE_SEND_ERROR;
 
             if ( m_curl ) {
                 curl_easy_reset(m_curl);
@@ -147,10 +146,10 @@ namespace Delphi {
                     }
                 }
 
-                m_Code = curl_easy_perform(m_curl);
+                code = curl_easy_perform(m_curl);
             }
 
-            return Result;
+            return code;
         }
         //--------------------------------------------------------------------------------------------------------------
 

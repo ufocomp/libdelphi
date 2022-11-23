@@ -63,9 +63,6 @@ namespace Delphi {
         protected:
 
             CURL *m_curl;
-            CURLcode m_Code;
-
-            CString m_Result;
 
             static size_t CallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
 
@@ -75,16 +72,13 @@ namespace Delphi {
 
             virtual ~CCurlApi();
 
-            CURLcode Code() const { return m_Code; };
-            CString Result() const { return m_Result; };
-
-            CString GetErrorMessage() const;
+            static CString GetErrorMessage(CURLcode code) ;
 
             virtual void Reset();
 
-            virtual CString Get(const CString &URL);
-            virtual CString Post(const CString &URL, const CString &Content);
-            virtual CString Send(const CString &URL, const CString &Action, const CString &Content, const CStringList &Headers);
+            virtual CURLcode Get(const CString &URL, CString &Result, const CStringList &Headers) const;
+            virtual CURLcode Post(const CString &URL, CString &Result, const CString &Content, const CStringList &Headers) const;
+            virtual CURLcode Send(const CString &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const;
 
         };
     }
