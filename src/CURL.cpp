@@ -98,23 +98,23 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Get(const CString &URL, CString &Result, const CStringList &Headers) const {
+        CURLcode CCurlApi::Get(const CLocation &URL, CString &Result, const CStringList &Headers) const {
             return Send(URL, Result, "GET", CString(), Headers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Post(const CString &URL, CString &Result, const CString &Content, const CStringList &Headers) const {
+        CURLcode CCurlApi::Post(const CLocation &URL, CString &Result, const CString &Content, const CStringList &Headers) const {
             return CCurlApi::Send(URL, Result, "POST", Content, Headers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Send(const CString &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const {
+        CURLcode CCurlApi::Send(const CLocation &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const {
             CURLcode code = CURLE_SEND_ERROR;
 
             if ( m_curl ) {
                 curl_easy_reset(m_curl);
 
-                curl_easy_setopt(m_curl, CURLOPT_URL, URL.c_str());
+                curl_easy_setopt(m_curl, CURLOPT_URL, URL.href().c_str());
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &Result);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);

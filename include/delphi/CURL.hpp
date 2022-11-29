@@ -76,9 +76,9 @@ namespace Delphi {
 
             virtual void Reset();
 
-            virtual CURLcode Get(const CString &URL, CString &Result, const CStringList &Headers) const;
-            virtual CURLcode Post(const CString &URL, CString &Result, const CString &Content, const CStringList &Headers) const;
-            virtual CURLcode Send(const CString &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const;
+            virtual CURLcode Get(const CLocation &URL, CString &Result, const CStringList &Headers) const;
+            virtual CURLcode Post(const CLocation &URL, CString &Result, const CString &Content, const CStringList &Headers) const;
+            virtual CURLcode Send(const CLocation &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const;
 
         };
     }
