@@ -37,8 +37,8 @@ Author:
 #define MaxInt (int)     (2147483647)
 //----------------------------------------------------------------------------------------------------------------------
 
-#define SFormatDateTimeA    "%04d/%02d/%02d %02d:%02d:%02d"
-#define SFormatDateTimeW    L"%04d/%02d/%02d %02d:%02d:%02d"
+#define SFormatDateTimeA    "%04d-%02d-%02d %02d:%02d:%02d"
+#define SFormatDateTimeW    L"%04d-%02d-%02d %02d:%02d:%02d"
 
 #define SInvalidInteger     _T("Invalid conversion string \"%s\" to integer")
 #define SInvalidDouble      _T("Invalid conversion string \"%s\" to double")
