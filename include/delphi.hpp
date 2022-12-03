@@ -232,7 +232,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.3.1")
+#define DELPHI_LIB_VERSION      _T("2.3.2")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 

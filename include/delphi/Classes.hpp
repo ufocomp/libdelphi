@@ -1501,6 +1501,79 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CFile -----------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        #define INVALID_FILE         (-1)
+        #define FILE_ERROR           (-1)
+        //--------------------------------------------------------------------------------------------------------------
+
+        #define FILE_RDONLY          O_RDONLY
+        #define FILE_WRONLY          O_WRONLY
+        #define FILE_RDWR            O_RDWR
+        #define FILE_CREATE_OR_OPEN  O_CREAT
+        #define FILE_OPEN            0
+        #define FILE_TRUNCATE        (O_CREAT|O_TRUNC)
+        #define FILE_APPEND          (O_WRONLY|O_APPEND)
+        #define FILE_NONBLOCK        O_NONBLOCK
+        //--------------------------------------------------------------------------------------------------------------
+
+        #define FILE_DEFAULT_ACCESS  0644
+        #define FILE_OWNER_ACCESS    0600
+        //--------------------------------------------------------------------------------------------------------------
+
+#ifdef _GLIBCXX_FUNCTIONAL
+        typedef std::function<void (Pointer Sender, int Error, LPCTSTR lpFormat, va_list args)> COnFilerErrorEvent;
+#else
+        typedef void (* COnFilerErrorEvent) (Pointer Sender, int Error, LPCTSTR lpFormat, va_list args);
+#endif
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CFile: public CObject {
+
+            int m_hHandle;
+
+            int m_iFlags;
+
+            off_t m_uOffset;
+
+            CString m_FileName;
+
+            COnFilerErrorEvent m_OnFilerError;
+
+            size_t GetSize() const;
+
+        private:
+
+            void DoFilerError(int AError, LPCTSTR lpFormat, ...);
+
+        public:
+
+            explicit CFile(const CString &FileName, int AFlags);
+
+            ~CFile() override;
+
+            int Handle() const { return m_hHandle; }
+
+            const CString &FileName() const { return m_FileName; }
+
+            void Open();
+            void Close(bool ASafe = false);
+
+            ssize_t Read(char *buf, ssize_t size, off_t offset);
+            ssize_t Write(char *buf, ssize_t size, off_t offset);
+
+            size_t Size() const { return GetSize(); }
+            off_t Offset() const { return m_uOffset; }
+
+            const COnFilerErrorEvent &OnFilerError() const { return m_OnFilerError; };
+            void OnFilerError(COnFilerErrorEvent && Value) { m_OnFilerError = Value; };
+
+        }; // class CFile
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CQueueItem ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------

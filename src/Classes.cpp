@@ -2742,6 +2742,132 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        //-- CFile -----------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        #define FILE_CLOSE_MESSAGE   _T("Could not close file: \"%s\" error: ")
+        //--------------------------------------------------------------------------------------------------------------
+
+        CFile::CFile(const CString &FileName, int AFlags): CObject() {
+
+            m_hHandle = INVALID_FILE;
+            m_iFlags = AFlags;
+            m_uOffset = 0;
+
+            m_FileName = FileName;
+            m_OnFilerError = nullptr;
+        };
+        //--------------------------------------------------------------------------------------------------------------
+
+        CFile::~CFile() {
+            Close(true);
+        };
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CFile::Open() {
+
+            if (m_FileName.IsEmpty()) {
+                throw EFilerError(_T("Error open file: file name cannot be empty"));
+            }
+
+            Close();
+
+            if (m_FileName == "stderr:") {
+                m_hHandle = STDERR_FILENO;
+            } else {
+                m_hHandle = ::open(m_FileName.c_str(), m_iFlags, FILE_DEFAULT_ACCESS);
+
+                if (m_hHandle == INVALID_FILE) {
+                    throw EFilerError(errno, _T("Could not open file: \"%s\" error: "), m_FileName.c_str());
+                }
+            }
+        };
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CFile::Close(bool ASafe) {
+            if ((m_hHandle != INVALID_FILE) && (m_hHandle != STDERR_FILENO)) {
+                if (::close(m_hHandle) == FILE_ERROR) {
+                    if (ASafe) {
+                        DoFilerError(errno, FILE_CLOSE_MESSAGE, m_FileName.c_str());
+                    } else {
+                        throw EFilerError(errno, FILE_CLOSE_MESSAGE, m_FileName.c_str());
+                    }
+                } else {
+                    m_hHandle = INVALID_FILE;
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CFile::Read(char *buf, ssize_t size, off_t offset)
+        {
+            ssize_t  n;
+
+            n = pread(m_hHandle, buf, size, offset);
+
+            if (n == -1) {
+                throw EReadError(errno, _T("pread() \"%s\" failed: "), m_FileName.c_str());
+            }
+
+            m_uOffset += n;
+
+            return n;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CFile::Write(char *buf, ssize_t size, off_t offset)
+        {
+            ssize_t n;
+            ssize_t written;
+            int     err;
+
+            written = 0;
+
+            for ( ;; ) {
+                n = pwrite(m_hHandle, buf + written, size, offset);
+
+                if (n == -1) {
+                    err = errno;
+
+                    if (err == EINTR) {
+                        continue;
+                    }
+
+                    throw EWriteError(errno, _T("pwrite() \"%s\" failed"), m_FileName.c_str());
+                }
+
+                m_uOffset += n;
+                written += n;
+
+                if ((size_t) n == size) {
+                    return written;
+                }
+
+                offset += n;
+                size -= n;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        size_t CFile::GetSize() const {
+            struct stat stat_buf {};
+            int rc = fstat(m_hHandle, &stat_buf);
+            return rc == 0 ? stat_buf.st_size : 0;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CFile::DoFilerError(int AError, LPCTSTR lpFormat, ...) {
+            if (m_OnFilerError) {
+                va_list args;
+                va_start(args, lpFormat);
+                m_OnFilerError((Pointer) this, AError, lpFormat, args);
+                va_end(args);
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+
         //-- CQueueItem ------------------------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------------------------------------
