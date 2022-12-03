@@ -1815,6 +1815,9 @@ namespace Delphi {
             void Resume();
             void Suspend();
 
+            static void Lock();
+            static void Unlock();
+
             virtual void Terminate();
             int WaitFor();
 

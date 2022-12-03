@@ -42,7 +42,7 @@ namespace Delphi {
 
         CNotifyEvent WakeMainThread = nullptr;
 
-        static pthread_mutex_t GThreadLock;
+        static pthread_mutex_t GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI CHeap *GHeap = nullptr;
@@ -56,13 +56,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         inline void InitThreadSynchronization() {
-            GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 //            pthread_mutex_init(&GThreadLock, nullptr);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         inline void DoneThreadSynchronization() {
-            pthread_mutex_destroy(&GThreadLock);
+//            pthread_mutex_destroy(&GThreadLock);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3219,6 +3218,16 @@ namespace Delphi {
             pthread_mutex_destroy(&m_SuspendMutex);
 
             RemoveThread();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CThread::Lock() {
+            pthread_mutex_lock(&GThreadLock);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CThread::Unlock() {
+            pthread_mutex_unlock(&GThreadLock);
         }
         //--------------------------------------------------------------------------------------------------------------
 
