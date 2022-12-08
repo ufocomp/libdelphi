@@ -3417,14 +3417,7 @@ namespace Delphi {
 
         CThreadList::CThreadList()
         {
-            pthread_mutex_init(&m_Lock, nullptr);
             m_Duplicates = dupIgnore;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CThreadList::~CThreadList()
-        {
-            pthread_mutex_destroy(&m_Lock);
         }
         //--------------------------------------------------------------------------------------------------------------
 

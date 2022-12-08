@@ -1326,6 +1326,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CHTTPReply::DelHeader(const CString &Name) {
+            const auto index = Headers.IndexOfName(Name);
+            if (index != -1 ) {
+                Headers.Delete(index);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHTTPReply::ToText() {
             CString Temp;
             TCHAR ch;
@@ -2694,6 +2702,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager) {
+            m_ProxyType = ptHTTP;
             m_Request = nullptr;
             m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
@@ -2728,13 +2737,103 @@ namespace Delphi {
                     pConnection->OnDisconnected(std::bind(&CHTTPProxy::DoDisconnected, this, _1));
 #endif
                     DoConnected(pConnection);
-                    DoRequest(pConnection);
+                    DoHandshake(pConnection);
 
                     AHandler->Start(etIO);
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
                 AHandler->Stop();
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoRead(CPollEventHandler *AHandler) {
+            if (m_ProxyType == ptHTTP) {
+                CHTTPClient::DoRead(AHandler);
+            } else {
+                auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+                if (pConnection == nullptr) {
+                    AHandler->Stop();
+                    return;
+                }
+
+                CMemoryStream Stream(pConnection->ReadAsync());
+                if (Stream.Size() > 0) {
+                    pConnection->InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    unsigned char frame[2];
+                    Stream.ReadBuffer(&frame, sizeof(frame));
+                    if (frame[0] == 0x05 && frame[1] == 0x00) {
+                        if (Stream.Size() == 2) {
+                            SOCKS5(pConnection);
+                        } else {
+                            m_ProxyType = ptHTTP;
+                            DoRequest(pConnection);
+                        }
+                    } else {
+                        throw ExceptionFrm(_T("SOCKS5 error: %x"), frame[1]);
+                    }
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoWrite(CPollEventHandler *AHandler) {
+            if (m_ProxyType == ptHTTP) {
+                CHTTPClient::DoWrite(AHandler);
+            } else {
+                auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+
+                if (pConnection == nullptr) {
+                    AHandler->Stop();
+                    return;
+                }
+
+                try {
+                    if (pConnection->WriteAsync()) {
+                        DoRead(AHandler);
+                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(pConnection, E);
+                    AHandler->Stop();
+                }
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::Auth(CHTTPClientConnection *AConnection) {
+            unsigned char frame[3] = { 0x05, 0x01, 0x00 };
+            AConnection->WriteBuffer(&frame, sizeof(frame), true);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::SOCKS5(CHTTPClientConnection *AConnection) {
+            auto pBuffer = AConnection->OutputBuffer();
+
+            union {
+                uint16_t val;
+                uint8_t  arr[2];
+            } len16 = {0};
+
+            unsigned char frame[4] = { 0x05, 0x01, 0x00, 0x03 };
+
+            pBuffer->WriteBuffer(&frame, sizeof(frame));
+
+            frame[0] = m_Request->Location.hostname.Size();
+            pBuffer->WriteBuffer(&frame, 1);
+            pBuffer->WriteBuffer(m_Request->Location.hostname.Data(), m_Request->Location.hostname.Size());
+
+            len16.val = be16toh(m_Request->Location.port);
+            pBuffer->WriteBuffer(len16.arr, sizeof(len16));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPProxy::DoHandshake(CHTTPClientConnection *AConnection) {
+            if (m_ProxyType == ptSOCKS5) {
+                Auth(AConnection);
+            } else {
+                DoRequest(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------

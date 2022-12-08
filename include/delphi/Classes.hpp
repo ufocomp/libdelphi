@@ -1853,13 +1853,13 @@ namespace Delphi {
         private:
 
             CList               m_List;
-            pthread_mutex_t     m_Lock {};
+            pthread_mutex_t     m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
             CDuplicates         m_Duplicates;
 
         public:
 
             CThreadList();
-            virtual ~CThreadList();
+            virtual ~CThreadList() = default;
 
             void Add(CThread *Item);
             void Clear();

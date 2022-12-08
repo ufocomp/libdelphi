@@ -594,6 +594,7 @@ namespace Delphi {
                     ContentLength = Value.ContentLength;
                     ContentType = Value.ContentType;
                     Content = Value.Content;
+                    FormData = Value.FormData;
                     UserAgent = Value.UserAgent;
                     CloseConnection = Value.CloseConnection;
                     Location = Value.Location;
@@ -828,6 +829,9 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
 
+            /// Delete header from headers.
+            void DelHeader(const CString& Name);
+
             /// Set cookie.
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
@@ -840,6 +844,36 @@ namespace Delphi {
             static CHTTPReply *GetStockReply(CHTTPReply *AReply, CStatusType AStatus);
 
             static void AddUnauthorized(CHTTPReply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
+
+            void Assign(const CHTTPReply &Value) {
+                if (this != &Value) {
+                    VMajor = Value.VMajor;
+                    VMinor = Value.VMinor;
+                    Headers = Value.Headers;
+                    Status = Value.Status;
+                    StatusString = Value.StatusString;
+                    StatusText = Value.StatusText;
+                    ContentType = Value.ContentType;
+                    ServerName = Value.ServerName;
+                    AllowedMethods = Value.AllowedMethods;
+                    CloseConnection = Value.CloseConnection;
+                    ContentLength = Value.ContentLength;
+                    Content = Value.Content;
+                }
+            };
+
+            CHTTPReply(): VMajor(1), VMinor(1), ContentLength(0) {
+
+            }
+
+            CHTTPReply(const CHTTPReply &Reply): CHTTPReply() {
+                Assign(Reply);
+            }
+
+            CHTTPReply &operator=(const CHTTPReply &Reply) {
+                Assign(Reply);
+                return *this;
+            };
 
         };
 
@@ -1187,15 +1221,22 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        enum CProxyType { ptHTTP = 0, ptSOCKS5 };
+
         class CHTTPProxyManager;
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPProxy: public CHTTPClientItem {
         private:
 
+            CProxyType m_ProxyType;
+
             CHTTPServerConnection *m_pConnection;
 
             CHTTPRequest *m_Request;
+
+            static void Auth(CHTTPClientConnection *AConnection);
+            void SOCKS5(CHTTPClientConnection *AConnection);
 
         protected:
 
@@ -1203,7 +1244,10 @@ namespace Delphi {
 
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
+            void DoRead(CPollEventHandler *AHandler) override;
+            void DoWrite(CPollEventHandler *AHandler) override;
 
+            void DoHandshake(CHTTPClientConnection *AConnection);
             void DoRequest(CHTTPClientConnection *AConnection) override;
 
         public:
@@ -1215,6 +1259,9 @@ namespace Delphi {
             CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
             CHTTPRequest *Request() { return GetRequest(); }
+
+            CProxyType ProxyType() { return m_ProxyType; }
+            void ProxyType(CProxyType Value) { m_ProxyType = Value; }
 
         };
 
