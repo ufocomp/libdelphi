@@ -1030,12 +1030,25 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date) {
+        LIB_DELPHI int GetRandomValue(int a, int b) {
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_int_distribution<> time(a, b);
-            CDateTime delta = time(gen);
+            std::uniform_int_distribution<> value(a, b);
+            return value(gen);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date) {
+            const double delta = GetRandomValue(a, b);
             return Date + (CDateTime) (delta / SecsPerDay);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI bool IsRunningProc(pid_t pid) {
+            if (::kill(pid, 0) == 0 && errno != ESRCH) {
+                return true;
+            }
+            return false;
         }
     }
 }

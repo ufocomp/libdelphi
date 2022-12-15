@@ -257,13 +257,9 @@ namespace Delphi {
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
 
             void DoConnect(CPollEventHandler *AHandler) override;
-
             void DoRead(CPollEventHandler *AHandler) override;
-
             void DoWrite(CPollEventHandler *AHandler) override;
-
             bool DoCommand(CTCPConnection *AConnection) override;
-
             bool DoExecute(CTCPConnection *AConnection) override;
 
             void DoCONNECT(CCommand *ACommand);

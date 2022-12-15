@@ -108,7 +108,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Send(const CLocation &URL, CString &Result, const CString &Action, const CString &Content, const CStringList &Headers) const {
+        CURLcode CCurlApi::Send(const CLocation &URL, CString &Result, const CString &Method, const CString &Content, const CStringList &Headers) const {
             CURLcode code = CURLE_SEND_ERROR;
 
             if ( m_curl ) {
@@ -118,6 +118,9 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &Result);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+#ifdef _DEBUG
+                curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
+#endif
 
                 if ( Headers.Count() > 0 ) {
 
@@ -129,14 +132,14 @@ namespace Delphi {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, chunk);
                 }
 
-                if ( Action == "GET" ) {
+                if ( Method == "GET" ) {
 
                     curl_easy_setopt(m_curl, CURLOPT_HTTPGET, TRUE);
 
-                } else if ( Action == "POST" || Action == "PUT" || Action == "DELETE" ) {
+                } else if ( Method == "POST" || Method == "PUT" || Method == "DELETE" ) {
 
-                    if ( Action == "PUT" || Action == "DELETE" ) {
-                        curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Action.c_str() );
+                    if ( Method == "PUT" || Method == "DELETE" ) {
+                        curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Method.c_str() );
                     } else {
                         curl_easy_setopt(m_curl, CURLOPT_POST, TRUE);
 

@@ -917,6 +917,7 @@ namespace Delphi {
             COnSocketConnectionEvent m_OnAccessLog;
 
             COnSocketExecuteEvent m_OnExecute;
+            COnSocketConnectionEvent m_OnTimeOut;
 
             CNotifyEvent m_OnConnected;
             CNotifyEvent m_OnDisconnected;
@@ -936,6 +937,7 @@ namespace Delphi {
             virtual bool DoExecute(CTCPConnection *AConnection) abstract;
 
             virtual void DoAccessLog(CTCPConnection *AConnection);
+            virtual void DoTimeOutEvent(CTCPConnection *AConnection);
 
             virtual void DoConnected(CObject *Sender);
             virtual void DoDisconnected(CObject *Sender);
@@ -956,6 +958,9 @@ namespace Delphi {
 
             const COnSocketExecuteEvent &OnExecute() { return m_OnExecute; }
             void OnExecute(COnSocketExecuteEvent && Value) { m_OnExecute = Value; }
+
+            const COnSocketConnectionEvent &OnTimeOut() { return m_OnTimeOut; }
+            void OnTimeOut(COnSocketConnectionEvent && Value) { m_OnTimeOut = Value; }
 
             const COnSocketConnectionEvent &OnAccessLog() { return m_OnAccessLog; }
             void OnAccessLog(COnSocketConnectionEvent && Value) { m_OnAccessLog = Value; }
@@ -1125,12 +1130,20 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CPollSocketClient: public CEventSocketClient, public CPollManager {
+        class LIB_DELPHI CPollSocketClient: public CEventSocketClient {
+        protected:
+
+            CPollManager m_Connections;
+
         public:
 
-            CPollSocketClient(): CEventSocketClient(), CPollManager() {};
+            CPollSocketClient(): CEventSocketClient() {};
 
-            ~CPollSocketClient() override = default;
+           virtual ~CPollSocketClient() = default;
+
+            CPollManager *ptrConnections() { return &m_Connections; }
+            CPollManager &Connections() { return m_Connections; }
+            const CPollManager &Connections() const { return m_Connections; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2316,7 +2329,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEPoll {
+        class LIB_DELPHI CEPoll: public CObject {
         private:
 
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
@@ -2349,7 +2362,7 @@ namespace Delphi {
 
             CEPoll();
 
-            ~CEPoll();
+            ~CEPoll() override;
 
             void Wait(const sigset_t *ASigMask = nullptr);
 

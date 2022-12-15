@@ -204,8 +204,11 @@ namespace Delphi {
         LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format = SFormatDateTimeW);
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI int GetRandomValue(int a, int b);
         LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date);
         //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI bool IsRunningProc(pid_t pid);
 
 #ifdef UNICODE
 

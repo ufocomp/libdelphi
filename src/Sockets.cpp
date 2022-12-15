@@ -2692,7 +2692,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient): CWebSocketConnection(AClient) {
+        CTCPClientConnection::CTCPClientConnection(CPollSocketClient *AClient): CWebSocketConnection(AClient->ptrConnections()) {
             m_pClient = AClient;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2703,7 +2703,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CTCPClientConnection::FreeClient() {
-            if (m_pClient != nullptr && m_pClient->AutoFree() && m_pClient->Count() == 1) {
+            if (m_pClient != nullptr && m_pClient->AutoFree() && m_pClient->Connections().Count() == 1) {
                 FreeAndNil(m_pClient);
                 return true;
             }
@@ -2785,6 +2785,7 @@ namespace Delphi {
             m_OnVerbose = nullptr;
             m_OnAccessLog = nullptr;
             m_OnExecute = nullptr;
+            m_OnTimeOut = nullptr;
             m_OnException = nullptr;
             m_OnListenException = nullptr;
             m_OnConnected = nullptr;
@@ -2827,6 +2828,12 @@ namespace Delphi {
         void CSocketEvent::DoAccessLog(CTCPConnection *AConnection) {
             if (m_OnAccessLog != nullptr)
                 m_OnAccessLog(AConnection);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CSocketEvent::DoTimeOutEvent(CTCPConnection *AConnection) {
+            if (m_OnTimeOut != nullptr)
+                m_OnTimeOut(AConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3738,7 +3745,7 @@ namespace Delphi {
                         ConnectStart();
 
                 } else {
-                    CloseAllConnection();
+                    m_Connections.CloseAllConnection();
                 }
 
                 m_Active = AValue;
@@ -4282,7 +4289,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CEPoll::CEPoll() {
+        CEPoll::CEPoll(): CObject() {
             m_pEventHandlers = nullptr;
             m_FreeEventHandlers = true;
             m_OnEventHandlerException = nullptr;
@@ -4492,10 +4499,14 @@ namespace Delphi {
 
         void CEPollClient::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CTCPConnection *> (AHandler->Binding());
-            try {
-                pConnection->Disconnect();
-            } catch (Delphi::Exception::Exception &E) {
-                DoException(pConnection, E);
+            if (m_OnTimeOut == nullptr) {
+                try {
+                    pConnection->Disconnect();
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(pConnection, E);
+                }
+            } else {
+                DoTimeOutEvent(pConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4636,7 +4647,7 @@ namespace Delphi {
                         ConnectStart();
 
                 } else {
-                    CloseAllConnection();
+                    m_Connections.CloseAllConnection();
                 }
 
                 m_Active = AValue;
