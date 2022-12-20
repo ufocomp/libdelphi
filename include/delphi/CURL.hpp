@@ -64,6 +64,8 @@ namespace Delphi {
 
             CURL *m_curl;
 
+            virtual void CurlInfo() const abstract;
+
             static size_t CallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
 
         public:

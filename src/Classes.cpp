@@ -1834,12 +1834,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        TCHAR CStrings::GetNameValueSeparator() const {
+        const CString &CStrings::GetNameValueSeparator() const {
             return m_NameValueSeparator;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SetNameValueSeparator(const TCHAR Value) {
+        void CStrings::SetNameValueSeparator(const CString &Value) {
             if (m_NameValueSeparator != Value)
                 m_NameValueSeparator = Value;
         }
@@ -1858,14 +1858,15 @@ namespace Delphi {
 
         CString CStrings::GetValueFromIndex(int Index) const {
             size_t      SepPos;
+            size_t      SepLen = NameValueSeparator().Length();
             CString     R;
 
             if (Index >= 0) {
                 const CString &S = Get(Index);
                 SepPos = S.Find(NameValueSeparator());
                 if (SepPos != CString::npos) {
-                    R.SetLength(S.Length() - SepPos - 1);
-                    S.Copy(R.Data(), R.Length(), SepPos + 1);
+                    R.SetLength(S.Length() - SepPos - SepLen);
+                    S.Copy(R.Data(), R.Length(), SepPos + SepLen);
                 }
             }
 

@@ -322,6 +322,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CHTTPRequest::DelHeader(const CString &Name) {
+            const auto index = Headers.IndexOfName(Name);
+            if (index != -1 ) {
+                Headers.Delete(index);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHTTPRequest::ToText() {
             CString Temp;
             TCHAR ch;

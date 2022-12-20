@@ -104,7 +104,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CURLcode CCurlApi::Post(const CLocation &URL, CString &Result, const CString &Content, const CStringList &Headers) const {
-            return CCurlApi::Send(URL, Result, "POST", Content, Headers);
+            return Send(URL, Result, "POST", Content, Headers);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -150,6 +150,10 @@ namespace Delphi {
                 }
 
                 code = curl_easy_perform(m_curl);
+
+                if (code == CURLE_OK) {
+                    CurlInfo();
+                }
             }
 
             return code;

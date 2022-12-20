@@ -1144,7 +1144,8 @@ namespace Delphi {
 
             TCHAR m_Delimiter;
             TCHAR m_QuoteChar;
-            TCHAR m_NameValueSeparator;
+
+            CString m_NameValueSeparator;
 
             bool m_StrictDelimiter;
             int m_UpdateCount;
@@ -1170,8 +1171,8 @@ namespace Delphi {
             void SetLineBreak(LPCTSTR Value);
             TCHAR GetQuoteChar() const;
             void SetQuoteChar(TCHAR Value);
-            TCHAR GetNameValueSeparator() const;
-            void SetNameValueSeparator(TCHAR Value);
+            const CString &GetNameValueSeparator() const;
+            void SetNameValueSeparator(const CString &Value);
             bool GetStrictDelimiter() const;
             void SetStrictDelimiter(bool Value);
 
@@ -1271,8 +1272,8 @@ namespace Delphi {
             void ValueFromIndex(int Index, const CString &Value) { SetValueFromIndex(Index, Value); };
             void ValueFromIndex(int Index, reference Value) { SetValueFromIndex(Index, Value); };
 
-            TCHAR NameValueSeparator() const { return GetNameValueSeparator(); };
-            void NameValueSeparator(TCHAR Value) { SetNameValueSeparator(Value); };
+            const CString &NameValueSeparator() const { return GetNameValueSeparator(); };
+            void NameValueSeparator(const CString &Value) { SetNameValueSeparator(Value); };
 
             bool StrictDelimiter() const { return GetStrictDelimiter(); };
             void StrictDelimiter(bool Value) { SetStrictDelimiter(Value); };

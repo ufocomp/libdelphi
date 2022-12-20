@@ -579,6 +579,9 @@ namespace Delphi {
             /// Add header to headers.
             void AddHeader(const CString& Name, const CString& Value);
 
+            /// Delete header from headers.
+            void DelHeader(const CString& Name);
+
             bool BuildLocation();
             void BuildCookies();
 
