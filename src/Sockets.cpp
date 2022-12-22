@@ -3644,9 +3644,8 @@ namespace Delphi {
             int i;
             bool result = false;
 
-            CMemoryStream Stream;
-
             if (CommandHandlers().Count() > 0) {
+                CMemoryStream Stream;
                 result = true;
 
                 if (AConnection->Connected()) {

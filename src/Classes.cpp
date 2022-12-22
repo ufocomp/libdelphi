@@ -1127,7 +1127,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCustomMemoryStream::SaveToStream(CStream &Stream) {
+        void CCustomMemoryStream::SaveToStream(CStream &Stream) const {
             if (m_Size != 0)
                 Stream.WriteBuffer(m_Memory, m_Size);
         }

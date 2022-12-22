@@ -1021,6 +1021,7 @@ namespace Delphi {
                 CHTTPReply::forbidden,
                 CHTTPReply::not_found,
                 CHTTPReply::not_allowed,
+                CHTTPReply::status_443,
                 CHTTPReply::internal_server_error,
                 CHTTPReply::not_implemented,
                 CHTTPReply::bad_gateway,
@@ -1047,6 +1048,7 @@ namespace Delphi {
             const TCHAR forbidden[] = _T("Forbidden");
             const TCHAR not_found[] = _T("Not Found");
             const TCHAR not_allowed[] = _T("Method Not Allowed");
+            const TCHAR status_443[] = _T("443");
             const TCHAR internal_server_error[] = _T("Internal Server Error");
             const TCHAR not_implemented[] = _T("Not Implemented");
             const TCHAR bad_gateway[] = _T("Bad Gateway");
@@ -1087,6 +1089,8 @@ namespace Delphi {
                         return StringArrayToStream(Stream, not_found);
                     case CHTTPReply::not_allowed:
                         return StringArrayToStream(Stream, not_allowed);
+                    case CHTTPReply::status_443:
+                        return StringArrayToStream(Stream, status_443);
                     case CHTTPReply::internal_server_error:
                         return StringArrayToStream(Stream, internal_server_error);
                     case CHTTPReply::not_implemented:
@@ -1151,6 +1155,9 @@ namespace Delphi {
                         break;
                     case CHTTPReply::not_allowed:
                         AString = not_allowed;
+                        break;
+                    case CHTTPReply::status_443:
+                        AString = status_443;
                         break;
                     case CHTTPReply::internal_server_error:
                         AString = internal_server_error;
@@ -1244,6 +1251,7 @@ namespace Delphi {
             LPCTSTR forbidden[]             = CreateStockReplies(403, Forbidden);
             LPCTSTR not_found[]             = CreateStockReplies(404, Not Found);
             LPCTSTR not_allowed[]           = CreateStockReplies(405, Method Not Allowed);
+            LPCTSTR status_443[]            = CreateStockReplies(443, 443);
             LPCTSTR internal_server_error[] = CreateStockReplies(500, Internal Server Error);
             LPCTSTR not_implemented[]       = CreateStockReplies(501, Not Implemented);
             LPCTSTR bad_gateway[]           = CreateStockReplies(502, Bad Gateway);
@@ -1288,6 +1296,8 @@ namespace Delphi {
                         return not_found[AMessage];
                     case CHTTPReply::not_allowed:
                         return not_allowed[AMessage];
+                    case CHTTPReply::status_443:
+                        return status_443[AMessage];
                     case CHTTPReply::internal_server_error:
                         return internal_server_error[AMessage];
                     case CHTTPReply::not_implemented:
@@ -1775,7 +1785,10 @@ namespace Delphi {
                         return -1;
                     }
                 case Reply::header_value_options_start:
-                    if ((ch == ' ' || ch == '\t')) {
+                    if (ch == '\r') {
+                        Context.State = Reply::expecting_newline_2;
+                        return -1;
+                    } else if ((ch == ' ' || ch == '\t')) {
                         Context.State = Reply::header_value_options_start;
                         AReply->Headers.Last().Value().Append(ch);
                         return -1;
@@ -2013,7 +2026,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
-            CHTTPContext Context = CHTTPContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
+            CHTTPContext Context((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
             const int result = CHTTPRequestParser::Parse(GetRequest(), Context);
 
             switch (result) {
@@ -2165,7 +2178,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClientConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
-                CHTTPReplyContext Context = CHTTPReplyContext((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
+            CHTTPReplyContext Context((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
 
             const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
 

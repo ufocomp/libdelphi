@@ -596,7 +596,7 @@ namespace Delphi {
 
             off_t Seek(off_t Offset, unsigned short Origin) const override;
 
-            void SaveToStream(CStream &Stream);
+            void SaveToStream(CStream &Stream) const;
             void SaveToFile(LPCTSTR lpszFileName);
 
             virtual Pointer Memory() const { return m_Memory; }
