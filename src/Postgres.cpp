@@ -1101,10 +1101,10 @@ namespace Delphi {
 
             m_OnNotify = nullptr;
 
-            m_OnError = nullptr;
-            m_OnTimeOut = nullptr;
-            m_OnStatus = nullptr;
-            m_OnPollingStatus = nullptr;
+            m_OnPQError = nullptr;
+            m_OnPQTimeOut = nullptr;
+            m_OnPQStatus = nullptr;
+            m_OnPQPollingStatus = nullptr;
 
             m_OnConnectException = nullptr;
             m_OnServerException = nullptr;
@@ -1133,29 +1133,29 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPollEvent::DoPQError(CPQConnection *AConnection) {
-            if (m_OnError != nullptr) {
-                m_OnError(AConnection);
+            if (m_OnPQError != nullptr) {
+                m_OnPQError(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPollEvent::DoPQTimeOut(CPQConnection *AConnection) {
-            if (m_OnTimeOut != nullptr) {
-                m_OnTimeOut(AConnection);
+            if (m_OnPQTimeOut != nullptr) {
+                m_OnPQTimeOut(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPollEvent::DoPQStatus(CPQConnection *AConnection) {
-            if (m_OnStatus != nullptr) {
-                m_OnStatus(AConnection);
+            if (m_OnPQStatus != nullptr) {
+                m_OnPQStatus(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPQConnectPollEvent::DoPQPollingStatus(CPQConnection *AConnection) {
-            if (m_OnPollingStatus != nullptr) {
-                m_OnPollingStatus(AConnection);
+            if (m_OnPQPollingStatus != nullptr) {
+                m_OnPQPollingStatus(AConnection);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1366,19 +1366,19 @@ namespace Delphi {
                     pConnection->OnNotify([this](auto && AConnection, auto && ANotify) { DoPQNotify(AConnection, ANotify); });
                 }
 
-                if (m_OnError != nullptr) {
+                if (m_OnPQError != nullptr) {
                     pConnection->OnError([this](auto && AConnection) { DoPQError(AConnection); });
                 }
 
-                if (m_OnTimeOut != nullptr) {
+                if (m_OnPQTimeOut != nullptr) {
                     pConnection->OnTimeOut([this](auto && AConnection) { DoPQTimeOut(AConnection); });
                 }
 
-                if (m_OnStatus != nullptr) {
+                if (m_OnPQStatus != nullptr) {
                     pConnection->OnStatus([this](auto && AConnection) { DoPQStatus(AConnection); });
                 }
 
-                if (m_OnPollingStatus != nullptr) {
+                if (m_OnPQPollingStatus != nullptr) {
                     pConnection->OnPollingStatus([this](auto && AConnection) { DoPQPollingStatus(AConnection); });
                 }
 
@@ -1404,11 +1404,11 @@ namespace Delphi {
                     pConnection->OnNotify(std::bind(&CPQConnectPoll::DoPQNotify, this, _1, _2));
                 }
 
-                if (m_OnError != nullptr) {
+                if (m_OnPQError != nullptr) {
                     pConnection->OnError(std::bind(&CPQConnectPoll::DoPQError, this, _1));
                 }
 
-                if (m_OnTimeOut != nullptr) {
+                if (m_OnPQTimeOut != nullptr) {
                     pConnection->OnError(std::bind(&CPQConnectPoll::DoPQTimeOut, this, _1));
                 }
 
