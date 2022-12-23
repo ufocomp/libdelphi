@@ -2025,7 +2025,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
+        void CHTTPServerConnection::Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
             CHTTPContext Context((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength);
             const int result = CHTTPRequestParser::Parse(GetRequest(), Context);
 
@@ -2177,7 +2177,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPClientConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
+        void CHTTPClientConnection::Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
             CHTTPReplyContext Context((LPCBYTE) Stream.Memory(), Stream.Size(), m_State, m_ContentLength, m_ChunkedLength);
 
             const int ParseResult = CHTTPReplyParser::Parse(GetReply(), Context);
