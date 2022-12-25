@@ -142,7 +142,7 @@ namespace Delphi {
 
         public:
 
-            CQueueHandler(CQueueCollection *ACollection, COnQueueHandlerEvent && Handler);
+            CQueueHandler(CQueueCollection *ACollection, COnQueueHandlerEvent && Handler, bool Allow = true);
 
             ~CQueueHandler() override;
 

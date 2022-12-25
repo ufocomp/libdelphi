@@ -237,8 +237,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CQueueHandler::CQueueHandler(CQueueCollection *ACollection, COnQueueHandlerEvent && Handler):
-                CPollConnection(ACollection->ptrQueueManager()), m_Allow(true) {
+        CQueueHandler::CQueueHandler(CQueueCollection *ACollection, COnQueueHandlerEvent && Handler, bool Allow):
+                CPollConnection(ACollection->ptrQueueManager()), m_Allow(Allow) {
 
             m_pCollection = ACollection;
             m_Handler = Handler;
