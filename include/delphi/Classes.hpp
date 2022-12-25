@@ -1126,10 +1126,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         #define sLineBreak          _T("\n")
-
-        #define sDelimiter          _T(',')
+        #define sDelimiter          _T(",")
+        #define sNameValueSeparator _T("=")
         #define sQuoteChar          _T('"')
-        #define sNameValueSeparator _T('=')
 
         class CStrings;
         //--------------------------------------------------------------------------------------------------------------
@@ -1141,11 +1140,10 @@ namespace Delphi {
         private:
 
             LPCTSTR m_LineBreak;
+            LPCTSTR m_Delimiter;
+            LPCTSTR m_NameValueSeparator;
 
-            TCHAR m_Delimiter;
             TCHAR m_QuoteChar;
-
-            CString m_NameValueSeparator;
 
             bool m_StrictDelimiter;
             int m_UpdateCount;
@@ -1165,14 +1163,14 @@ namespace Delphi {
 
         protected:
 
-            TCHAR GetDelimiter() const;
-            void SetDelimiter(TCHAR Value);
+            LPCTSTR GetDelimiter() const;
+            void SetDelimiter(LPCTSTR Value);
             LPCTSTR GetLineBreak() const;
             void SetLineBreak(LPCTSTR Value);
             TCHAR GetQuoteChar() const;
             void SetQuoteChar(TCHAR Value);
-            const CString &GetNameValueSeparator() const;
-            void SetNameValueSeparator(const CString &Value);
+            LPCTSTR GetNameValueSeparator() const;
+            void SetNameValueSeparator(LPCTSTR Value);
             bool GetStrictDelimiter() const;
             void SetStrictDelimiter(bool Value);
 
@@ -1244,8 +1242,8 @@ namespace Delphi {
             void Capacity(int NewCapacity) { SetCapacity(NewCapacity); };
 
             int Count() const noexcept { return GetCount(); };
-            TCHAR Delimiter() const { return GetDelimiter(); };
-            void Delimiter(TCHAR Value) { SetDelimiter(Value); };
+            LPCTSTR Delimiter() const { return GetDelimiter(); };
+            void Delimiter(LPCTSTR Value) { SetDelimiter(Value); };
 
             LPCTSTR LineBreak() const { return GetLineBreak(); };
             void LineBreak(LPCTSTR Value) { SetLineBreak(Value); };
@@ -1272,8 +1270,8 @@ namespace Delphi {
             void ValueFromIndex(int Index, const CString &Value) { SetValueFromIndex(Index, Value); };
             void ValueFromIndex(int Index, reference Value) { SetValueFromIndex(Index, Value); };
 
-            const CString &NameValueSeparator() const { return GetNameValueSeparator(); };
-            void NameValueSeparator(const CString &Value) { SetNameValueSeparator(Value); };
+            LPCTSTR NameValueSeparator() const { return GetNameValueSeparator(); };
+            void NameValueSeparator(LPCTSTR Value) { SetNameValueSeparator(Value); };
 
             bool StrictDelimiter() const { return GetStrictDelimiter(); };
             void StrictDelimiter(bool Value) { SetStrictDelimiter(Value); };
@@ -1408,8 +1406,8 @@ namespace Delphi {
 
             CStringList();
 
-            CStringList(const CStringList& List): CStringList() {
-                if (&List != this) {
+            CStringList(const CStringList &List): CStringList() {
+                if (this != &List) {
                     CStringList::Assign(List);
                 }
             }

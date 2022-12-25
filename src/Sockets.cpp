@@ -2477,7 +2477,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketConnection::Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
+        void CWebSocketConnection::Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) {
 #ifdef _DEBUG
             CString Hex;
             Hex.SetLength(Stream.Size() * 3 + 1);

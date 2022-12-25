@@ -606,7 +606,7 @@ namespace Delphi {
 
             CHTTPRequest(): VMajor(1), VMinor(1), ContentLength(0) {
                 Params.LineBreak("&");
-                Params.Delimiter('&');
+                Params.Delimiter("&");
             }
 
             CHTTPRequest(const CHTTPRequest &Request): CHTTPRequest() {
@@ -998,7 +998,7 @@ namespace Delphi {
 
             size_t m_ContentLength;
 
-            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
+            void Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
         protected:
 
@@ -1046,7 +1046,7 @@ namespace Delphi {
             size_t m_ContentLength;
             size_t m_ChunkedLength;
 
-            void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
+            void Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
         protected:
 

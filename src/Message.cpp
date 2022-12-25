@@ -41,9 +41,9 @@ namespace Delphi {
 
         CMessage::CMessage(): CObject() {
             m_Body.LineBreak(MESSAGE_CRLF_LINEFEED);
-            m_Body.NameValueSeparator(':');
+            m_Body.Delimiter("\n");
+            m_Body.NameValueSeparator(":");
             m_Body.QuoteChar('\0');
-            m_Body.Delimiter('\n');
 
             m_Submitted = false;
 

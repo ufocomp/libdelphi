@@ -1307,7 +1307,7 @@ namespace Delphi {
 
             void SetObject(CObject *Value);
 
-            virtual void Parse(CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
+            virtual void Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
 
         public:
 

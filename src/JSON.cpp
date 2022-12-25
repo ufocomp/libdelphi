@@ -465,7 +465,7 @@ namespace Delphi {
 
         CJSONElements::CJSONElements(CPersistent *AOwner, CJSONValueType ValueType): CJSON(AOwner, ValueType) {
             m_LineBreak = sLineBreak;
-            m_Delimiter = ',';
+            m_Delimiter = ",";
             m_QuoteChar = '"';
             m_StrictDelimiter = false;
             m_CurrentIndex = -1;
@@ -1996,7 +1996,10 @@ namespace Delphi {
                     if (AInput == '"') {
                         m_State = value_string_end;
                         return -1;
-                    } if (IsCharacter(AInput)) {
+                    } else if (IsCharacter(AInput)) {
+                        if (AInput == '\\') {
+                            m_Escape = true;
+                        }
                         CurrentValue().Data().Append(AInput);
                         m_State = value_string;
                         return -1;
@@ -2008,11 +2011,14 @@ namespace Delphi {
                     if (!m_Escape && AInput == '"') {
                         m_State = value_string_end;
                         return -1;
-                    } if (IsCharacter(AInput)) {
-                        if (m_Escape)
+                    } else if (IsCharacter(AInput)) {
+                        if (m_Escape) {
                             m_Escape = false;
-                        if (AInput == '\\')
-                            m_Escape = true;
+                        } else {
+                            if (AInput == '\\') {
+                                m_Escape = true;
+                            }
+                        }
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (IsWS(AInput)) {
@@ -2033,7 +2039,7 @@ namespace Delphi {
                     } else if (AInput == '"') {
                         m_State = value_string;
                         return -1;
-                    } if (IsCharacter(AInput)) {
+                    } else if (IsCharacter(AInput)) {
                         m_State = value_string_end;
                         return -1;
                     } else if (IsWS(AInput)) {
@@ -2051,7 +2057,8 @@ namespace Delphi {
                         else
                             m_State = value_start;
                         return -1;
-                    } else if ((AInput == '.') || IsDigit(AInput) || (AInput == 'e') || (AInput == 'E') || (AInput == '+') || (AInput == '-')) {
+                    } else if ((AInput == '.') || IsDigit(AInput) || (AInput == 'e') || (AInput == 'E') ||
+                               (AInput == '+') || (AInput == '-')) {
                         CurrentValue().Data().Append(AInput);
                         return -1;
                     } else if (IsWS(AInput)) {

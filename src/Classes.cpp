@@ -1801,13 +1801,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        TCHAR CStrings::GetDelimiter() const {
+        LPCTSTR CStrings::GetDelimiter() const {
             return m_Delimiter;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SetDelimiter(TCHAR Value) {
-            if (m_Delimiter != Value)
+        void CStrings::SetDelimiter(LPCTSTR Value) {
+            if (!SameText(m_Delimiter, Value))
                 m_Delimiter = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1818,7 +1818,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetLineBreak(LPCTSTR Value) {
-            if (*m_LineBreak != *Value)
+            if (!SameText(m_LineBreak, Value))
                 m_LineBreak = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1834,13 +1834,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString &CStrings::GetNameValueSeparator() const {
+        LPCTSTR CStrings::GetNameValueSeparator() const {
             return m_NameValueSeparator;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::SetNameValueSeparator(const CString &Value) {
-            if (m_NameValueSeparator != Value)
+        void CStrings::SetNameValueSeparator(LPCTSTR Value) {
+            if (!SameText(m_NameValueSeparator, Value))
                 m_NameValueSeparator = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1858,8 +1858,10 @@ namespace Delphi {
 
         CString CStrings::GetValueFromIndex(int Index) const {
             size_t      SepPos;
-            size_t      SepLen = NameValueSeparator().Length();
+            size_t      SepLen;
             CString     R;
+
+            SepLen = strlen(NameValueSeparator());
 
             if (Index >= 0) {
                 const CString &S = Get(Index);
@@ -1932,9 +1934,7 @@ namespace Delphi {
 
             int i;
             size_t L, LineBreakLen;
-            LPCTSTR LB = LineBreak();
-
-            bool IsLineFeed = SameText(LB, sLineBreak);
+            LPCTSTR LB = m_LineBreak;
 
             L = 0;
             LineBreakLen = strlen(LB);
@@ -1943,22 +1943,17 @@ namespace Delphi {
 
             for (i = 0; i < Count; ++i) {
                 const CString &S = Get(i);
-                if (!S.IsEmpty())
+                if (!S.IsEmpty()) {
+                    Result.WriteBuffer(S.Data(), S.Size());
                     L += S.Size();
-                if (IsLineFeed || i < Count - 1)
-                    L += LineBreakLen;
+                    if (i < Count - 1) {
+                        Result.WriteBuffer(LB, LineBreakLen);
+                        L += LineBreakLen;
+                    }
+                }
             }
 
             Result.SetLength(L);
-            Result.Position(0);
-
-            for (i = 0; i < Count; ++i) {
-                const CString &S = Get(i);
-                if (!S.IsEmpty())
-                    Result.WriteBuffer(S.Data(), S.Size());
-                if (IsLineFeed || i < Count - 1)
-                    Result.WriteBuffer(LB, LineBreakLen);
-            }
 
             return Result;
         }
@@ -2307,7 +2302,7 @@ namespace Delphi {
         void CStrings::SetTextStr(LPCTSTR Text, size_t Size) {
 
             size_t LineBreakLen;
-            LPCTSTR P, E, LB;
+            LPCTSTR P, E, LB, LD;
 
             BeginUpdate();
             try {
@@ -2316,9 +2311,10 @@ namespace Delphi {
                 E = P + Size;
                 if (Assigned(P)) {
                     Add(CString());
-                    if (SameText(LineBreak(), sLineBreak)) {
+                    if (SameText(m_LineBreak, sLineBreak)) {
                         while (P < E) {
-                            if ((*P == '\n') || (*P == m_Delimiter)) {
+                            LD = strstr(P, m_Delimiter);
+                            if ((*P == '\n') || (P == LD)) {
                                 Add(CString());
                             } else {
                                 if (!IsCtl(*P) && (*P != m_QuoteChar)) {
@@ -2328,14 +2324,15 @@ namespace Delphi {
                             P++;
                         }
                     } else {
-                        LineBreakLen = strlen(LineBreak());
-                        LB = strstr(P, LineBreak());
+                        LineBreakLen = strlen(m_LineBreak);
+                        LB = strstr(P, m_LineBreak);
+                        LD = strstr(P, m_Delimiter);
                         while (P < E) {
-                            if ((P == LB) || (*P == m_Delimiter)) {
+                            if ((P == LB) || (P == LD)) {
                                 Add(CString());
                                 if (P == LB) {
                                     P += LineBreakLen;
-                                    LB = strstr(P, LineBreak());
+                                    LB = strstr(P, m_LineBreak);
                                 } else {
                                     if (P == (Text + Size))
                                         break;
@@ -2485,18 +2482,20 @@ namespace Delphi {
 
         CString CStringList::GetValue(const CString &Name) const {
             CStringItem *P;
-            size_t Length;
+            size_t Length, SepLen;
             CString Value;
 
             int Index = IndexOfName(Name);
             if (Index != -1) {
                 P = m_pList[Index];
+                SepLen = strlen(NameValueSeparator());
                 Length = P->String.Length() - Name.Length();
                 if (Length > 0) {
-                    if (P->String.at(Name.Length() + 1) == QuoteChar() && P->String.back() == QuoteChar())
-                        Value = P->String.SubString(Name.Length() + 2, Length - 3);
-                    else
-                        Value = P->String.SubString(Name.Length() + 1, Length - 1);
+                    if (P->String.at(Name.Length() + 1) == QuoteChar() && P->String.back() == QuoteChar()) {
+                        Value = P->String.SubString(Name.Length() + SepLen + 1, Length - (SepLen + 2));
+                    } else {
+                        Value = P->String.SubString(Name.Length() + SepLen, Length - SepLen);
+                    }
                 }
             }
 
