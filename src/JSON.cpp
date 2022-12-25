@@ -465,7 +465,7 @@ namespace Delphi {
 
         CJSONElements::CJSONElements(CPersistent *AOwner, CJSONValueType ValueType): CJSON(AOwner, ValueType) {
             m_LineBreak = sLineBreak;
-            m_Delimiter = ',';
+            m_Delimiter = ",";
             m_QuoteChar = '"';
             m_StrictDelimiter = false;
             m_CurrentIndex = -1;

@@ -606,7 +606,7 @@ namespace Delphi {
 
             CHTTPRequest(): VMajor(1), VMinor(1), ContentLength(0) {
                 Params.LineBreak("&");
-                Params.Delimiter('&');
+                Params.Delimiter("&");
             }
 
             CHTTPRequest(const CHTTPRequest &Request): CHTTPRequest() {

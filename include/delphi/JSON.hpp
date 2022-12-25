@@ -280,8 +280,8 @@ namespace Delphi {
         private:
 
             LPCTSTR m_LineBreak;
+            LPCTSTR m_Delimiter;
 
-            TCHAR m_Delimiter;
             TCHAR m_QuoteChar;
 
             bool m_StrictDelimiter;
@@ -451,10 +451,10 @@ namespace Delphi {
         private:
 
             LPCTSTR m_LineBreak;
+            LPCTSTR m_Delimiter;
+            LPCTSTR m_NameValueSeparator;
 
-            TCHAR m_Delimiter;
             TCHAR m_QuoteChar;
-            TCHAR m_NameValueSeparator;
 
             bool m_StrictDelimiter;
 

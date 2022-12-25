@@ -56,7 +56,7 @@ namespace Delphi {
             Strings->BeginUpdate();
             try {
                 for (int I = 0; I < AllSections.Count(); ++I) {
-                    CString &S = AllSections[I];
+                    const CString &S = AllSections[I];
                     SLen = S.Length();
                     if ((SectionLen == 0)
                         || (SubSectionNamesOnly && (SLen > SectionLen) &&
@@ -520,7 +520,7 @@ namespace Delphi {
 
             try {
                 if (!FileName().IsEmpty() && FileExists(FileName().c_str())) {
-                    List.Delimiter('\n');
+                    List.Delimiter("\n");
                     List.LoadFromFile(FileName().c_str());
                     SetStrings(&List);
                 } else
