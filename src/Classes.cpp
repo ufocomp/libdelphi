@@ -1945,20 +1945,13 @@ namespace Delphi {
                 const CString &S = Get(i);
                 if (!S.IsEmpty()) {
                     L += S.Size();
-                    if (i < Count - 1)
-                        L += LineBreakLen;
-                }
-            }
-
-            Result.SetLength(L);
-            Result.Position(0);
-
-            for (i = 0; i < Count; ++i) {
-                const CString &S = Get(i);
-                if (!S.IsEmpty()) {
+                    Result.SetLength(L);
                     Result.WriteBuffer(S.Data(), S.Size());
-                    if (i < Count - 1)
+                    if (i < Count - 1) {
+                        L += LineBreakLen;
+                        Result.SetLength(L);
                         Result.WriteBuffer(LB, LineBreakLen);
+                    }
                 }
             }
 
