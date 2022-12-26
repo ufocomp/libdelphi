@@ -1412,11 +1412,11 @@ namespace Delphi {
                     pConnection->OnError(std::bind(&CPQConnectPoll::DoPQTimeOut, this, _1));
                 }
 
-                if (m_OnStatus != nullptr) {
+                if (m_OnPQStatus != nullptr) {
                     pConnection->OnStatus(std::bind(&CPQConnectPoll::DoPQStatus, this, _1));
                 }
 
-                if (m_OnPollingStatus != nullptr) {
+                if (m_OnPQPollingStatus != nullptr) {
                     pConnection->OnPollingStatus(std::bind(&CPQConnectPoll::DoPQPollingStatus, this, _1));
                 }
 
