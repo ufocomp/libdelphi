@@ -1934,7 +1934,7 @@ namespace Delphi {
 
             int i;
             size_t L, LineBreakLen;
-            LPCTSTR LB = m_LineBreak;
+            LPCTSTR LB = LineBreak();
 
             L = 0;
             LineBreakLen = strlen(LB);
@@ -1944,16 +1944,23 @@ namespace Delphi {
             for (i = 0; i < Count; ++i) {
                 const CString &S = Get(i);
                 if (!S.IsEmpty()) {
-                    Result.WriteBuffer(S.Data(), S.Size());
                     L += S.Size();
-                    if (i < Count - 1) {
-                        Result.WriteBuffer(LB, LineBreakLen);
+                    if (i < Count - 1)
                         L += LineBreakLen;
-                    }
                 }
             }
 
             Result.SetLength(L);
+            Result.Position(0);
+
+            for (i = 0; i < Count; ++i) {
+                const CString &S = Get(i);
+                if (!S.IsEmpty()) {
+                    Result.WriteBuffer(S.Data(), S.Size());
+                    if (i < Count - 1)
+                        Result.WriteBuffer(LB, LineBreakLen);
+                }
+            }
 
             return Result;
         }
