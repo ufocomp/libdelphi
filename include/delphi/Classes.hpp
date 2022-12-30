@@ -864,6 +864,10 @@ namespace Delphi {
             int Compare(const std::string& S) const;
             int Compare(LPCTSTR Str) const;
 
+            int CompareCase(const CString& S) const;
+            int CompareCase(const std::string& S) const;
+            int CompareCase(LPCTSTR Str) const;
+
             CString Trim(TCHAR TrimChar = ' ') const;
             CString TrimLeft(TCHAR TrimChar = ' ') const;
             CString TrimRight(TCHAR TrimChar = ' ') const;
@@ -1027,6 +1031,14 @@ namespace Delphi {
             friend CString operator+ (const CString& LS, TCHAR RS) {
                 CString S(LS);
                 S.Append(1, RS);
+                return S;
+            }
+
+            friend CString operator+ (const CString& LS, int RV) {
+                CString S(LS);
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(RV, szValue, _INT_T_LEN);
+                S.Append(szValue);
                 return S;
             }
 

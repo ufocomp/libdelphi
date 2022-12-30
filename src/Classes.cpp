@@ -1623,6 +1623,33 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        int CString::CompareCase(const CString &S) const {
+            if (IsEmpty())
+                return -1;
+            if (S.IsEmpty())
+                return 1;
+            return CompareStringCase(c_str(), S.c_str());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CString::CompareCase(const std::string &S) const {
+            if (IsEmpty())
+                return -1;
+            if (S.empty())
+                return 1;
+            return CompareStringCase(c_str(), S.c_str());
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CString::CompareCase(LPCTSTR Str) const {
+            if (IsEmpty())
+                return -1;
+            if (Str == nullptr)
+                return 1;
+            return CompareStringCase(c_str(), Str);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         size_t CString::Find(const CString& S, size_t Pos) const {
             if (m_Size == 0) return npos;
             LPCTSTR P = strstr(Str() + Pos, S.Str());
@@ -2193,7 +2220,7 @@ namespace Delphi {
 
         int CStrings::IndexOfName(const CString &Name) const {
             for (int i = 0; i < GetCount(); ++i) {
-                if (GetName(i) == Name)
+                if (GetName(i).CompareCase(Name) == 0)
                     return i;
             }
             return -1;
@@ -2202,7 +2229,7 @@ namespace Delphi {
 
         int CStrings::IndexOfName(reference Name) const {
             for (int i = 0; i < GetCount(); ++i) {
-                if (GetName(i) == Name)
+                if (GetName(i).CompareCase(Name) == 0)
                     return i;
             }
             return -1;

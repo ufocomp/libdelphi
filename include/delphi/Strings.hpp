@@ -87,32 +87,38 @@ using namespace Delphi::Strings;
 
 #ifndef UNICODE
 
-#define StringSize(len)         ((len) + 1)
+#define StringSize(len)           ((len) + 1)
 
-#define AnsiCompare(ls, rs)     strcmp(ls, rs)
-#define CompareString(ls, rs)   AnsiCompare(ls, rs)
+#define AnsiCompare(ls, rs)       strcmp(ls, rs)
+#define AnsiCompareCase(ls, rs)   strcasecmp(ls, rs)
 
-#define StringCchLength         StringCchLengthA
-#define StringCchPrintf         StringCchPrintfA
-#define StringCchVPrintf        StringCchVPrintfA
-#define StringPCchPrintf        StringPCchPrintfA
-#define StringPCchVPrintf       StringPCchVPrintfA
+#define CompareString(ls, rs)     AnsiCompare(ls, rs)
+#define CompareStringCase(ls, rs) AnsiCompareCase(ls, rs)
 
-#define StringCchCopy           StringCchCopyA
-#define StringCchCat            StringCchCatA
+#define StringCchLength           StringCchLengthA
+#define StringCchPrintf           StringCchPrintfA
+#define StringCchVPrintf          StringCchVPrintfA
+#define StringPCchPrintf          StringPCchPrintfA
+#define StringPCchVPrintf         StringPCchVPrintfA
+
+#define StringCchCopy             StringCchCopyA
+#define StringCchCat              StringCchCatA
 
 #else
 
-#define StringSize(len)         ((len) * sizeof(TCHAR) + sizeof(TCHAR))
+#define StringSize(len)           ((len) * sizeof(TCHAR) + sizeof(TCHAR))
 
-#define WideCompare(ls, rs)     wcscmp(ls, rc)
-#define CompareString(ls, rc)   WideCompare(ls, rc)
+#define WideCompare(ls, rs)       wcscmp(ls, rc)
+#define WideCompareCase(ls, rs)   __wcsicmp(ls, rc)
 
-#define StringCchLength         StringCchLengthW
-#define StringCchPrintf         StringCchPrintfW
-#define StringCchVPrintf        StringCchVPrintfW
-#define StringPCchPrintf        StringPCchPrintfW
-#define StringPCchVPrintf       StringPCchVPrintfW
+#define CompareString(ls, rc)     WideCompare(ls, rc)
+#define CompareStringCase(ls, rs) WideCompareCase(ls, rs)
+
+#define StringCchLength           StringCchLengthW
+#define StringCchPrintf           StringCchPrintfW
+#define StringCchVPrintf          StringCchVPrintfW
+#define StringPCchPrintf          StringPCchPrintfW
+#define StringPCchVPrintf         StringPCchVPrintfW
 
 #define StringCchCopy           StringCchCopyW
 #define StringCchCat            StringCchCatW
