@@ -1235,13 +1235,16 @@ namespace Delphi {
 
             CProxyType m_ProxyType;
 
+            CHTTPClientConnection *m_pProxyConnection;
             CHTTPServerConnection *m_pConnection;
 
             CHTTPRequest *m_Request;
 
             static void Auth(CHTTPClientConnection *AConnection);
             void SOCKS5(CHTTPClientConnection *AConnection);
-
+#ifdef WITH_SSL
+            void SetUsedSSL(bool Value) override;
+#endif
         protected:
 
             CHTTPRequest *GetRequest();

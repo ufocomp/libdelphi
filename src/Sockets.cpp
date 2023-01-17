@@ -1727,7 +1727,7 @@ namespace Delphi {
             if (m_pOutputBuffer->Size() > 0) {
 
                 if (AByteCount == -1)
-                    AByteCount = m_pOutputBuffer->Size();
+                    AByteCount = (ssize_t) m_pOutputBuffer->Size();
 
                 byteCount = WriteBufferAsync(m_pOutputBuffer->Memory(), (size_t) AByteCount);
 
@@ -4653,7 +4653,14 @@ namespace Delphi {
             }
         }
         //--------------------------------------------------------------------------------------------------------------
-
+#ifdef WITH_SSL
+        void CAsyncClient::SetUsedSSL(bool Value) {
+            if (m_UsedSSL != Value) {
+                m_UsedSSL = Value;
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+#endif
         void CAsyncClient::ConnectStart() {
             auto pIOHandler = new CIOHandlerSocket();
 #ifdef WITH_SSL

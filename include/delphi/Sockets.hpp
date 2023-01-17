@@ -2505,7 +2505,9 @@ namespace Delphi {
             CStringList m_Data;
 
             void SetActive(bool AValue);
-
+#ifdef WITH_SSL
+            virtual void SetUsedSSL(bool Value);
+#endif
             virtual void Initialize() {};
 
             virtual void InitializeCommandHandlers() {};
@@ -2533,7 +2535,7 @@ namespace Delphi {
             void AutoConnect(bool Value) { m_AutoConnect = Value; }
 #ifdef WITH_SSL
             bool UsedSSL() const { return m_UsedSSL; }
-            void UsedSSL(bool Value) { m_UsedSSL = Value; }
+            void UsedSSL(bool Value) { SetUsedSSL(Value); }
 #endif
 
             CCommandHandlers &CommandHandlers() { return m_CommandHandlers; }

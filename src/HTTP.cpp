@@ -2725,18 +2725,34 @@ namespace Delphi {
         CHTTPProxy::CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection): CHTTPClientItem(AManager) {
             m_ProxyType = ptHTTP;
             m_Request = nullptr;
+            m_pProxyConnection = nullptr;
             m_pConnection = AConnection;
             m_ClientName = Server()->ServerName();
 
             AllocateEventHandlers(Server());
         }
         //--------------------------------------------------------------------------------------------------------------
-
+#ifdef WITH_SSL
+        void CHTTPProxy::SetUsedSSL(bool Value) {
+            CAsyncClient::SetUsedSSL(Value);
+            auto pIOHandler = dynamic_cast<CIOHandlerSocket *> (m_pProxyConnection->IOHandler());
+            auto pBinding = pIOHandler->Binding();
+            pBinding->SSLMethod(Value ? sslClient : sslNotUsed);
+            if (Value) {
+                pBinding->AllocateSSL();
+                pBinding->ConnectSSL();
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+                pBinding->SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
+#endif
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+#endif
         void CHTTPProxy::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto pConnection = new CHTTPClientConnection(this);
-            pConnection->IOHandler(AIOHandler);
-            pConnection->AutoFree(true);
-            AHandler->Binding(pConnection);
+            m_pProxyConnection = new CHTTPClientConnection(this);
+            m_pProxyConnection->IOHandler(AIOHandler);
+            m_pProxyConnection->AutoFree(true);
+            AHandler->Binding(m_pProxyConnection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2785,11 +2801,12 @@ namespace Delphi {
                     pConnection->InputBuffer()->Extract(Stream.Memory(), Stream.Size());
                     unsigned char frame[2];
                     Stream.ReadBuffer(&frame, sizeof(frame));
-                    if (frame[0] == 0x05 && frame[1] == 0x00) {
+                    if (frame[0] == 0x05 && (frame[1] == 0x00 || frame[1] == 0x06)) {
                         if (Stream.Size() == 2) {
                             SOCKS5(pConnection);
                         } else {
                             m_ProxyType = ptHTTP;
+                            UsedSSL(GetRequest()->Location.protocol == HTTPS_PREFIX);
                             DoRequest(pConnection);
                         }
                     } else {
@@ -2841,11 +2858,11 @@ namespace Delphi {
 
             pBuffer->WriteBuffer(&frame, sizeof(frame));
 
-            frame[0] = m_Request->Location.hostname.Size();
+            frame[0] = GetRequest()->Location.hostname.Size();
             pBuffer->WriteBuffer(&frame, 1);
-            pBuffer->WriteBuffer(m_Request->Location.hostname.Data(), m_Request->Location.hostname.Size());
+            pBuffer->WriteBuffer(GetRequest()->Location.hostname.Data(), GetRequest()->Location.hostname.Size());
 
-            len16.val = be16toh(m_Request->Location.port);
+            len16.val = be16toh(GetRequest()->Location.port);
             pBuffer->WriteBuffer(len16.arr, sizeof(len16));
         }
         //--------------------------------------------------------------------------------------------------------------
