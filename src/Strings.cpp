@@ -213,14 +213,16 @@ namespace Delphi {
                         case 's':
                             p = va_arg(args, char *);
 
-                            if (slen == (size_t) -1) {
-                                while (*p && buf < last) {
-                                    *buf++ = *p++;
-                                }
+                            if (p != nullptr) {
+                                if (slen == (size_t) -1) {
+                                    while (*p && buf < last) {
+                                        *buf++ = *p++;
+                                    }
 
-                            } else {
-                                len = Min(((size_t) (last - buf)), slen);
-                                buf = MemCopy(buf, p, len);
+                                } else {
+                                    len = Min(((size_t) (last - buf)), slen);
+                                    buf = MemCopy(buf, p, len);
+                                }
                             }
 
                             fmt++;

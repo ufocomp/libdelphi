@@ -92,7 +92,9 @@ namespace Delphi {
 
         size_t CCurlApi::HeaderCallBack(char *buffer, size_t size, size_t nitems, CStringList *Headers) {
             size_t buffer_size = nitems * size;
-            Headers->Add(CString((LPCTSTR) buffer, buffer_size));
+            if (buffer_size > 2) {
+                Headers->Add(CString((LPCTSTR) buffer, buffer_size - 2));
+            }
             return buffer_size;
         }
         //--------------------------------------------------------------------------------------------------------------

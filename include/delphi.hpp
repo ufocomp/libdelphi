@@ -39,7 +39,6 @@ Author:
 #include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <syscall.h>
 #include <pwd.h>
 #include <grp.h>
@@ -232,7 +231,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.4.4")
+#define DELPHI_LIB_VERSION      _T("2.5.0")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 

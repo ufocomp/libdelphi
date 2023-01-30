@@ -619,11 +619,11 @@ namespace Delphi {
             };
 
             /// Get a prepare request.
-            static CHTTPRequest *Prepare(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR AURI,
+            static CHTTPRequest *Prepare(CHTTPRequest &Request, LPCTSTR AMethod, LPCTSTR AURI,
                 LPCTSTR AContentType = nullptr, LPCTSTR AConnection = nullptr);
 
             /// Add Authorization header to headers
-            static CHTTPRequest *Authorization(CHTTPRequest *ARequest, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
+            static CHTTPRequest *Authorization(CHTTPRequest &Request, LPCTSTR AMethod, LPCTSTR ALogin, LPCTSTR APassword);
 
         };
 
@@ -712,14 +712,14 @@ namespace Delphi {
             static bool IsDigit(int c);
 
             /// Handle the next character of input.
-            static int Consume(CHTTPRequest *ARequest, CHTTPContext &Context);
+            static int Consume(CHTTPRequest &Request, CHTTPContext &Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CHTTPRequest *ARequest, CHTTPContext &Context);
+            static int Parse(CHTTPRequest &Request, CHTTPContext &Context);
 
-            static int ParseFormData(CHTTPRequest *ARequest, CFormData &FormData);
+            static int ParseFormData(const CHTTPRequest &Request, CFormData &FormData);
 
         };
 
@@ -748,8 +748,8 @@ namespace Delphi {
 
         struct CHTTPReply
         {
-            int VMajor {};
-            int VMinor {};
+            int VMajor;
+            int VMinor;
 
             /// The status of the reply.
             enum CStatusType
@@ -778,8 +778,10 @@ namespace Delphi {
                 gateway_timeout = 504
             } Status = internal_server_error;
 
-            CString StatusString{};
-            CString StatusText{};
+            int StatusCode;
+
+            CString StatusString {};
+            CString StatusText {};
 
             /// The content type of the reply.
             enum CContentType
@@ -791,23 +793,22 @@ namespace Delphi {
                 sbin
             } ContentType = html;
 
-            CString ServerName{};
-
-            CString AllowedMethods{};
+            CString ServerName {};
+            CString AllowedMethods {};
 
             bool CloseConnection = true;
 
             /// The headers to be included in the reply.
-            CHeaders Headers{};
+            CHeaders Headers {};
 
             /// The content length to be receive in the reply.
-            size_t ContentLength = 0;
+            size_t ContentLength;
 
             /// The content to be receive in the reply.
-            CString Content{};
+            CString Content {};
 
             /// The cache file.
-            CString CacheFile{};
+            CString CacheFile {};
 
             /// Clear content and headers.
             void Clear();
@@ -841,13 +842,13 @@ namespace Delphi {
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
 
             /// Get a prepare reply.
-            static CHTTPReply *GetReply(CHTTPReply *AReply, CStatusType AStatus, LPCTSTR AContentType = nullptr,
-                LPCTSTR ATransferEncoding = nullptr);
+            static CHTTPReply *GetReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType = nullptr,
+                LPCTSTR lpszTransferEncoding = nullptr);
 
             /// Get a stock reply.
-            static CHTTPReply *GetStockReply(CHTTPReply *AReply, CStatusType AStatus);
+            static CHTTPReply *GetStockReply(CHTTPReply &Reply, CStatusType Status);
 
-            static void AddUnauthorized(CHTTPReply *AReply, bool ABearer = false, LPCTSTR AError = nullptr, LPCTSTR AMessage = nullptr);
+            static void AddUnauthorized(CHTTPReply &Reply, bool bBearer = false, LPCTSTR lpszError = nullptr, LPCTSTR lpszMessage = nullptr);
 
             void Assign(const CHTTPReply &Value) {
                 if (this != &Value) {
@@ -855,6 +856,7 @@ namespace Delphi {
                     VMinor = Value.VMinor;
                     Headers = Value.Headers;
                     Status = Value.Status;
+                    StatusCode = Value.StatusCode;
                     StatusString = Value.StatusString;
                     StatusText = Value.StatusText;
                     ContentType = Value.ContentType;
@@ -866,7 +868,7 @@ namespace Delphi {
                 }
             };
 
-            CHTTPReply(): VMajor(1), VMinor(1), ContentLength(0) {
+            CHTTPReply(): VMajor(1), VMinor(1), StatusCode(0), ContentLength(0) {
 
             }
 
@@ -967,12 +969,12 @@ namespace Delphi {
             static bool IsHex(int c);
 
             /// Handle the next character of input.
-            static int Consume(CHTTPReply *AReply, CHTTPReplyContext& Context);
+            static int Consume(CHTTPReply &Reply, CHTTPReplyContext &Context);
 
             /// Parse some data. The int return value is "1" when a complete request
             /// has been parsed, "0" if the data is invalid, "-1" when more
             /// data is required.
-            static int Parse(CHTTPReply *AReply, CHTTPReplyContext& Context);
+            static int Parse(CHTTPReply &Reply, CHTTPReplyContext &Context);
 
         };
 
@@ -990,8 +992,8 @@ namespace Delphi {
 
         private:
 
-            CHTTPRequest *m_Request;
-            CHTTPReply *m_Reply;
+            CHTTPRequest m_Request;
+            CHTTPReply m_Reply;
 
             /// The current state of the parser.
             Request::CParserState m_State;
@@ -1002,8 +1004,8 @@ namespace Delphi {
 
         protected:
 
-            CHTTPRequest *GetRequest();
-            CHTTPReply *GetReply();
+            const CHTTPRequest *ptrRequest() const;
+            const CHTTPReply *ptrReply() const;
 
         public:
 
@@ -1015,12 +1017,15 @@ namespace Delphi {
 
             bool ParseInput(COnSocketExecuteEvent && OnExecute);
 
-            CHTTPRequest *Request() { return GetRequest(); }
-            CHTTPReply *Reply() { return GetReply(); }
+            CHTTPRequest &Request() { return m_Request; }
+            const CHTTPRequest &Request() const { return m_Request; }
 
-            void SendStockReply(CHTTPReply::CStatusType AStatus, bool ASendNow = false);
-            void SendReply(CHTTPReply::CStatusType AStatus, LPCTSTR AContentType = nullptr, bool ASendNow = false);
-            void SendReply(bool ASendNow = false);
+            CHTTPReply &Reply() { return m_Reply; }
+            const CHTTPReply &Reply() const { return m_Reply; }
+
+            void SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow = false);
+            void SendReply(CHTTPReply::CStatusType Status, LPCTSTR lpszContentType = nullptr, bool bSendNow = false);
+            void SendReply(bool bSendNow = false);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
 
@@ -1037,8 +1042,8 @@ namespace Delphi {
 
         private:
 
-            CHTTPRequest *m_Request;
-            CHTTPReply *m_Reply;
+            CHTTPRequest m_Request;
+            CHTTPReply m_Reply;
 
             /// The current state of the parser.
             Reply::CParserState m_State;
@@ -1050,8 +1055,8 @@ namespace Delphi {
 
         protected:
 
-            CHTTPRequest *GetRequest();
-            CHTTPReply *GetReply();
+            const CHTTPRequest *ptrRequest() const;
+            const CHTTPReply *ptrReply() const;
 
         public:
 
@@ -1063,8 +1068,11 @@ namespace Delphi {
 
             bool ParseInput(COnSocketExecuteEvent && OnExecute);
 
-            CHTTPRequest *Request() { return GetRequest(); }
-            CHTTPReply *Reply() { return GetReply(); };
+            CHTTPRequest &Request() { return m_Request; }
+            const CHTTPRequest &Request() const { return m_Request; }
+
+            CHTTPReply &Reply() { return m_Reply; };
+            const CHTTPReply &Reply() const { return m_Reply; };
 
             void SwitchingProtocols(CHTTPProtocol Protocol);
 
@@ -1135,7 +1143,7 @@ namespace Delphi {
         class CHTTPClient;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef std::function<void (CHTTPClient *Sender, CHTTPRequest *Request)> COnHTTPClientRequestEvent;
+        typedef std::function<void (CHTTPClient *Sender, CHTTPRequest &Request)> COnHTTPClientRequestEvent;
         //--------------------------------------------------------------------------------------------------------------
 
         class CHTTPClient: public CAsyncClient {
@@ -1238,7 +1246,7 @@ namespace Delphi {
             CHTTPClientConnection *m_pProxyConnection;
             CHTTPServerConnection *m_pConnection;
 
-            CHTTPRequest *m_Request;
+            CHTTPRequest m_Request;
 
             static void Auth(CHTTPClientConnection *AConnection);
             void SOCKS5(CHTTPClientConnection *AConnection);
@@ -1246,8 +1254,6 @@ namespace Delphi {
             void SetUsedSSL(bool Value) override;
 #endif
         protected:
-
-            CHTTPRequest *GetRequest();
 
             void DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) override;
             void DoConnect(CPollEventHandler *AHandler) override;
@@ -1265,7 +1271,8 @@ namespace Delphi {
 
             CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
-            CHTTPRequest *Request() { return GetRequest(); }
+            CHTTPRequest &Request() { return m_Request; };
+            const CHTTPRequest &Request() const { return m_Request; };
 
             CProxyType ProxyType() { return m_ProxyType; }
             void ProxyType(CProxyType Value) { m_ProxyType = Value; }
