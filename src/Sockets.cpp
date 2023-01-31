@@ -2450,9 +2450,6 @@ namespace Delphi {
 
             m_Object = nullptr;
 
-            m_WSRequest = nullptr;
-            m_WSReply = nullptr;
-
             m_OnWaitRequest = nullptr;
             m_OnWaitReply = nullptr;
 
@@ -2465,8 +2462,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketConnection::Clear() {
-            FreeAndNil(m_WSRequest);
-            FreeAndNil(m_WSReply);
+            m_WSRequest.Clear();
+            m_WSReply.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2485,18 +2482,17 @@ namespace Delphi {
             DebugMessage("\n[INPUT] %d: %s\n", Stream.Size(), Hex.c_str());
 #endif
             int status;
-            auto pWSRequest = GetWSRequest();
 
             while (Stream.Position() < Stream.Size()) {
 
-                status = CWebSocketParser::Parse(pWSRequest, Stream);
+                status = CWebSocketParser::Parse(m_WSRequest, Stream);
 
-                switch (pWSRequest->Frame().Opcode) {
+                switch (m_WSRequest.Frame().Opcode) {
                     case WS_OPCODE_CONTINUATION:
                     case WS_OPCODE_TEXT:
                     case WS_OPCODE_BINARY:
 
-                        if (pWSRequest->Frame().FIN == 0 || status == -1) {
+                        if (m_WSRequest.Frame().FIN == 0 || status == -1) {
                             m_ConnectionStatus = csWaitRequest;
                             DoWaitRequest();
                         } else {
@@ -2535,9 +2531,8 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketConnection::SendWebSocket(bool ASendNow) {
-
-            GetWSReply()->SaveToStream(*OutputBuffer());
+        void CWebSocketConnection::SendWebSocket(bool bSendNow) {
+            m_WSReply.SaveToStream(*OutputBuffer());
 #ifdef _DEBUG
             const auto &Stream = *OutputBuffer();
             CString Hex;
@@ -2549,7 +2544,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (ASendNow) {
+            if (bSendNow) {
                 WriteAsync();
                 m_ConnectionStatus = csReplySent;
                 Clear();
@@ -2557,34 +2552,18 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CWebSocket *CWebSocketConnection::GetWSRequest() {
-            if (m_WSRequest == nullptr)
-                m_WSRequest = new CWebSocket();
-            return m_WSRequest;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        CWebSocket *CWebSocketConnection::GetWSReply() {
-            if (m_WSReply == nullptr)
-                m_WSReply = new CWebSocket();
-            return m_WSReply;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CWebSocketConnection::SendWebSocketPing(bool ASendNow) {
+        void CWebSocketConnection::SendWebSocketPing(bool bSendNow) {
             TCHAR szDate[25] = {0};
 
-            auto pReply = GetWSReply();
-
-            pReply->Clear();
-            pReply->SetPayload(DateTimeToStr(Now(), szDate, sizeof(szDate)), (uint32_t) MsEpoch());
-            pReply->Ping(*OutputBuffer());
+            m_WSReply.Clear();
+            m_WSReply.SetPayload(DateTimeToStr(Now(), szDate, sizeof(szDate)), (uint32_t) MsEpoch());
+            m_WSReply.Ping(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
-            if (ASendNow) {
+            if (bSendNow) {
                 WriteAsync();
                 m_ConnectionStatus = csReplySent;
                 Clear();
@@ -2592,19 +2571,16 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketConnection::SendWebSocketPong(bool ASendNow) {
-            auto pReply = GetWSReply();
-            auto pRequest = GetWSRequest();
-
-            pReply->Clear();
-            pReply->SetPayload(pRequest->Payload());
-            pReply->Pong(*OutputBuffer());
+        void CWebSocketConnection::SendWebSocketPong(bool bSendNow) {
+            m_WSReply.Clear();
+            m_WSReply.SetPayload(m_WSRequest.Payload());
+            m_WSReply.Pong(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
-            if (ASendNow) {
+            if (bSendNow) {
                 WriteAsync();
                 m_ConnectionStatus = csReplySent;
                 Clear();
@@ -2612,15 +2588,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CWebSocketConnection::SendWebSocketClose(bool ASendNow) {
-
-            GetWSReply()->Close(*OutputBuffer());
+        void CWebSocketConnection::SendWebSocketClose(bool bSendNow) {
+            m_WSReply.Close(*OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
-            if (ASendNow) {
+            if (bSendNow) {
                 WriteAsync();
                 m_ConnectionStatus = csReplySent;
                 Clear();

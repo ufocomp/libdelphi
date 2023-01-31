@@ -733,7 +733,7 @@ namespace Delphi {
         class CWebSocketParser {
         public:
 
-            static int Parse(CWebSocket *ARequest, const CMemoryStream &AStream);
+            static int Parse(CWebSocket &Request, const CMemoryStream &Stream);
 
         };
 
@@ -1002,11 +1002,6 @@ namespace Delphi {
 
             void Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
-        protected:
-
-            const CHTTPRequest *ptrRequest() const;
-            const CHTTPReply *ptrReply() const;
-
         public:
 
             explicit CHTTPServerConnection(CPollSocketServer *AServer);
@@ -1076,7 +1071,7 @@ namespace Delphi {
 
             void SwitchingProtocols(CHTTPProtocol Protocol);
 
-            void SendRequest(bool ASendNow = false);
+            void SendRequest(bool bSendNow = false);
 
         }; // CHTTPServerConnection
 

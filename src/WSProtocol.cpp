@@ -258,10 +258,10 @@ namespace Delphi {
 
             CWSProtocol::ResponseCall(pHandler->UniqueId(), Action, Payload, Result);
 
-            auto pWSReply = pConnection->WSReply();
+            auto &WSReply = pConnection->WSReply();
 
-            pWSReply->Clear();
-            pWSReply->SetPayload(Result);
+            WSReply.Clear();
+            WSReply.SetPayload(Result);
 
             pConnection->SendWebSocket(true);
 

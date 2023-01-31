@@ -489,7 +489,7 @@ namespace Delphi {
             size_t CopyFrom(CStream *Source, size_t Count);
 
             off_t Position() const { return GetPosition(); };
-            void Position(off_t Value) { SetPosition(Value); };
+            void Position(off_t Value) const { SetPosition(Value); };
 
             virtual size_t Size() const { return GetSize(); };
             void Size(size_t Value) { SetSize(Value); };
@@ -736,7 +736,7 @@ namespace Delphi {
 
             virtual void SetLength(size_t NewLength) abstract;
 
-            void LoadFromStream(CStream &Stream);
+            void LoadFromStream(const CStream &Stream);
 
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromFile(const CString& FileName);
@@ -830,7 +830,7 @@ namespace Delphi {
 
             CString(TCHAR C);
 
-            explicit CString(CStream &Stream);
+            explicit CString(const CStream &Stream);
 
             explicit CString(size_t Length, TCHAR C);
 

@@ -994,8 +994,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        int CWebSocketParser::Parse(CWebSocket *ARequest, const CMemoryStream &Stream) {
-            return ARequest->LoadFromStream(Stream);
+        int CWebSocketParser::Parse(CWebSocket &Request, const CMemoryStream &Stream) {
+            return Request.LoadFromStream(Stream);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1997,18 +1997,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CHTTPRequest *CHTTPServerConnection::ptrRequest() const {
-            return &m_Request;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        const CHTTPReply *CHTTPServerConnection::ptrReply() const {
-            return &m_Reply;
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         void CHTTPServerConnection::Clear() {
             CWebSocketConnection::Clear();
+
+            m_Request.Clear();
+            m_Reply.Clear();
 
             m_State = Request::method_start;
             m_ContentLength = 0;
@@ -2232,14 +2225,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPClientConnection::SendRequest(bool ASendNow) {
+        void CHTTPClientConnection::SendRequest(bool bSendNow) {
             m_Request.ToBuffers(*OutputBuffer());
 
             m_ConnectionStatus = csRequestReady;
 
             DoRequest();
 
-            if (ASendNow) {
+            if (bSendNow) {
                 WriteAsync();
                 m_ConnectionStatus = csRequestSent;
             }

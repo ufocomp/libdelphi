@@ -1336,7 +1336,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStringStream::LoadFromStream(CStream &Stream) {
+        void CStringStream::LoadFromStream(const CStream &Stream) {
             size_t Count;
             Stream.Position(0);
             Count = Stream.Size();
@@ -1526,7 +1526,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CString::CString(CStream &Stream): CString() {
+        CString::CString(const CStream &Stream): CString() {
             auto Position = Stream.Position();
             LoadFromStream(Stream);
             Stream.Position(Position);

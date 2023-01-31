@@ -1273,8 +1273,8 @@ namespace Delphi {
 
             CObject *m_Object;
 
-            CWebSocket *m_WSRequest;
-            CWebSocket *m_WSReply;
+            CWebSocket m_WSRequest;
+            CWebSocket m_WSReply;
 
             CStringList m_Data;
 
@@ -1292,9 +1292,6 @@ namespace Delphi {
             CConnectionStatus m_ConnectionStatus;
 
             CHTTPProtocol m_Protocol;
-
-            CWebSocket *GetWSRequest();
-            CWebSocket *GetWSReply();
 
             void DoWaitRequest();
             void DoWaitReply();
@@ -1317,17 +1314,20 @@ namespace Delphi {
 
             CHTTPProtocol Protocol() const { return m_Protocol; }
 
-            CWebSocket *WSRequest() { return GetWSRequest(); }
-            CWebSocket *WSReply() { return GetWSReply(); }
+            CWebSocket &WSRequest() { return m_WSRequest; }
+            const CWebSocket &WSRequest() const { return m_WSRequest; }
+
+            CWebSocket &WSReply() { return m_WSReply; }
+            const CWebSocket &WSReply() const { return m_WSReply; }
 
             CConnectionStatus ConnectionStatus() const { return m_ConnectionStatus; }
             void ConnectionStatus(CConnectionStatus Value) { m_ConnectionStatus = Value; }
 
-            void SendWebSocket(bool ASendNow = false);
+            void SendWebSocket(bool bSendNow = false);
 
-            void SendWebSocketPing(bool ASendNow = false);
-            void SendWebSocketPong(bool ASendNow = false);
-            void SendWebSocketClose(bool ASendNow = false);
+            void SendWebSocketPing(bool bSendNow = false);
+            void SendWebSocketPong(bool bSendNow = false);
+            void SendWebSocketClose(bool bSendNow = false);
 
             virtual void Clear();
 
