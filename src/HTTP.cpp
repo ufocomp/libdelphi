@@ -2150,6 +2150,9 @@ namespace Delphi {
         void CHTTPClientConnection::Clear() {
             CWebSocketConnection::Clear();
 
+            m_Request.Clear();
+            m_Reply.Clear();
+
             m_State = Reply::http_version_h;
             m_ContentLength = 0;
             m_ChunkedLength = 0;

@@ -2146,8 +2146,11 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocket::Clear() {
-            m_MaskingIndex = 0;
+            m_State = frame;
+            m_Frame.Clear();
             m_Payload.Clear();
+            m_MaskingIndex = 0;
+            m_PayloadSize = 0;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2332,6 +2335,8 @@ namespace Delphi {
         int CWebSocket::LoadFromStream(const CMemoryStream &Stream) {
 
             if (m_State == frame) {
+                Clear();
+
                 LoadHeader(Stream);
 
                 m_State = extended;

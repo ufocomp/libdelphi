@@ -1178,7 +1178,6 @@ namespace Delphi {
                 ::CopyMemory(MaskingKey, Key, sizeof(MaskingKey));
             }
 
-            //unsigned long long PayloadLength = 0;
         };
 
         //--------------------------------------------------------------------------------------------------------------
