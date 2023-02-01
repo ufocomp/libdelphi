@@ -2335,8 +2335,6 @@ namespace Delphi {
         int CWebSocket::LoadFromStream(const CMemoryStream &Stream) {
 
             if (m_State == frame) {
-                Clear();
-
                 LoadHeader(Stream);
 
                 m_State = extended;
@@ -2369,8 +2367,10 @@ namespace Delphi {
 
             if (m_State == payload_start) {
 
-                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION)
-                    Clear();
+                if (m_Frame.Opcode != WS_OPCODE_CONTINUATION) {
+                    m_MaskingIndex = 0;
+                    m_Payload.Clear();
+                }
 
                 const auto payloadSize = m_Payload.Size();
 
