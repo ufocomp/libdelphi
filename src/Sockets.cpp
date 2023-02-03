@@ -1462,13 +1462,9 @@ namespace Delphi {
             m_ClosedGracefully = false;
             m_OEM = false;
 
-            m_pRecvBuffer = new CSimpleBuffer;
             m_RecvBufferSize = GRecvBufferSizeDefault;
-
-            m_pInputBuffer = new CManagedBuffer;
-            m_pOutputBuffer = new CSimpleBuffer;
-
             m_SendBufferSize = GSendBufferSizeDefault;
+
             m_MaxLineLength = MaxLineLengthDefault;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1477,9 +1473,6 @@ namespace Delphi {
             DisconnectSocket();
 
             FreeIOHandler();
-            FreeAndNil(m_pInputBuffer);
-            FreeAndNil(m_pOutputBuffer);
-            FreeAndNil(m_pRecvBuffer);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1595,13 +1588,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::FlushOutputBuffer(ssize_t AByteCount) {
-            if (m_pOutputBuffer->Size() > 0) {
-                if ((AByteCount == -1) || (m_pOutputBuffer->Size() <= (size_t) AByteCount)) {
-                    WriteBuffer(m_pOutputBuffer->Memory(), m_pOutputBuffer->Size(), true);
-                    m_pOutputBuffer->Clear();
+            if (m_OutputBuffer.Size() > 0) {
+                if ((AByteCount == -1) || (m_OutputBuffer.Size() <= (size_t) AByteCount)) {
+                    WriteBuffer(m_OutputBuffer.Memory(), m_OutputBuffer.Size(), true);
+                    m_OutputBuffer.Clear();
                 } else {
-                    WriteBuffer(m_pOutputBuffer->Memory(), (size_t) AByteCount, true);
-                    m_pOutputBuffer->Remove((size_t) AByteCount);
+                    WriteBuffer(m_OutputBuffer.Memory(), (size_t) AByteCount, true);
+                    m_OutputBuffer.Remove((size_t) AByteCount);
                 }
             }
         }
@@ -1724,15 +1717,15 @@ namespace Delphi {
         bool CTCPConnection::WriteAsync(ssize_t AByteCount) {
             ssize_t byteCount = AByteCount;
 
-            if (m_pOutputBuffer->Size() > 0) {
+            if (m_OutputBuffer.Size() > 0) {
 
                 if (AByteCount == -1)
-                    AByteCount = (ssize_t) m_pOutputBuffer->Size();
+                    AByteCount = (ssize_t) m_OutputBuffer.Size();
 
-                byteCount = WriteBufferAsync(m_pOutputBuffer->Memory(), (size_t) AByteCount);
+                byteCount = WriteBufferAsync(m_OutputBuffer.Memory(), (size_t) AByteCount);
 
                 if (byteCount > 0 )
-                    m_pOutputBuffer->Remove((size_t) byteCount);
+                    m_OutputBuffer.Remove((size_t) byteCount);
             }
 
             return (byteCount == AByteCount);
@@ -1855,14 +1848,14 @@ namespace Delphi {
         void CTCPConnection::ReadBuffer(void *ABuffer, size_t AByteCount) {
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 // Read from stack until we have enough data
-                while (InputBuffer()->Size() < AByteCount) {
+                while (InputBuffer().Size() < AByteCount) {
                     ReadFromStack();
                     CheckForDisconnect(true);
                 }
                 // Copy it to the callers buffer
-                ::MoveMemory(ABuffer, InputBuffer()->Memory(), AByteCount);
+                ::MoveMemory(ABuffer, InputBuffer().Memory(), AByteCount);
                 // Remove used data from buffer
-                InputBuffer()->Remove(AByteCount);
+                InputBuffer().Remove(AByteCount);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1899,9 +1892,9 @@ namespace Delphi {
             size = 0;
 
             do {
-                inputBufferSize = InputBuffer()->Size();
+                inputBufferSize = InputBuffer().Size();
                 if (inputBufferSize > 0) {
-                    termPos = MemoryPos(terminator, ((char *) InputBuffer()->Memory()) + size, inputBufferSize - size);
+                    termPos = MemoryPos(terminator, ((char *) InputBuffer().Memory()) + size, inputBufferSize - size);
                     if (termPos > 0)
                         termPos = termPos + size;
                     size = inputBufferSize;
@@ -1912,7 +1905,7 @@ namespace Delphi {
                         throw ESocketError(_T("ReadLn Max Line Length Exceeded."));
                     else {
                         m_ReadLnSplit = true;
-                        return InputBuffer()->Extract(AStr, (size_t) AMaxLineLength);
+                        return InputBuffer().Extract(AStr, (size_t) AMaxLineLength);
                     }
                     // ReadFromStack blocks - do not call unless we need to
                 } else if (termPos == 0) {
@@ -1921,7 +1914,7 @@ namespace Delphi {
                             throw ESocketError(_T("ReadLn Max Line Length Exceeded."));
                         else {
                             m_ReadLnSplit = true;
-                            return InputBuffer()->Extract(AStr, (size_t) AMaxLineLength);
+                            return InputBuffer().Extract(AStr, (size_t) AMaxLineLength);
                         }
                     }
                     // ReadLn needs to call this as data may exist in the buffer, but no EOL yet disconnected
@@ -1935,7 +1928,7 @@ namespace Delphi {
             } while (termPos == 0);
 
             // Extract actual data
-            termPos = InputBuffer()->Extract(AStr, (size_t) termPos) - 1;
+            termPos = InputBuffer().Extract(AStr, (size_t) termPos) - 1;
             if ((ATerminator == INT_LF) && (termPos > 0) && (AStr[termPos - 1] == INT_CR))
                 termPos--;
 
@@ -2004,7 +1997,7 @@ namespace Delphi {
                         if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
                             if (m_pIOHandler != nullptr)
                                 DisconnectSocket();
-                            if (InputBuffer()->Size() == 0)
+                            if (InputBuffer().Size() == 0)
                                 GStack->RaiseSocketError(GStack->SSLError());
                         }
                     }
@@ -2015,16 +2008,16 @@ namespace Delphi {
                         AByteCount = 0;
                         if (m_pIOHandler != nullptr)
                             DisconnectSocket();
-                        if (InputBuffer()->Size() == 0)
+                        if (InputBuffer().Size() == 0)
                             GStack->RaiseSocketError(GStack->LastError());
                     }
 #ifdef WITH_SSL
                 }
 #endif
                 if (AByteCount > 0) {
-                    m_pRecvBuffer->Size((size_t) AByteCount);
-                    m_pInputBuffer->Seek(0, soEnd);
-                    m_pInputBuffer->WriteBuffer(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                    m_RecvBuffer.Size((size_t) AByteCount);
+                    m_InputBuffer.Seek(0, soEnd);
+                    m_InputBuffer.WriteBuffer(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
                 }
             }
 
@@ -2040,10 +2033,9 @@ namespace Delphi {
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
             if (Connected()) {
                 do {
-                    if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
-
-                        m_pRecvBuffer->Size(RecvBufferSize());
-                        byteCount = m_pIOHandler->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                    if (Connected() && IOHandler() != nullptr) { //APR: disconnect from other thread
+                        m_RecvBuffer.Size(RecvBufferSize());
+                        byteCount = m_pIOHandler->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
 #ifdef WITH_SSL
                         if (m_pIOHandler->UsedSSL()) {
                             if (byteCount <= 0) {
@@ -2100,10 +2092,10 @@ namespace Delphi {
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
-            if (Connected() && (m_pRecvBuffer != nullptr) && (IOHandler() != nullptr)) { //APR: disconnect from other thread
-                m_pRecvBuffer->Size(RecvBufferSize());
+            if (Connected() && IOHandler() != nullptr) { //APR: disconnect from other thread
+                m_RecvBuffer.Size(RecvBufferSize());
                 do {
-                    byteRecv = IOHandler()->Recv(m_pRecvBuffer->Memory(), m_pRecvBuffer->Size());
+                    byteRecv = IOHandler()->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
 #ifdef WITH_SSL
                     if (m_pIOHandler->UsedSSL()) {
                         unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ };
@@ -2229,7 +2221,7 @@ namespace Delphi {
                 if (size != 0) {
                     const auto pos = m_Payload.Position();
                     const auto count = Stream.Read(Pointer((size_t) m_Payload.Memory() + pos), size);
-                    m_Payload.Position(pos + count);
+                    m_Payload.Position(pos + (off_t) count);
                 }
             }
         }
@@ -2537,13 +2529,13 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketConnection::SendWebSocket(bool bSendNow) {
-            m_WSReply.SaveToStream(*OutputBuffer());
+            m_WSReply.SaveToStream(OutputBuffer());
 #ifdef _DEBUG
-            const auto &Stream = *OutputBuffer();
+            const auto &Buffer = OutputBuffer();
             CString Hex;
-            Hex.SetLength(Stream.Size() * 3 + 1);
-            ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Stream.Memory(), Stream.Size(), 32);
-            DebugMessage("\n[OUTPUT] %d: %s\n", Stream.Size(), Hex.c_str());
+            Hex.SetLength(Buffer.Size() * 3 + 1);
+            ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Buffer.Memory(), Buffer.Size(), 32);
+            DebugMessage("\n[OUTPUT] %d: %s\n", Buffer.Size(), Hex.c_str());
 #endif
             m_ConnectionStatus = csReplyReady;
 
@@ -2562,7 +2554,7 @@ namespace Delphi {
 
             m_WSReply.Clear();
             m_WSReply.SetPayload(DateTimeToStr(Now(), szDate, sizeof(szDate)), (uint32_t) MsEpoch());
-            m_WSReply.Ping(*OutputBuffer());
+            m_WSReply.Ping(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2579,7 +2571,7 @@ namespace Delphi {
         void CWebSocketConnection::SendWebSocketPong(bool bSendNow) {
             m_WSReply.Clear();
             m_WSReply.SetPayload(m_WSRequest.Payload());
-            m_WSReply.Pong(*OutputBuffer());
+            m_WSReply.Pong(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2594,7 +2586,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CWebSocketConnection::SendWebSocketClose(bool bSendNow) {
-            m_WSReply.Close(*OutputBuffer());
+            m_WSReply.Close(OutputBuffer());
 
             m_ConnectionStatus = csReplyReady;
 
@@ -2971,23 +2963,21 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CUDPClient::CUDPClient(): CSocketClient() {
-            m_pSocket = new CSocketHandle(nullptr);
             m_Active = false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CUDPClient::~CUDPClient() {
             CUDPClient::SetActive(false);
-            FreeAndNil(m_pSocket);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CUDPClient::SetActive(bool AValue) {
             if (AValue) {
-                m_pSocket->AllocateSocket(SOCK_DGRAM, IPPROTO_UDP, 0); // O_NONBLOCK
-                m_pSocket->SetSockOpt(SOL_SOCKET, SO_BROADCAST, (void *) &SO_True, sizeof(SO_True));
+                m_Socket.AllocateSocket(SOCK_DGRAM, IPPROTO_UDP, 0); // O_NONBLOCK
+                m_Socket.SetSockOpt(SOL_SOCKET, SO_BROADCAST, (void *) &SO_True, sizeof(SO_True));
             } else {
-                m_pSocket->CloseSocket();
+                m_Socket.CloseSocket();
             }
 
             m_Active = AValue;

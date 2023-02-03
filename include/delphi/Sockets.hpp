@@ -758,10 +758,10 @@ namespace Delphi {
             CIOHandlerSocket *m_pSocket;
 
             CSimpleBuffer *m_pWriteBuffer;
-            CSimpleBuffer *m_pRecvBuffer;
+            CSimpleBuffer m_RecvBuffer;
 
-            CManagedBuffer *m_pInputBuffer;
-            CSimpleBuffer *m_pOutputBuffer;
+            CManagedBuffer m_InputBuffer;
+            CSimpleBuffer m_OutputBuffer;
 
             bool m_ReadLnSplit;
             bool m_ReadLnTimedOut;
@@ -880,8 +880,11 @@ namespace Delphi {
             CMaxLineAction MaxLineAction() { return m_MaxLineAction; }
             void MaxLineAction(CMaxLineAction Value) { m_MaxLineAction = Value; }
 
-            CManagedBuffer *InputBuffer() { return m_pInputBuffer; }
-            CSimpleBuffer *OutputBuffer() { return m_pOutputBuffer; }
+            CManagedBuffer &InputBuffer() { return m_InputBuffer; }
+            const CManagedBuffer &InputBuffer() const { return m_InputBuffer; }
+
+            CSimpleBuffer &OutputBuffer() { return m_OutputBuffer; }
+            const CSimpleBuffer &OutputBuffer() const { return m_OutputBuffer; }
 
             const CNotifyEvent& OnDisconnected() { return m_OnDisconnected; }
             void OnDisconnected(CNotifyEvent && Value) { m_OnDisconnected = Value; }
@@ -1491,7 +1494,7 @@ namespace Delphi {
 
         private:
 
-            CSocketHandle *m_pSocket;
+            CSocketHandle m_Socket { nullptr };
 
             bool m_Active;
 
@@ -1508,7 +1511,8 @@ namespace Delphi {
             bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
 
-            CSocketHandle *Socket() { return m_pSocket; }
+            CSocketHandle &Socket() { return m_Socket; }
+            const CSocketHandle &Socket() const { return m_Socket; }
 
         };
 

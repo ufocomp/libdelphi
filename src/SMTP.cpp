@@ -251,7 +251,7 @@ namespace Delphi {
                 CMemoryStream Stream(ReadAsync());
                 Result = Stream.Size() > 0;
                 if (Result) {
-                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    InputBuffer().Extract(Stream.Memory(), Stream.Size());
 
                     CSMTPReplyParser pParser((LPCSTR) Stream.Memory(), (LPCSTR) Stream.Memory() + Stream.Size());
                     const int ParseResult = pParser.Parse(m_Command);
@@ -279,7 +279,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CSMTPConnection::SendCommand() {
-            m_Command.ToBuffers(*OutputBuffer());
+            m_Command.ToBuffers(OutputBuffer());
             DoRequest();
             return WriteAsync();
         }

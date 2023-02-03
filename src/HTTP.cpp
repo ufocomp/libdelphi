@@ -2043,7 +2043,7 @@ namespace Delphi {
                 UpdateClock();
                 CMemoryStream Stream(ReadAsync());
                 if (Stream.Size() > 0) {
-                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    InputBuffer().Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
                             CHTTPServerConnection::Parse(Stream, std::move(OnExecute));
@@ -2081,7 +2081,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendReply(bool bSendNow) {
-            m_Reply.ToBuffers(*OutputBuffer());
+            m_Reply.ToBuffers(OutputBuffer());
 
             if (EventHandler() != nullptr) {
                 UpdateTimeOut(EventHandler()->TimeStamp());
@@ -2195,7 +2195,7 @@ namespace Delphi {
             if (Connected()) {
                 CMemoryStream Stream(ReadAsync());
                 if (Stream.Size() > 0) {
-                    InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    InputBuffer().Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
                         case pHTTP:
                             CHTTPClientConnection::Parse(Stream, std::move(OnExecute));
@@ -2229,7 +2229,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClientConnection::SendRequest(bool bSendNow) {
-            m_Request.ToBuffers(*OutputBuffer());
+            m_Request.ToBuffers(OutputBuffer());
 
             m_ConnectionStatus = csRequestReady;
 
@@ -2773,7 +2773,7 @@ namespace Delphi {
 
                 CMemoryStream Stream(pConnection->ReadAsync());
                 if (Stream.Size() > 0) {
-                    pConnection->InputBuffer()->Extract(Stream.Memory(), Stream.Size());
+                    pConnection->InputBuffer().Extract(Stream.Memory(), Stream.Size());
                     unsigned char frame[2];
                     Stream.ReadBuffer(&frame, sizeof(frame));
                     if (frame[0] == 0x05 && (frame[1] == 0x00 || frame[1] == 0x06)) {
@@ -2822,7 +2822,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPProxy::SOCKS5(CHTTPClientConnection *AConnection) {
-            auto pBuffer = AConnection->OutputBuffer();
+            auto &Buffer = AConnection->OutputBuffer();
 
             union {
                 uint16_t val;
@@ -2831,14 +2831,14 @@ namespace Delphi {
 
             unsigned char frame[4] = { 0x05, 0x01, 0x00, 0x03 };
 
-            pBuffer->WriteBuffer(&frame, sizeof(frame));
+            Buffer.WriteBuffer(&frame, sizeof(frame));
 
             frame[0] = m_Request.Location.hostname.Size();
-            pBuffer->WriteBuffer(&frame, 1);
-            pBuffer->WriteBuffer(m_Request.Location.hostname.Data(), m_Request.Location.hostname.Size());
+            Buffer.WriteBuffer(&frame, 1);
+            Buffer.WriteBuffer(m_Request.Location.hostname.Data(), m_Request.Location.hostname.Size());
 
             len16.val = be16toh(m_Request.Location.port);
-            pBuffer->WriteBuffer(len16.arr, sizeof(len16));
+            Buffer.WriteBuffer(len16.arr, sizeof(len16));
         }
         //--------------------------------------------------------------------------------------------------------------
 
