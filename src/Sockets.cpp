@@ -1636,50 +1636,47 @@ namespace Delphi {
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
 
-                if (Connected()) {
-                    if ((m_pWriteBuffer == nullptr) || AWriteNow) {
+                if ((m_pWriteBuffer == nullptr) || AWriteNow) {
+                    if (m_pWriteBuffer == nullptr) {
+                        pBuffer = new CSimpleBuffer();
+                    } else
+                        pBuffer = m_pWriteBuffer;
 
-                        if (m_pWriteBuffer == nullptr) {
-                            pBuffer = new CSimpleBuffer();
-                        } else
-                            pBuffer = m_pWriteBuffer;
+                    try {
+                        if (pBuffer->Size() == 0)
+                            pBuffer->WriteBuffer(ABuffer, AByteCount);
 
-                        try {
-                            if (pBuffer->Size() == 0)
-                                pBuffer->WriteBuffer(ABuffer, AByteCount);
-
-                            pos = 0;
-                            do {
-                                byteCount = m_pIOHandler->Send(Pointer((size_t) pBuffer->Memory() + pos), pBuffer->Size() - pos);
+                        pos = 0;
+                        do {
+                            byteCount = m_pIOHandler->Send(Pointer((size_t) pBuffer->Memory() + pos),
+                                                           pBuffer->Size() - pos);
 #ifdef WITH_SSL
-                                if (m_pIOHandler->UsedSSL()) {
-                                    if (byteCount <= 0) {
-                                        unsigned long LastError = GStack->GetSSLError();
-                                        if (LastError == SSL_ERROR_WANT_WRITE)
-                                            break;
-                                    }
+                            if (m_pIOHandler->UsedSSL()) {
+                                if (byteCount <= 0) {
+                                    unsigned long LastError = GStack->GetSSLError();
+                                    if (LastError == SSL_ERROR_WANT_WRITE)
+                                        break;
                                 }
+                            }
 #endif
-                                CheckWriteResult(byteCount);
-                                DoWork(wmWrite, byteCount);
-                                pos += byteCount;
-                            } while (pos < AByteCount);
-                        } catch (...) {
-                            pBuffer->Clear();
-                            if (pBuffer != m_pWriteBuffer)
-                                delete pBuffer;
-                            throw;
-                        }
+                            CheckWriteResult(byteCount);
+                            DoWork(wmWrite, byteCount);
+                            pos += byteCount;
+                        } while (pos < AByteCount);
+                    } catch (...) {
                         pBuffer->Clear();
                         if (pBuffer != m_pWriteBuffer)
                             delete pBuffer;
-                    } else {
-                        m_pWriteBuffer->WriteBuffer(ABuffer, AByteCount);
-                        if (m_WriteBufferThreshold > 0 && m_pWriteBuffer->Size() >= (size_t) m_WriteBufferThreshold)
-                            FlushWriteBuffer(m_WriteBufferThreshold);
+                        throw;
                     }
-                } else
-                    throw ESocketError(_T("Not Connected."));
+                    pBuffer->Clear();
+                    if (pBuffer != m_pWriteBuffer)
+                        delete pBuffer;
+                } else {
+                    m_pWriteBuffer->WriteBuffer(ABuffer, AByteCount);
+                    if (m_WriteBufferThreshold > 0 && m_pWriteBuffer->Size() >= (size_t) m_WriteBufferThreshold)
+                        FlushWriteBuffer(m_WriteBufferThreshold);
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1689,25 +1686,23 @@ namespace Delphi {
 
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
-                if (Connected()) {
-                    byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
+
+                byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 #ifdef WITH_SSL
-                    if (m_pIOHandler->UsedSSL()) {
-                        unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE };
-                        if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
-                            return 0;
-                        }
-                    } else {
-#endif
-                        int Ignore[] = { EAGAIN, EWOULDBLOCK };
-                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
-                            return 0;
-#ifdef WITH_SSL
+                if (m_pIOHandler->UsedSSL()) {
+                    unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
+                    if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
+                        return 0;
                     }
+                } else {
 #endif
-                    CheckWriteResult(byteCount);
-                } else
-                    throw ESocketError(_T("Not Connected."));
+                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                    if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
+                        return 0;
+#ifdef WITH_SSL
+                }
+#endif
+                CheckWriteResult(byteCount);
             }
 
             return byteCount;
@@ -1766,12 +1761,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CTCPConnection::WriteStrings(CStrings *AValue, bool AWriteLinesCount) {
-            int LWriteLinesCount;
+            int nWriteLinesCount;
             if (Assigned(AValue)) {
-                LWriteLinesCount = AValue->Count();
+                nWriteLinesCount = AValue->Count();
                 if (AWriteLinesCount)
-                    WriteInteger(LWriteLinesCount);
-                for (int i = 0; i < LWriteLinesCount; ++i) {
+                    WriteInteger(nWriteLinesCount);
+                for (int i = 0; i < nWriteLinesCount; ++i) {
                     WriteLn(AValue->Strings(i).c_str());
                 }
             }
@@ -2031,56 +2026,50 @@ namespace Delphi {
             ssize_t result = 0;
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
-            if (Connected()) {
-                do {
-                    if (Connected() && IOHandler() != nullptr) { //APR: disconnect from other thread
-                        m_RecvBuffer.Size(RecvBufferSize());
-                        byteCount = m_pIOHandler->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
-#ifdef WITH_SSL
-                        if (m_pIOHandler->UsedSSL()) {
-                            if (byteCount <= 0) {
-                                result = byteCount;
-                                unsigned long LastError = GStack->GetSSLError();
-                                if (LastError == SSL_CTRL_SESS_TIMEOUTS) {
-                                    if (ARaiseExceptionOnTimeout)
-                                        throw ESocketError(_T("Read Timeout"));
-                                    return 0;
-                                } else if (LastError == SSL_ERROR_NONE) {
-                                    continue;
-                                } else {
-                                    break;
-                                }
-                            }
-                        } else {
-#endif
-                            if (byteCount == SOCKET_ERROR) {
-                                result = byteCount;
-                                int LastError = GStack->GetLastError();
-                                if (LastError == ETIMEDOUT) {
-                                    if (ARaiseExceptionOnTimeout)
-                                        throw ESocketError(_T("Read Timeout"));
-                                    return 0;
-                                }
 
+            do {
+                if (IOHandler() != nullptr) { //APR: disconnect from other thread
+                    m_RecvBuffer.Size(RecvBufferSize());
+                    byteCount = m_pIOHandler->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
+#ifdef WITH_SSL
+                    if (m_pIOHandler->UsedSSL()) {
+                        if (byteCount <= 0) {
+                            result = byteCount;
+                            unsigned long LastError = GStack->GetSSLError();
+                            if (LastError == SSL_CTRL_SESS_TIMEOUTS) {
+                                if (ARaiseExceptionOnTimeout)
+                                    throw ESocketError(_T("Read Timeout"));
+                                return 0;
+                            } else if (LastError == SSL_ERROR_NONE) {
+                                continue;
+                            } else {
                                 break;
                             }
-#ifdef WITH_SSL
                         }
-#endif
                     } else {
-                        byteCount = 0;
-                        if (ARaiseExceptionIfDisconnected)
-                            throw ESocketError(_T("Not Connected"));
+#endif
+                        if (byteCount == SOCKET_ERROR) {
+                            result = byteCount;
+                            int LastError = GStack->GetLastError();
+                            if (LastError == ETIMEDOUT) {
+                                if (ARaiseExceptionOnTimeout)
+                                    throw ESocketError(_T("Read Timeout"));
+                                return 0;
+                            }
+
+                            break;
+                        }
+#ifdef WITH_SSL
                     }
+#endif
+                } else {
+                    byteCount = 0;
+                }
 
-                    result = CheckReadStack(byteCount);
-                    CheckForDisconnect(ARaiseExceptionIfDisconnected);
+                result = CheckReadStack(byteCount);
+                CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
-                } while ((byteCount == 0) && Connected());
-            } else {
-                if (ARaiseExceptionIfDisconnected)
-                    throw ESocketError(_T("Not Connected"));
-            }
+            } while (byteCount == 0);
 
             return result;
         }
@@ -2092,7 +2081,7 @@ namespace Delphi {
 
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
-            if (Connected() && IOHandler() != nullptr) { //APR: disconnect from other thread
+            if (IOHandler() != nullptr) { //APR: disconnect from other thread
                 m_RecvBuffer.Size(RecvBufferSize());
                 do {
                     byteRecv = IOHandler()->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
@@ -2111,9 +2100,6 @@ namespace Delphi {
 #endif
                     byteCount += CheckReadStack(byteRecv);
                 } while (byteRecv > 0);
-            } else {
-                if (ARaiseExceptionIfDisconnected)
-                    throw ESocketError(_T("Not Connected."));
             }
 
             return byteCount;
@@ -3781,7 +3767,6 @@ namespace Delphi {
 
             if (result) {
                 if (AConnection->Connected()) {
-
                     CMemoryStream Stream;
 
                     Stream.SetSize(MaxLineLengthDefault);
@@ -4544,7 +4529,6 @@ namespace Delphi {
 
             if (result) {
                 if (AConnection->Connected()) {
-
                     CMemoryStream Stream;
 
                     Stream.SetSize(MaxLineLengthDefault);
@@ -4675,7 +4659,6 @@ namespace Delphi {
 
             if (result) {
                 if (AConnection->Connected()) {
-
                     CMemoryStream Stream;
 
                     Stream.SetSize(MaxLineLengthDefault);
