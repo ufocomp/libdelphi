@@ -3117,6 +3117,7 @@ namespace Delphi {
 
         void CThread::Suspend()
         {
+            m_bSuspended = true;
             pthread_mutex_lock(&m_SuspendMutex);
             while (m_bSuspended) {
                 pthread_cond_wait(&m_ResumeCond, &m_SuspendMutex);
