@@ -1464,7 +1464,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPReply *CHTTPReply::GetReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType,
+        void CHTTPReply::InitReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType,
                 LPCTSTR lpszTransferEncoding) {
 
             TCHAR szBuffer[MAX_STRING_LEN + 1] = {0};
@@ -1565,15 +1565,13 @@ namespace Delphi {
                 Reply.AddHeader(_T("Connection"), _T("close"));
             else
                 Reply.AddHeader(_T("Connection"), _T("keep-alive"));
-
-            return &Reply;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPReply *CHTTPReply::GetStockReply(CHTTPReply &Reply, CHTTPReply::CStatusType Status) {
+        void CHTTPReply::InitStockReply(CHTTPReply &Reply, CHTTPReply::CStatusType Status) {
             if (Status != CHTTPReply::no_content)
                 Reply.Content = StockReplies::ToString(Status, Reply.ContentType);
-            return GetReply(Reply, Status);
+            InitReply(Reply, Status);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2063,19 +2061,19 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow) {
             m_Reply.CloseConnection = CloseConnection();
-            CHTTPReply::GetStockReply(m_Reply, Status);
+            CHTTPReply::InitStockReply(m_Reply, Status);
             SendReply(bSendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendReply(CHTTPReply::CStatusType Status, LPCTSTR lpszContentType, bool bSendNow) {
-            if (Status == CHTTPReply::ok) {
-                const auto &caConnection = m_Request.Headers[_T("Connection")].Lower();
-                CloseConnection(!(caConnection == _T("keep-alive") || caConnection == _T("upgrade")));
-            }
-
-            m_Reply.CloseConnection = CloseConnection();
-            CHTTPReply::GetReply(m_Reply, Status, lpszContentType);
+//            if (Status == CHTTPReply::ok) {
+//                const auto &caConnection = m_Request.Headers[_T("Connection")];
+//                CloseConnection(!(caConnection == _T("keep-alive") || caConnection == _T("upgrade")));
+//            }
+//
+//            m_Reply.CloseConnection = CloseConnection();
+            CHTTPReply::InitReply(m_Reply, Status, lpszContentType);
             SendReply(bSendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2083,11 +2081,11 @@ namespace Delphi {
         void CHTTPServerConnection::SendReply(bool bSendNow) {
             m_Reply.ToBuffers(OutputBuffer());
 
-            if (EventHandler() != nullptr) {
-                UpdateTimeOut(EventHandler()->TimeStamp());
-            } else {
-                UpdateTimeOut(Now());
-            }
+//            if (EventHandler() != nullptr) {
+//                UpdateTimeOut(EventHandler()->TimeStamp());
+//            } else {
+//                UpdateTimeOut(Now());
+//            }
 
             m_ConnectionStatus = csReplyReady;
 

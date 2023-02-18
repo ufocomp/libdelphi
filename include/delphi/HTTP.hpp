@@ -188,7 +188,7 @@ namespace Delphi {
                     port = StrToIntDef(portStr.c_str(), 0);
 
                 if (protocol.IsEmpty())
-                    ProtocolInit();
+                    protocol = HTTP_PREFIX;
             };
 
             CString Host() const {
@@ -841,12 +841,12 @@ namespace Delphi {
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
 
-            /// Get a prepare reply.
-            static CHTTPReply *GetReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType = nullptr,
+            /// Initialize a prepare reply.
+            static void InitReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType = nullptr,
                 LPCTSTR lpszTransferEncoding = nullptr);
 
-            /// Get a stock reply.
-            static CHTTPReply *GetStockReply(CHTTPReply &Reply, CStatusType Status);
+            /// Initialize a stock reply.
+            static void InitStockReply(CHTTPReply &Reply, CStatusType Status);
 
             static void AddUnauthorized(CHTTPReply &Reply, bool bBearer = false, LPCTSTR lpszError = nullptr, LPCTSTR lpszMessage = nullptr);
 
