@@ -280,31 +280,6 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        struct CCleanToken {
-
-            const CString Header;
-            const CString Payload;
-
-            const bool Valid;
-
-            explicit CCleanToken(const CString& Header, const CString& Payload, bool Valid):
-                    Header(Header), Payload(Payload), Valid(Valid) {
-
-            }
-
-            template<typename T>
-            CString Sign(const T& algorithm) const {
-                if (!Valid)
-                    throw CAuthorizationError("Clean Token has not valid.");
-                const auto& header = base64urlEncoding(Header);
-                const auto& payload = base64urlEncoding(Payload);
-                CString token = header + "." + payload;
-                return token + "." + base64urlEncoding(algorithm.sign(token));
-            }
-
-        };
-        //--------------------------------------------------------------------------------------------------------------
-
         struct CAuthorization {
 
             enum CScheme {
@@ -313,8 +288,8 @@ namespace Delphi {
                 asBearer
             } Schema;
 
-            CString Username;
-            CString Password;
+            CString Username {};
+            CString Password {};
 
             enum CAuthorizationType {
                 atUnknown = -1,
@@ -323,7 +298,7 @@ namespace Delphi {
                 atClient
             } Type;
 
-            CString Token;
+            CString Token {};
 
             CAuthorization(): Schema(asUnknown), Type(atUnknown) {
 
