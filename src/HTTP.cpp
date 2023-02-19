@@ -2779,7 +2779,9 @@ namespace Delphi {
                             SOCKS5(pConnection);
                         } else {
                             m_ProxyType = ptHTTP;
+#ifdef WITH_SSL
                             UsedSSL(m_Request.Location.protocol == HTTPS_PREFIX);
+#endif
                             DoRequest(pConnection);
                         }
                     } else {
