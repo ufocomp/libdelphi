@@ -2708,15 +2708,17 @@ namespace Delphi {
 #ifdef WITH_SSL
         void CHTTPProxy::SetUsedSSL(bool Value) {
             CAsyncClient::SetUsedSSL(Value);
-            auto pIOHandler = dynamic_cast<CIOHandlerSocket *> (m_pProxyConnection->IOHandler());
-            auto pBinding = pIOHandler->Binding();
-            pBinding->SSLMethod(Value ? sslClient : sslNotUsed);
-            if (Value) {
-                pBinding->AllocateSSL();
-                pBinding->ConnectSSL();
+            if (m_pProxyConnection != nullptr) {
+                auto pIOHandler = dynamic_cast<CIOHandlerSocket *> (m_pProxyConnection->IOHandler());
+                auto pBinding = pIOHandler->Binding();
+                pBinding->SSLMethod(Value ? sslClient : sslNotUsed);
+                if (Value) {
+                    pBinding->AllocateSSL();
+                    pBinding->ConnectSSL();
 #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
-                pBinding->SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
+                    pBinding->SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
 #endif
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
