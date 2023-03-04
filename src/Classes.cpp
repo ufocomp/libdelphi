@@ -1960,25 +1960,25 @@ namespace Delphi {
             CString Result;
 
             int i;
-            size_t L, LineBreakLen;
+            size_t L, nLineBreakLen;
             LPCTSTR LB = LineBreak();
 
             L = 0;
-            LineBreakLen = strlen(LB);
+            nLineBreakLen = strlen(LB);
 
-            const auto Count = GetCount();
+            const auto count = GetCount();
 
-            for (i = 0; i < Count; ++i) {
-                const CString &S = Get(i);
+            for (i = 0; i < count; ++i) {
+                const auto &S = Get(i);
                 if (!S.IsEmpty()) {
                     L += S.Size();
                     Result.SetLength(L);
                     Result.WriteBuffer(S.Data(), S.Size());
-                    if (i < Count - 1) {
-                        L += LineBreakLen;
-                        Result.SetLength(L);
-                        Result.WriteBuffer(LB, LineBreakLen);
-                    }
+                }
+                if (i < count - 1) {
+                    L += nLineBreakLen;
+                    Result.SetLength(L);
+                    Result.WriteBuffer(LB, nLineBreakLen);
                 }
             }
 
