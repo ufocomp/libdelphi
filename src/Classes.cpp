@@ -2328,7 +2328,7 @@ namespace Delphi {
 
         void CStrings::SetTextStr(LPCTSTR Text, size_t Size) {
 
-            size_t LineBreakLen;
+            size_t nLineBreakLen, nLineDelimiterLen;
             LPCTSTR P, E, LB, LD;
 
             BeginUpdate();
@@ -2339,27 +2339,45 @@ namespace Delphi {
                 if (Assigned(P)) {
                     Add(CString());
                     if (SameText(m_LineBreak, sLineBreak)) {
+                        nLineDelimiterLen = strlen(m_Delimiter);
+                        LD = strstr(P, m_Delimiter);
+
                         while (P < E) {
-                            LD = strstr(P, m_Delimiter);
                             if ((*P == '\n') || (P == LD)) {
                                 Add(CString());
+                                if (P == LD) {
+                                    P += nLineDelimiterLen;
+                                    LD = strstr(P, m_Delimiter);
+                                } else {
+                                    if (P == (Text + Size))
+                                        break;
+                                    P++;
+                                }
                             } else {
                                 if (!IsCtl(*P) && (*P != m_QuoteChar)) {
                                     Last().Append(*P);
                                 }
+                                if (P == (Text + Size))
+                                    break;
+                                P++;
                             }
-                            P++;
                         }
                     } else {
-                        LineBreakLen = strlen(m_LineBreak);
+                        nLineBreakLen = strlen(m_LineBreak);
+                        nLineDelimiterLen = strlen(m_Delimiter);
+
                         LB = strstr(P, m_LineBreak);
                         LD = strstr(P, m_Delimiter);
+
                         while (P < E) {
                             if ((P == LB) || (P == LD)) {
                                 Add(CString());
                                 if (P == LB) {
-                                    P += LineBreakLen;
+                                    P += nLineBreakLen;
                                     LB = strstr(P, m_LineBreak);
+                                } else if (P == LD) {
+                                    P += nLineDelimiterLen;
+                                    LD = strstr(P, m_Delimiter);
                                 } else {
                                     if (P == (Text + Size))
                                         break;
