@@ -861,6 +861,8 @@ namespace Delphi {
                         Request.FormData.back().Append((TCHAR) HexToDec(Context.MIME));
                         Context.State = Request::form_data;
                     }
+                    if (Context.Begin == Context.End)
+                        return 1;
                     return -1;
                 default:
                     return 0;
