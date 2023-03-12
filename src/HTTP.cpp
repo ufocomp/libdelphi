@@ -322,11 +322,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPRequest::DelHeader(const CString &Name) {
+        int CHTTPRequest::DelHeader(const CString &Name) {
             const auto index = Headers.IndexOfName(Name);
             if (index != -1 ) {
                 Headers.Delete(index);
             }
+            return index;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1346,11 +1347,12 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPReply::DelHeader(const CString &Name) {
+        int CHTTPReply::DelHeader(const CString &Name) {
             const auto index = Headers.IndexOfName(Name);
             if (index != -1 ) {
                 Headers.Delete(index);
             }
+            return index;
         }
         //--------------------------------------------------------------------------------------------------------------
 

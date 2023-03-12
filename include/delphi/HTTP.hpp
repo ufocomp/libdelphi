@@ -555,7 +555,7 @@ namespace Delphi {
             void AddHeader(const CString& Name, const CString& Value);
 
             /// Delete header from headers.
-            void DelHeader(const CString& Name);
+            int DelHeader(const CString& Name);
 
             bool BuildLocation();
             void BuildCookies();
@@ -813,7 +813,7 @@ namespace Delphi {
             void AddHeader(const CString& Name, const CString& Value);
 
             /// Delete header from headers.
-            void DelHeader(const CString& Name);
+            int DelHeader(const CString& Name);
 
             /// Set cookie.
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
