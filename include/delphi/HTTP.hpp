@@ -582,6 +582,9 @@ namespace Delphi {
             CHTTPRequest(): VMajor(1), VMinor(1), ContentLength(0) {
                 Params.LineBreak("&");
                 Params.Delimiter("&");
+
+                Cookies.LineBreak("; ");
+                Cookies.Delimiter("; ");
             }
 
             CHTTPRequest(const CHTTPRequest &Request): CHTTPRequest() {

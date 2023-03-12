@@ -2069,12 +2069,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServerConnection::SendReply(CHTTPReply::CStatusType Status, LPCTSTR lpszContentType, bool bSendNow) {
-//            if (Status == CHTTPReply::ok) {
-//                const auto &caConnection = m_Request.Headers[_T("Connection")];
-//                CloseConnection(!(caConnection == _T("keep-alive") || caConnection == _T("upgrade")));
-//            }
-//
-//            m_Reply.CloseConnection = CloseConnection();
             CHTTPReply::InitReply(m_Reply, Status, lpszContentType);
             SendReply(bSendNow);
         }
@@ -2082,12 +2076,6 @@ namespace Delphi {
 
         void CHTTPServerConnection::SendReply(bool bSendNow) {
             m_Reply.ToBuffers(OutputBuffer());
-
-//            if (EventHandler() != nullptr) {
-//                UpdateTimeOut(EventHandler()->TimeStamp());
-//            } else {
-//                UpdateTimeOut(Now());
-//            }
 
             m_ConnectionStatus = csReplyReady;
 

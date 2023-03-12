@@ -1688,6 +1688,9 @@ namespace Delphi {
                 CheckForDisconnect(true);
 
                 byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
+
+                if (m_pIOHandler == nullptr)
+                    return -1;
 #ifdef WITH_SSL
                 if (m_pIOHandler->UsedSSL()) {
                     unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
