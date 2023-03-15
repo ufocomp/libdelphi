@@ -40,7 +40,7 @@ namespace Delphi {
         CCustomProcess::CCustomProcess(CCustomProcess *AParent, CProcessType AType, LPCTSTR AName): CObject(),
                 m_Type(AType), m_pParent(AParent), m_ProcessName(AName) {
 
-            m_Pid = MainThreadID;
+            m_Pid = MainProcessID;
 
             m_fDaemonized = false;
             m_NewBinary = 0;

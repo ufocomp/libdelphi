@@ -49,7 +49,8 @@ namespace Delphi {
         LIB_DELPHI CSysError *GSysError = nullptr;
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI pid_t MainThreadID = getpid();
+        LIB_DELPHI pid_t MainProcessID = getpid();
+        LIB_DELPHI pid_t MainThreadID = gettid();
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI CDefaultLocale DefaultLocale;
@@ -119,7 +120,7 @@ namespace Delphi {
             CSyncProc *SyncProc;
             CList LocalSyncList;
 
-            if (::getpid() != MainThreadID)
+            if (::gettid() != MainThreadID)
                 throw Exception::Exception(_T("CheckSynchronize called from thread, which is NOT the main thread."));
 
             if (Timeout > 0)
@@ -3170,7 +3171,7 @@ namespace Delphi {
         {
             auto SyncProc = new CSyncProc;
 
-            if ( ::getppid() == MainThreadID )
+            if ( ::getppid() == MainProcessID )
             {
                 ASyncRec.Method();
             }
