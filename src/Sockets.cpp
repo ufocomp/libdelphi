@@ -2722,6 +2722,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CClientIOHandler::Connect(LPCSTR AHost, unsigned short APort) {
+            if (m_pBinding == nullptr)
+                return false;
 
             int ErrorCode = m_pBinding->Connect(AF_INET, AHost, APort);
 
@@ -3713,18 +3715,23 @@ namespace Delphi {
 
         void CTCPClient::ConnectStart() {
             auto pIOHandler = new CClientIOHandler();
+            try {
 #ifdef WITH_SSL
-            pIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
+                pIOHandler->Open(m_UsedSSL ? sslClient : sslNotUsed);
 #else
-            pIOHandler->Open();
+                pIOHandler->Open();
 #endif
-            pIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, 0); //O_NONBLOCK
-            pIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
+                pIOHandler->Binding()->AllocateSocket(SOCK_STREAM, IPPROTO_IP, 0); //O_NONBLOCK
+                pIOHandler->Binding()->SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (void *) &SO_True, sizeof(SO_True));
 
-            if (pIOHandler->Connect(m_Host.IsEmpty() ? "localhost" : m_Host.c_str(), m_Port == 0 ? 80 : m_Port)) {
-                DoConnectStart(pIOHandler);
-            } else {
+                if (pIOHandler->Connect(m_Host.IsEmpty() ? "localhost" : m_Host.c_str(), m_Port == 0 ? 80 : m_Port)) {
+                    DoConnectStart(pIOHandler);
+                } else {
+                    throw ExceptionFrm("Not connected");
+                }
+            } catch (...) {
                 delete pIOHandler;
+                throw;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
