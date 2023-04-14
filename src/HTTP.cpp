@@ -479,9 +479,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPRequest::BuildCookies() {
-            const auto& Cookie = Headers[_T("Cookie")];
-            if (!Cookie.empty()) {
-                SplitColumns(Cookie, Cookies, ';');
+            CStringList List;
+
+            const auto& cookie = Headers[_T("Cookie")];
+            if (!cookie.empty()) {
+                SplitColumns(cookie, List, ';');
+            }
+
+            Cookies.Clear();
+            for (int i = 0; i < List.Count(); i++) {
+                Cookies.Add(List[i].Trim());
             }
         }
 
