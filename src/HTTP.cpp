@@ -733,6 +733,7 @@ namespace Delphi {
                     }
                 case Request::header_value_options_start:
                     if ((ch == ' ' || ch == '\t')) {
+                        Request.Headers.Last().Value().Append(ch);
                         Context.State = Request::header_value_options_start;
                         return -1;
                     } else if (IsCtl(ch)) {
