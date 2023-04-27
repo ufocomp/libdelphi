@@ -1450,7 +1450,7 @@ namespace Delphi {
 
             Cookie = lpszName;
             Cookie << _T("=");
-            Cookie << lpszValue;
+            Cookie << CHTTPServer::URLEncode(lpszValue);
 
             if (lpszPath != nullptr) {
                 Cookie << "; Path=";
