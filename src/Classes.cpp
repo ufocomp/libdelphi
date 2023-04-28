@@ -1784,6 +1784,34 @@ namespace Delphi {
             m_MaxFormatSize = Value;
             return *this;
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CString::ToString(int Value) {
+            TCHAR szString[_INT_T_LEN + 1] = {0};
+            sprintf(szString, "%d", Value);
+            return {szString};
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CString::ToString(unsigned int Value) {
+            TCHAR szString[_INT_T_LEN + 1] = {0};
+            sprintf(szString, "%u", Value);
+            return {szString};
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CString::ToString(long Value) {
+            TCHAR szString[_INT_T_LEN + 1] = {0};
+            sprintf(szString, "%ld", Value);
+            return {szString};
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString CString::ToString(unsigned long Value) {
+            TCHAR szString[_INT_T_LEN + 1] = {0};
+            sprintf(szString, "%lu", Value);
+            return {szString};
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 

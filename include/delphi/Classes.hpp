@@ -1096,7 +1096,21 @@ namespace Delphi {
                 return *this;
             }
 
-            CString& operator<< (size_t Value) {
+            CString& operator<< (unsigned int Value) {
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(Value, szValue, _INT_T_LEN, 16);
+                Append(szValue);
+                return *this;
+            }
+
+            CString& operator<< (long int Value) {
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(Value, szValue, _INT_T_LEN);
+                Append(szValue);
+                return *this;
+            }
+
+            CString& operator<< (unsigned long int Value) {
                 TCHAR szValue[_INT_T_LEN + 1] = {0};
                 IntToStr(Value, szValue, _INT_T_LEN, 16);
                 Append(szValue);
@@ -1130,6 +1144,12 @@ namespace Delphi {
             const_reference operator[] (size_type Index) const { return m_Data[Index]; }
 
             static const size_type npos = static_cast<size_t>(-1);
+
+            static CString ToString(int Value);
+            static CString ToString(unsigned int Value);
+            static CString ToString(long int Value);
+            static CString ToString(unsigned long int Value);
+
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1351,6 +1371,7 @@ namespace Delphi {
 
             virtual CString operator[] (const CString &Name) const { return Values(Name); }
             virtual CString operator[] (reference Name) const { return Values(Name); }
+
         };
 
         //--------------------------------------------------------------------------------------------------------------

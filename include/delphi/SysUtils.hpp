@@ -137,7 +137,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI LPSTR IntToStrA(int Value, LPSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPSTR IntToStrA(unsigned int Value, LPSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPSTR IntToStrA(long int Value, LPSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPSTR IntToStrA(unsigned long int Value, LPSTR Str, size_t Size, int Base = 10);
+
         LIB_DELPHI LPWSTR IntToStrW(int Value, LPWSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPWSTR IntToStrW(unsigned int Value, LPWSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPWSTR IntToStrW(long int Value, LPWSTR Str, size_t Size, int Base = 10);
+        LIB_DELPHI LPWSTR IntToStrW(unsigned long int Value, LPWSTR Str, size_t Size, int Base = 10);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI LPSTR FloatToStrA(double Value, LPSTR Str, size_t Size, LPCSTR Format = "%f");

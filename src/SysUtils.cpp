@@ -821,6 +821,60 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI LPSTR IntToStrA(unsigned int Value, LPSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    snprintf(Str, Size, "%o", Value);
+                    break;
+                case 16:
+                    snprintf(Str, Size, "%x", Value);
+                    break;
+
+                default:
+                    snprintf(Str, Size, "%u", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI LPSTR IntToStrA(long int Value, LPSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    snprintf(Str, Size, "%lo", Value);
+                    break;
+                case 16:
+                    snprintf(Str, Size, "%lx", Value);
+                    break;
+
+                default:
+                    snprintf(Str, Size, "%ld", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI LPSTR IntToStrA(unsigned long int Value, LPSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    snprintf(Str, Size, "%lo", Value);
+                    break;
+                case 16:
+                    snprintf(Str, Size, "%lx", Value);
+                    break;
+
+                default:
+                    snprintf(Str, Size, "%lu", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         LIB_DELPHI LPWSTR IntToStrW(int Value, LPWSTR Str, size_t Size, int Base) {
             switch (Base) {
                 case 8:
@@ -833,6 +887,63 @@ namespace Delphi {
 
                 default:
                     swprintf(Str, Size, L"%d", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI LPWSTR IntToStrW(unsigned int Value, LPWSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    swprintf(Str, Size, L"%o", Value);
+                    break;
+
+                case 16:
+                    swprintf(Str, Size, L"%x", Value);
+                    break;
+
+                default:
+                    swprintf(Str, Size, L"%u", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI LPWSTR IntToStrW(long int Value, LPWSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    swprintf(Str, Size, L"%lo", Value);
+                    break;
+
+                case 16:
+                    swprintf(Str, Size, L"%lx", Value);
+                    break;
+
+                default:
+                    swprintf(Str, Size, L"%ld", Value);
+                    break;
+            }
+
+            return Str;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI LPWSTR IntToStrW(unsigned long int Value, LPWSTR Str, size_t Size, int Base) {
+            switch (Base) {
+                case 8:
+                    swprintf(Str, Size, L"%lo", Value);
+                    break;
+
+                case 16:
+                    swprintf(Str, Size, L"%lx", Value);
+                    break;
+
+                default:
+                    swprintf(Str, Size, L"%lu", Value);
                     break;
             }
 
