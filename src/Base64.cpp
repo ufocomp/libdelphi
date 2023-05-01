@@ -1,3 +1,4 @@
+#include <c++/11/array>
 #include "delphi.hpp"
 #include "delphi/Base64.hpp"
 
