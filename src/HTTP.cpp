@@ -1027,6 +1027,8 @@ namespace Delphi {
                 CHTTPReply::moved_temporarily,
                 CHTTPReply::see_other,
                 CHTTPReply::not_modified,
+                CHTTPReply::temporary_redirect,
+                CHTTPReply::permanent_redirect,
                 CHTTPReply::bad_request,
                 CHTTPReply::unauthorized,
                 CHTTPReply::forbidden,
@@ -1054,6 +1056,8 @@ namespace Delphi {
             const TCHAR moved_temporarily[] = _T("Moved Temporarily");
             const TCHAR see_other[] = _T("See Other");
             const TCHAR not_modified[] = _T("Not Modified");
+            const TCHAR temporary_redirect[] = _T("Temporary Redirect");
+            const TCHAR permanent_redirect[] = _T("Permanent Redirect");
             const TCHAR bad_request[] = _T("Bad Request");
             const TCHAR unauthorized[] = _T("Unauthorized");
             const TCHAR forbidden[] = _T("Forbidden");
@@ -1090,6 +1094,10 @@ namespace Delphi {
                         return StringArrayToStream(Stream, see_other);
                     case CHTTPReply::not_modified:
                         return StringArrayToStream(Stream, not_modified);
+                    case CHTTPReply::temporary_redirect:
+                        return StringArrayToStream(Stream, temporary_redirect);
+                    case CHTTPReply::permanent_redirect:
+                        return StringArrayToStream(Stream, permanent_redirect);
                     case CHTTPReply::bad_request:
                         return StringArrayToStream(Stream, bad_request);
                     case CHTTPReply::unauthorized:
@@ -1151,6 +1159,12 @@ namespace Delphi {
                         break;
                     case CHTTPReply::not_modified:
                         AString = not_modified;
+                        break;
+                    case CHTTPReply::temporary_redirect:
+                        AString = temporary_redirect;
+                        break;
+                    case CHTTPReply::permanent_redirect:
+                        AString = permanent_redirect;
                         break;
                     case CHTTPReply::bad_request:
                         AString = bad_request;
@@ -1257,6 +1271,8 @@ namespace Delphi {
             LPCTSTR moved_temporarily[]     = CreateStockReplies(302, Moved Temporarily);
             LPCTSTR see_other[]             = CreateStockReplies(303, See Other);
             LPCTSTR not_modified[]          = CreateStockReplies(304, Not Modified);
+            LPCTSTR temporary_redirect[]    = CreateStockReplies(307, Temporary Redirect);
+            LPCTSTR permanent_redirect[]    = CreateStockReplies(308, Permanent Redirect);
             LPCTSTR bad_request[]           = CreateStockReplies(400, Bad Request);
             LPCTSTR unauthorized[]          = CreateStockReplies(401, Unauthorized);
             LPCTSTR forbidden[]             = CreateStockReplies(403, Forbidden);
@@ -1297,6 +1313,10 @@ namespace Delphi {
                         return see_other[AMessage];
                     case CHTTPReply::not_modified:
                         return not_modified[AMessage];
+                    case CHTTPReply::temporary_redirect:
+                        return temporary_redirect[AMessage];
+                    case CHTTPReply::permanent_redirect:
+                        return permanent_redirect[AMessage];
                     case CHTTPReply::bad_request:
                         return bad_request[AMessage];
                     case CHTTPReply::unauthorized:

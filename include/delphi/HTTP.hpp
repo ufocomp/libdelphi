@@ -743,6 +743,8 @@ namespace Delphi {
                 moved_temporarily = 302,
                 see_other = 303,
                 not_modified = 304,
+                temporary_redirect = 307,
+                permanent_redirect = 308,
                 bad_request = 400,
                 unauthorized = 401,
                 forbidden = 403,
