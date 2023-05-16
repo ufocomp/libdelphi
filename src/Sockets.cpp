@@ -3935,6 +3935,7 @@ namespace Delphi {
             m_EventType = etNull;
             m_pBinding = nullptr;
             m_pEventHandlers = AEventHandlers;
+            m_OnTimerEvent = nullptr;
             m_OnTimeOutEvent = nullptr;
             m_OnConnectEvent = nullptr;
             m_OnReadEvent = nullptr;
@@ -4256,6 +4257,8 @@ namespace Delphi {
         CEPoll::CEPoll(): CObject() {
             m_pEventHandlers = nullptr;
             m_FreeEventHandlers = true;
+
+            m_OnTimerEvent = nullptr;
             m_OnEventHandlerException = nullptr;
 
             CreateEventHandlers();
@@ -4410,12 +4413,31 @@ namespace Delphi {
                     if (uEvents & EPOLLIN) {
                         if (pHandler->OnTimerEvent() != nullptr) {
                             pHandler->DoTimerEvent();
+                        } else {
+                            DoTimer(pHandler);
                         }
                     }
                 }
             }
 
             PackEventHandlers(timestamp);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::DoTimerEvent(CPollEventHandler *AHandler) {
+            uint64_t exp;
+
+            auto pTimer = dynamic_cast<CEPollTimer *> (AHandler->Binding());
+            pTimer->Read(&exp, sizeof(uint64_t));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::DoTimer(CPollEventHandler *AHandler) {
+            if (m_OnTimerEvent == nullptr) {
+                DoTimerEvent(AHandler);
+            } else {
+                m_OnTimerEvent(AHandler);
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 

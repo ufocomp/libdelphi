@@ -503,6 +503,9 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        using CHandle = int;
+        //--------------------------------------------------------------------------------------------------------------
+
         #define INVALID_HANDLE_VALUE            (-1)
         //--------------------------------------------------------------------------------------------------------------
 
@@ -512,15 +515,15 @@ namespace Delphi {
 
         protected:
 
-            int m_Handle;
+            CHandle m_Handle;
 
-            void CreateHandle(int AHandle);
+            void CreateHandle(CHandle Handle);
 
             void SetSize(size_t NewSize) override;
 
         public:
 
-            explicit CHandleStream(int AHandle): inherited(), m_Handle(INVALID_HANDLE_VALUE) { CreateHandle(AHandle); };
+            explicit CHandleStream(CHandle Handle): inherited(), m_Handle(INVALID_HANDLE_VALUE) { CreateHandle(Handle); };
 
             ~CHandleStream() override = default;
 
@@ -1036,6 +1039,30 @@ namespace Delphi {
             }
 
             friend CString operator+ (const CString& LS, int RV) {
+                CString S(LS);
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(RV, szValue, _INT_T_LEN);
+                S.Append(szValue);
+                return S;
+            }
+
+            friend CString operator+ (const CString& LS, unsigned int RV) {
+                CString S(LS);
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(RV, szValue, _INT_T_LEN);
+                S.Append(szValue);
+                return S;
+            }
+
+            friend CString operator+ (const CString& LS, long int RV) {
+                CString S(LS);
+                TCHAR szValue[_INT_T_LEN + 1] = {0};
+                IntToStr(RV, szValue, _INT_T_LEN);
+                S.Append(szValue);
+                return S;
+            }
+
+            friend CString operator+ (const CString& LS, unsigned long int RV) {
                 CString S(LS);
                 TCHAR szValue[_INT_T_LEN + 1] = {0};
                 IntToStr(RV, szValue, _INT_T_LEN);

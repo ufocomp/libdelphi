@@ -2335,6 +2335,7 @@ namespace Delphi {
         class LIB_DELPHI CEPoll: public CObject {
         private:
 
+            COnPollEventHandlerEvent m_OnTimerEvent;
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
             bool m_FreeEventHandlers;
@@ -2344,6 +2345,8 @@ namespace Delphi {
 
             void CheckTimeOut(CPollEventHandler *AHandler, CDateTime DateTime);
 
+            void DoTimerEvent(CPollEventHandler *AHandler);
+
         protected:
 
             CPollEventHandlers *m_pEventHandlers;
@@ -2352,6 +2355,7 @@ namespace Delphi {
 
             virtual void PackEventHandlers(CDateTime DateTime);
 
+            virtual void DoTimer(CPollEventHandler *AHandler);
             virtual void DoTimeOut(CPollEventHandler *AHandler) abstract;
             virtual void DoAccept(CPollEventHandler *AHandler) abstract;
             virtual void DoConnect(CPollEventHandler *AHandler) abstract;
@@ -2376,6 +2380,9 @@ namespace Delphi {
             void AllocateEventHandlers(CEPoll *EPoll) { SetEventHandlers(EPoll->EventHandlers()); }
 
             bool ExternalEventHandlers() const { return !m_FreeEventHandlers; };
+
+            const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
+            void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
 
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() const { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }

@@ -1008,8 +1008,8 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHandleStream::CreateHandle(int AHandle) {
-            m_Handle = AHandle;
+        void CHandleStream::CreateHandle(CHandle Handle) {
+            m_Handle = Handle;
         }
         //--------------------------------------------------------------------------------------------------------------
 

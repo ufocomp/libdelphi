@@ -111,24 +111,37 @@ namespace Delphi {
 
         private:
 
+            mutable CHandle m_Handle;
+
+            sigset_t m_SigSet {};
+
             CSignal *Get(int Index) const;
             void Put(int Index, CSignal *Signal);
 
+            void InitHandle(int iFlags) const;
+
+        protected:
+
+            CHandle GetHandle() const;
+
         public:
 
-            CSignals(): CCollection(this) {};
+            CSignals(): CCollection(this), m_Handle(INVALID_HANDLE_VALUE) {};
 
             void AddSignal(int ASigNo, LPCTSTR ACode, LPCTSTR AName, CSignalHandler AHandler);
 
-            ~CSignals() override = default;
+            ~CSignals() override;
 
             int IndexOfSigNo(int SigNo);
 
             void InitSignals();
 
-            sigset_t *SigAddSet(sigset_t *set);
+            CHandle Handle() const { return GetHandle(); };
 
-            static void SigProcMask(int How, const sigset_t *Set, sigset_t *OldSet = nullptr);
+            sigset_t &SignalSet() { return m_SigSet; };
+            const sigset_t &SignalSet() const { return m_SigSet; };
+
+            void SigProcMask(int How, sigset_t *OldSet = nullptr);
 
             int SignalsCount() { return Count(); };
 
