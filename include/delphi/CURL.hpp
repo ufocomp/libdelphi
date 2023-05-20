@@ -87,7 +87,7 @@ namespace Delphi {
 
             virtual CURLcode Get(const CLocation &URL, const CStringList &Headers) const;
             virtual CURLcode Post(const CLocation &URL, const CString &Content, const CStringList &Headers) const;
-            virtual CURLcode Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers) const;
+            virtual CURLcode Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers, bool bTunnel) const;
 
         };
     }

@@ -112,16 +112,16 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CURLcode CCurlApi::Get(const CLocation &URL, const CStringList &Headers) const {
-            return Send(URL, "GET", CString(), Headers);
+            return Send(URL, "GET", CString(), Headers, false);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CURLcode CCurlApi::Post(const CLocation &URL, const CString &Content, const CStringList &Headers) const {
-            return Send(URL, "POST", Content, Headers);
+            return Send(URL, "POST", Content, Headers, false);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers) const {
+        CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers, bool bTunnel) const {
             CURLcode code = CURLE_SEND_ERROR;
 
             if (m_curl) {
@@ -133,6 +133,10 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_Result);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+
+                if (bTunnel) {
+                    curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
+                }
 #ifdef _DEBUG
                 curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
 #endif
