@@ -42,9 +42,6 @@ namespace Delphi {
 
         CNotifyEvent WakeMainThread = nullptr;
 
-        static pthread_mutex_t GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-        //--------------------------------------------------------------------------------------------------------------
-
         LIB_DELPHI CHeap *GHeap = nullptr;
         LIB_DELPHI CSysError *GSysError = nullptr;
         //--------------------------------------------------------------------------------------------------------------
@@ -3095,16 +3092,6 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Lock() {
-            pthread_mutex_lock(&GThreadLock);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CThread::Unlock() {
-            pthread_mutex_unlock(&GThreadLock);
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         void CThread::AfterConstruction()
         {
             if ( !m_bCreateSuspended )
@@ -3152,12 +3139,13 @@ namespace Delphi {
 
         void CThread::SetSuspended(bool Value)
         {
-            if ( Value != m_bSuspended )
-            {
-                if ( Value )
+            if ( Value != m_bSuspended ) {
+                if ( Value ) {
+                    m_bSuspended = true;
                     Suspend();
-                else
+                } else {
                     Resume();
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3165,6 +3153,7 @@ namespace Delphi {
         void CThread::Suspend()
         {
             pthread_mutex_lock(&m_SuspendMutex);
+            //m_bSuspended = true;
             while (m_bSuspended) {
                 pthread_cond_wait(&m_ResumeCond, &m_SuspendMutex);
             }

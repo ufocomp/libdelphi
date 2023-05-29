@@ -64,6 +64,9 @@ namespace Delphi {
         extern LIB_DELPHI CSysError *GSysError;
         //--------------------------------------------------------------------------------------------------------------
 
+        static pthread_mutex_t GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+        //--------------------------------------------------------------------------------------------------------------
+
         typedef unsigned (*PTHREAD_START)(void *);
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1794,9 +1797,6 @@ namespace Delphi {
             void Resume();
             void Suspend();
 
-            static void Lock();
-            static void Unlock();
-
             virtual void Terminate();
             int WaitFor();
 
@@ -1819,6 +1819,21 @@ namespace Delphi {
             void OnTerminate(CNotifyEvent && Value) { m_OnTerminate = Value; };
 
         }; // CThread
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CLockGuard ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CLockGuard {
+        public:
+
+            CLockGuard() { pthread_mutex_lock(&GThreadLock); }
+            ~CLockGuard() { pthread_mutex_unlock(&GThreadLock); }
+
+        };
+
 
         //--------------------------------------------------------------------------------------------------------------
 

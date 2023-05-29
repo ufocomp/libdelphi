@@ -78,7 +78,7 @@ namespace Delphi {
 
             virtual ~CCurlApi();
 
-            static CString GetErrorMessage(CURLcode code) ;
+            static CString GetErrorMessage(CURLcode code);
 
             virtual void Reset() const;
 
