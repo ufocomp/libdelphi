@@ -886,7 +886,8 @@ namespace Delphi {
             CSimpleBuffer &OutputBuffer() { return m_OutputBuffer; }
             const CSimpleBuffer &OutputBuffer() const { return m_OutputBuffer; }
 
-            const CNotifyEvent& OnDisconnected() { return m_OnDisconnected; }
+            CNotifyEvent &OnDisconnected() { return m_OnDisconnected; }
+            const CNotifyEvent &OnDisconnected() const { return m_OnDisconnected; }
             void OnDisconnected(CNotifyEvent && Value) { m_OnDisconnected = Value; }
 
         }; // CTCPConnection
@@ -956,37 +957,48 @@ namespace Delphi {
 
             CSocketEvent();
 
-            const COnSocketVerboseEvent &OnVerbose() { return m_OnVerbose; }
+            COnSocketVerboseEvent &OnVerbose() { return m_OnVerbose; }
+            const COnSocketVerboseEvent &OnVerbose() const { return m_OnVerbose; }
             void OnVerbose(COnSocketVerboseEvent && Value) { m_OnVerbose = Value; }
 
-            const COnSocketExecuteEvent &OnExecute() { return m_OnExecute; }
+            COnSocketExecuteEvent &OnExecute() { return m_OnExecute; }
+            const COnSocketExecuteEvent &OnExecute() const { return m_OnExecute; }
             void OnExecute(COnSocketExecuteEvent && Value) { m_OnExecute = Value; }
 
-            const COnSocketConnectionEvent &OnTimeOut() { return m_OnTimeOut; }
+            COnSocketConnectionEvent &OnTimeOut() { return m_OnTimeOut; }
+            const COnSocketConnectionEvent &OnTimeOut() const { return m_OnTimeOut; }
             void OnTimeOut(COnSocketConnectionEvent && Value) { m_OnTimeOut = Value; }
 
-            const COnSocketConnectionEvent &OnAccessLog() { return m_OnAccessLog; }
+            COnSocketConnectionEvent &OnAccessLog() { return m_OnAccessLog; }
+            const COnSocketConnectionEvent &OnAccessLog() const { return m_OnAccessLog; }
             void OnAccessLog(COnSocketConnectionEvent && Value) { m_OnAccessLog = Value; }
 
-            const CNotifyEvent &OnConnected() { return m_OnConnected; }
+            CNotifyEvent &OnConnected() { return m_OnConnected; }
+            const CNotifyEvent &OnConnected() const { return m_OnConnected; }
             void OnConnected(CNotifyEvent && Value) { m_OnConnected = Value; }
 
-            const CNotifyEvent &OnDisconnected() { return m_OnDisconnected; }
+            CNotifyEvent &OnDisconnected() { return m_OnDisconnected; }
+            const CNotifyEvent &OnDisconnected() const { return m_OnDisconnected; }
             void OnDisconnected(CNotifyEvent && Value) { m_OnDisconnected = Value; }
 
-            const COnSocketExceptionEvent &OnException() { return m_OnException; }
+            COnSocketExceptionEvent &OnException() { return m_OnException; }
+            const COnSocketExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnSocketExceptionEvent && Value) { m_OnException = Value; }
 
-            const COnSocketListenExceptionEvent &OnListenException() { return m_OnListenException; }
+            COnSocketListenExceptionEvent &OnListenException() { return m_OnListenException; }
+            const COnSocketListenExceptionEvent &OnListenException() const { return m_OnListenException; }
             void OnListenException(COnSocketListenExceptionEvent && Value) { m_OnListenException = Value; }
 
             COnSocketBeforeCommandHandlerEvent &OnBeforeCommandHandler() { return m_OnBeforeCommandHandler; }
+            const COnSocketBeforeCommandHandlerEvent &OnBeforeCommandHandler() const { return m_OnBeforeCommandHandler; }
             void OnBeforeCommandHandler(COnSocketBeforeCommandHandlerEvent && Value) { m_OnBeforeCommandHandler = Value; }
 
             COnSocketAfterCommandHandlerEvent &OnAfterCommandHandler() { return m_OnAfterCommandHandler; }
+            const COnSocketAfterCommandHandlerEvent &OnAfterCommandHandler() const { return m_OnAfterCommandHandler; }
             void OnAfterCommandHandler(COnSocketAfterCommandHandlerEvent && Value) { m_OnAfterCommandHandler = Value; }
 
-            const COnSocketNoCommandHandlerEvent &OnNoCommandHandler() { return m_OnNoCommandHandler; }
+            COnSocketNoCommandHandlerEvent &OnNoCommandHandler() { return m_OnNoCommandHandler; }
+            const COnSocketNoCommandHandlerEvent &OnNoCommandHandler() const { return m_OnNoCommandHandler; }
             void OnNoCommandHandler(COnSocketNoCommandHandlerEvent && Value) { m_OnNoCommandHandler = Value; }
 
         };
@@ -1339,22 +1351,28 @@ namespace Delphi {
             CStringList &Data() { return m_Data; }
             const CStringList &Data() const { return m_Data; }
 
-            const CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
+            CNotifyEvent &OnWaitRequest() { return m_OnWaitRequest; }
+            const CNotifyEvent &OnWaitRequest() const { return m_OnWaitRequest; }
             void OnWaitRequest(CNotifyEvent && Value) { m_OnWaitRequest = Value; }
 
-            const CNotifyEvent &OnWaitReply() { return m_OnWaitReply; }
+            CNotifyEvent &OnWaitReply() { return m_OnWaitReply; }
+            const CNotifyEvent &OnWaitReply() const { return m_OnWaitReply; }
             void OnWaitReply(CNotifyEvent && Value) { m_OnWaitReply = Value; }
 
-            const CNotifyEvent &OnRequest() { return m_OnRequest; }
+            CNotifyEvent &OnRequest() { return m_OnRequest; }
+            const CNotifyEvent &OnRequest() const { return m_OnRequest; }
             void OnRequest(CNotifyEvent && Value) { m_OnRequest = Value; }
 
-            const CNotifyEvent &OnReply() { return m_OnReply; }
+            CNotifyEvent &OnReply() { return m_OnReply; }
+            const CNotifyEvent &OnReply() const { return m_OnReply; }
             void OnReply(CNotifyEvent && Value) { m_OnReply = Value; }
 
-            const CNotifyEvent &OnPing() { return m_OnPing; }
+            CNotifyEvent &OnPing() { return m_OnPing; }
+            const CNotifyEvent &OnPing() const { return m_OnPing; }
             void OnPing(CNotifyEvent && Value) { m_OnPing = Value; }
 
-            const CNotifyEvent &OnPong() { return m_OnPong; }
+            CNotifyEvent &OnPong() { return m_OnPong; }
+            const CNotifyEvent &OnPong() const { return m_OnPong; }
             void OnPong(CNotifyEvent && Value) { m_OnPong = Value; }
 
         }; // CWebSocketConnection
@@ -1445,7 +1463,9 @@ namespace Delphi {
 
         public:
 #ifdef WITH_SSL
-            CClientIOHandler(CSSLMethod AMethod = sslNotUsed);
+            CClientIOHandler();
+
+            explicit CClientIOHandler(CSSLMethod AMethod);
 #else
             CClientIOHandler();
 #endif
@@ -1585,10 +1605,12 @@ namespace Delphi {
 
             bool Stopped() { return GetStopped(); }
 
-            const COnSocketThreadExceptionEvent &OnException() { return m_OnException; }
+            COnSocketThreadExceptionEvent &OnException() { return m_OnException; }
+            const COnSocketThreadExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnSocketThreadExceptionEvent && Value) { m_OnException = Value; }
 
-            const COnSocketThreadNotifyEvent& OnStopped() { return m_OnStopped; }
+            COnSocketThreadNotifyEvent& OnStopped() { return m_OnStopped; }
+            const COnSocketThreadNotifyEvent& OnStopped() const { return m_OnStopped; }
             void OnStopped(COnSocketThreadNotifyEvent && Value) { m_OnStopped = Value; }
 
         }; // CSocketThread
@@ -1806,9 +1828,11 @@ namespace Delphi {
             int ReplyExceptionCode() const { return m_ReplyExceptionCode; }
             void ReplyExceptionCode(int Value) { m_ReplyExceptionCode = Value; }
 
+            COnSocketCommandEvent &OnCommand() { return m_OnCommand; }
             const COnSocketCommandEvent &OnCommand() const { return m_OnCommand; }
             void OnCommand(COnSocketCommandEvent && Value) { m_OnCommand = Value; }
 
+            COnSocketExceptionEvent &OnException() { return m_OnException; }
             const COnSocketExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnSocketExceptionEvent && Value) { m_OnException = Value; }
 
@@ -2070,7 +2094,9 @@ namespace Delphi {
 
         public:
 
-            CPollStack(int AEventSize = 512);
+            CPollStack();
+
+            explicit CPollStack(int AEventSize);
 
             CPollStack(const CPollStack &Source): CPollStack() {
                 Assign(Source);
@@ -2203,21 +2229,27 @@ namespace Delphi {
 
             LPCTSTR TimeStampStr() const { return m_szTimeStamp; }
 
+            COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
             const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
 
+            COnPollEventHandlerEvent &OnTimeOutEvent() { return m_OnTimeOutEvent; }
             const COnPollEventHandlerEvent &OnTimeOutEvent() const { return m_OnTimeOutEvent; }
             void OnTimeOutEvent(COnPollEventHandlerEvent && Value) { m_OnTimeOutEvent = Value; }
 
+            COnPollEventHandlerEvent &OnConnectEvent() { return m_OnConnectEvent; }
             const COnPollEventHandlerEvent &OnConnectEvent() const { return m_OnConnectEvent; }
             void OnConnectEvent(COnPollEventHandlerEvent && Value) { m_OnConnectEvent = Value; }
 
+            COnPollEventHandlerEvent &OnReadEvent() { return m_OnReadEvent; }
             const COnPollEventHandlerEvent &OnReadEvent() const { return m_OnReadEvent; }
             void OnReadEvent(COnPollEventHandlerEvent && Value) { m_OnReadEvent = Value; }
 
+            COnPollEventHandlerEvent &OnWriteEvent() { return m_OnWriteEvent; }
             const COnPollEventHandlerEvent &OnWriteEvent() const { return m_OnWriteEvent; }
             void OnWriteEvent(COnPollEventHandlerEvent && Value) { m_OnWriteEvent = Value; }
 
+            COnPollEventHandlerEvent &OnErrorEvent() { return m_OnErrorEvent; }
             const COnPollEventHandlerEvent &OnErrorEvent() const { return m_OnErrorEvent; }
             void OnErrorEvent(COnPollEventHandlerEvent && Value) { m_OnErrorEvent = Value; }
         };
@@ -2274,6 +2306,7 @@ namespace Delphi {
 
             CPollEventHandler *operator[] (int Index) const override { return Handlers(Index); };
 
+            COnPollEventHandlerExceptionEvent& OnException() { return m_OnException; }
             const COnPollEventHandlerExceptionEvent& OnException() const { return m_OnException; }
             void OnException(COnPollEventHandlerExceptionEvent && Value) { m_OnException = Value; }
 
@@ -2321,6 +2354,7 @@ namespace Delphi {
             CPollEventHandler *AllocateTimer(CPollEventHandlers *AEventHandlers, long int Value, long int Interval = 0, int Flags = 0);
             void SetTimer(long int Value, long int Interval = 0, int Flags = 0);
 
+            COnPollEventHandlerEvent &OnTimer() { return m_OnTimer; }
             const COnPollEventHandlerEvent &OnTimer() const { return m_OnTimer; }
             void OnTimer(COnPollEventHandlerEvent && Value) { m_OnTimer = Value; }
 
@@ -2381,9 +2415,11 @@ namespace Delphi {
 
             bool ExternalEventHandlers() const { return !m_FreeEventHandlers; };
 
+            COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
             const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
 
+            COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() const { return m_OnEventHandlerException; }
             void OnEventHandlerException(COnPollEventHandlerExceptionEvent && Value) { m_OnEventHandlerException = Value; }
 
@@ -2606,9 +2642,11 @@ namespace Delphi {
             CSimpleBuffer &OutputBuffer() { return m_OutputBuffer; }
             const CSimpleBuffer &OutputBuffer() const { return m_OutputBuffer; }
 
+            COnUDPServerReadEvent &OnRead() { return m_OnRead; }
             const COnUDPServerReadEvent &OnRead() const { return m_OnRead; }
             void OnRead(COnUDPServerReadEvent && Value) { m_OnRead = Value; }
 
+            COnUDPServerWriteEvent &OnWrite() { return m_OnWrite; }
             const COnUDPServerWriteEvent &OnWrite() const { return m_OnWrite; }
             void OnWrite(COnUDPServerWriteEvent && Value) { m_OnWrite = Value; }
 
