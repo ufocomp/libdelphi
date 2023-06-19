@@ -1034,6 +1034,7 @@ namespace Delphi {
                 CHTTPReply::forbidden,
                 CHTTPReply::not_found,
                 CHTTPReply::not_allowed,
+                CHTTPReply::many_requests,
                 CHTTPReply::status_443,
                 CHTTPReply::internal_server_error,
                 CHTTPReply::not_implemented,
@@ -1063,6 +1064,7 @@ namespace Delphi {
             const TCHAR forbidden[] = _T("Forbidden");
             const TCHAR not_found[] = _T("Not Found");
             const TCHAR not_allowed[] = _T("Method Not Allowed");
+            const TCHAR many_requests[] = _T("Too Many Requests");
             const TCHAR status_443[] = _T("443");
             const TCHAR internal_server_error[] = _T("Internal Server Error");
             const TCHAR not_implemented[] = _T("Not Implemented");
@@ -1108,6 +1110,8 @@ namespace Delphi {
                         return StringArrayToStream(Stream, not_found);
                     case CHTTPReply::not_allowed:
                         return StringArrayToStream(Stream, not_allowed);
+                    case CHTTPReply::many_requests:
+                        return StringArrayToStream(Stream, many_requests);
                     case CHTTPReply::status_443:
                         return StringArrayToStream(Stream, status_443);
                     case CHTTPReply::internal_server_error:
@@ -1180,6 +1184,9 @@ namespace Delphi {
                         break;
                     case CHTTPReply::not_allowed:
                         AString = not_allowed;
+                        break;
+                    case CHTTPReply::many_requests:
+                        AString = many_requests;
                         break;
                     case CHTTPReply::status_443:
                         AString = status_443;
@@ -1278,6 +1285,7 @@ namespace Delphi {
             LPCTSTR forbidden[]             = CreateStockReplies(403, Forbidden);
             LPCTSTR not_found[]             = CreateStockReplies(404, Not Found);
             LPCTSTR not_allowed[]           = CreateStockReplies(405, Method Not Allowed);
+            LPCTSTR many_requests[]         = CreateStockReplies(429, Too Many Requests);
             LPCTSTR status_443[]            = CreateStockReplies(443, 443);
             LPCTSTR internal_server_error[] = CreateStockReplies(500, Internal Server Error);
             LPCTSTR not_implemented[]       = CreateStockReplies(501, Not Implemented);
@@ -1327,6 +1335,8 @@ namespace Delphi {
                         return not_found[AMessage];
                     case CHTTPReply::not_allowed:
                         return not_allowed[AMessage];
+                    case CHTTPReply::many_requests:
+                        return many_requests[AMessage];
                     case CHTTPReply::status_443:
                         return status_443[AMessage];
                     case CHTTPReply::internal_server_error:
@@ -1583,6 +1593,7 @@ namespace Delphi {
                 case not_implemented:
                     Reply.AddHeader(_T("Allow"), Reply.AllowedMethods);
                     break;
+                case many_requests:
                 case service_unavailable:
                     Reply.AddHeader(_T("Retry-After"), _T("30"));
                     break;

@@ -111,7 +111,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CQueue::CQueue() : CCollection(this) {
+        CQueue::CQueue(): CCollection(this) {
 
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CQueue::IndexOf(Pointer Queue) {
+        int CQueue::IndexOf(Pointer Queue) const {
             int Index = 0;
 
             while ((Index < Count()) && (Items(Index)->Queue() != Queue))
@@ -154,26 +154,26 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         int CQueue::Remove(Pointer Queue) {
-            int Index = IndexOf(Queue);
-            if (Index >= 0)
-                Delete(Index);
-            return Index;
+            const int i = IndexOf(Queue);
+            if (i >= 0)
+                Delete(i);
+            return i;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CQueueItem *CQueue::First() {
+        CQueueItem *CQueue::First() const {
             return GetItem(0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CQueueItem *CQueue::Last() {
+        CQueueItem *CQueue::Last() const {
             return GetItem(Count() - 1);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         int CQueue::AddToQueue(Pointer Queue, Pointer P) {
-            CQueueItem *Item = nullptr;
-            int i = IndexOf(Queue);
+            CQueueItem *Item;
+            const int i = IndexOf(Queue);
 
             if (i == -1)
                 Item = Add(Queue);
@@ -185,8 +185,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CQueue::InsertToQueue(Pointer Queue, int Index, Pointer P) {
-            CQueueItem *Item = nullptr;
-            int i = IndexOf(Queue);
+            CQueueItem *Item;
+            const int i = IndexOf(Queue);
 
             if (i == -1)
                 Item = Add(Queue);
@@ -198,8 +198,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CQueue::RemoveFromQueue(Pointer Queue, Pointer P) {
-            CQueueItem *Item = nullptr;
-            int i = IndexOf(Queue);
+            CQueueItem *Item;
+            const int i = IndexOf(Queue);
 
             if (i >= 0) {
                 Item = GetItem(i);
@@ -210,25 +210,27 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CQueue::FirstItem(Pointer Queue) {
-            Pointer P = nullptr;
-            int Index = IndexOf(Queue);
-
-            if (Index >= 0)
-                P = Items(Index)->First();
-
-            return P;
+        Pointer CQueue::FirstItem(Pointer Queue) const {
+            const int i = IndexOf(Queue);
+            if (i != -1)
+                return Items(i)->First();
+            return nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        Pointer CQueue::LastItem(Pointer Queue) {
-            Pointer P = nullptr;
-            int Index = IndexOf(Queue);
+        Pointer CQueue::LastItem(Pointer Queue) const {
+            const int i = IndexOf(Queue);
+            if (i != -1)
+                return Items(i)->Last();
+            return nullptr;
+        }
+        //--------------------------------------------------------------------------------------------------------------
 
-            if (Index >= 0)
-                P = Items(Index)->Last();
-
-            return P;
+        int CQueue::CountItems(Pointer Queue) const {
+            const int i = IndexOf(Queue);
+            if (i != -1)
+                return Items(i)->Count();
+            return 0;
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -315,6 +317,11 @@ namespace Delphi {
 
         void CQueueCollection::RemoveFromQueue(CQueueHandler *AHandler) {
             m_Queue.RemoveFromQueue(this, AHandler);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        int CQueueCollection::CountItems() {
+            return m_Queue.CountItems(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 

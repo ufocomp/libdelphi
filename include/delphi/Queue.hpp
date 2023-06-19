@@ -90,20 +90,22 @@ namespace Delphi {
 
             CQueue();
 
-            int IndexOf(Pointer Queue);
+            int IndexOf(Pointer Queue) const;
             int Remove(Pointer Queue);
 
             CQueueItem *Add(Pointer Queue);
             CQueueItem *Insert(int Index, Pointer Queue);
-            CQueueItem *First();
-            CQueueItem *Last();
+            CQueueItem *First() const;
+            CQueueItem *Last() const;
 
             int AddToQueue(Pointer Queue, Pointer P);
             void InsertToQueue(Pointer Queue, int Index, Pointer P);
             void RemoveFromQueue(Pointer Queue, Pointer P);
 
-            Pointer FirstItem(Pointer Queue);
-            Pointer LastItem(Pointer Queue);
+            Pointer FirstItem(Pointer Queue) const;
+            Pointer LastItem(Pointer Queue) const;
+
+            int CountItems(Pointer Queue) const;
 
             CQueueItem *Items(int Index) const override { return GetItem(Index); }
             void Items(int Index, CQueueItem *Value) { SetItem(Index, Value); }
@@ -186,6 +188,7 @@ namespace Delphi {
             void RemoveFromQueue(CQueueHandler *AHandler);
 
             virtual void UnloadQueue() abstract;
+            int CountItems();
 
             void IncProgress() { m_Progress++; }
             void DecProgress() { m_Progress--; }

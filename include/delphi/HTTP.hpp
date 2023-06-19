@@ -750,6 +750,7 @@ namespace Delphi {
                 forbidden = 403,
                 not_found = 404,
                 not_allowed = 405,
+                many_requests = 429,
                 status_443 = 443,
                 internal_server_error = 500,
                 not_implemented = 501,
