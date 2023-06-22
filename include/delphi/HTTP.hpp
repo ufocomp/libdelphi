@@ -820,7 +820,7 @@ namespace Delphi {
 
             /// Set cookie.
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
-                    bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"));
+                    bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"), bool Secure = false, LPCTSTR lpszDomain = nullptr);
 
             /// Initialize a prepare reply.
             static void InitReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType = nullptr,

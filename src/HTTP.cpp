@@ -1472,7 +1472,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPReply::SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath, time_t Expires,
-                bool HttpOnly, LPCTSTR lpszSameSite) {
+                bool HttpOnly, LPCTSTR lpszSameSite, bool Secure, LPCTSTR lpszDomain) {
 
             TCHAR szDate[MAX_BUFFER_SIZE + 1] = {0};
 
@@ -1500,6 +1500,14 @@ namespace Delphi {
             if (lpszSameSite != nullptr) {
                 Cookie << "; SameSite=";
                 Cookie << lpszSameSite;
+            }
+
+            if (Secure)
+                Cookie << "; Secure";
+
+            if (lpszDomain != nullptr) {
+                Cookie << "; Domain=";
+                Cookie << lpszDomain;
             }
 
             AddHeader(_T("Set-Cookie"), Cookie);
