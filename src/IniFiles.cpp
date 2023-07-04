@@ -498,13 +498,8 @@ namespace Delphi {
 
         CStrings *CMemIniFile::AddSection(LPCTSTR lpszSectionName) {
             CHashedStringList *Result = CHashedStringList::Create(true); // OwnsObject = true
-            try {
-                m_Sections->AddObject(lpszSectionName, Result);
-                ((CHashedStringList *) m_Sections)->Changed();
-            } catch (...) {
-                delete Result;
-                throw;
-            };
+            m_Sections->AddObject(lpszSectionName, Result);
+            ((CHashedStringList *) m_Sections)->Changed();
             return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -743,8 +738,7 @@ namespace Delphi {
                     } else if (Strings != nullptr) {
                         J = S.Find('=');
                         if (J != CString::npos) {
-                            Strings->AddObject(S.SubString(0, J).Trim() + '=' + S.SubString(J + 1).Trim(),
-                                               new CKeyLine(I + 1));
+                            Strings->AddObject(S.SubString(0, J).Trim() + '=' + S.SubString(J + 1).Trim(), new CKeyLine(I + 1));
                         } else
                             Strings->AddObject(S, new CKeyLine(I + 1));
                     }

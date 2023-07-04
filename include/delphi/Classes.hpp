@@ -800,6 +800,7 @@ namespace Delphi {
             size_t Size() const noexcept override { return GetSize(); };
 
             TCHAR GetChar(size_t Index) const;
+            BYTE GetByte(size_t Index) const;
 
             bool IsEmpty() const noexcept { return m_Data == nullptr; };
 

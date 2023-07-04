@@ -1449,6 +1449,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        BYTE CCustomString::GetByte(size_t Index) const {
+            if (Index >= 0 && Index < m_Length)
+                return m_Data[Index];
+            return '\0';
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CCustomString::WriteStr(LPCTSTR Str, size_t Length) {
 
             if (Length == 0) {
@@ -1743,14 +1750,14 @@ namespace Delphi {
             size_t i, L;
             L = Length() - 1;
             i = 0;
-            if (IsEmpty() || ((GetChar(i) > TrimChar) && (GetChar(L) > TrimChar)))
+            if (IsEmpty() || ((GetByte(i) > TrimChar) && (GetByte(L) > TrimChar)))
                 return *this;
-            while ((i <= L) && (GetChar(i) <= TrimChar)) i++;
+            while ((i <= L) && (GetByte(i) <= TrimChar)) i++;
                 if (i > L) {
                     CString S;
                     return S;
                 }
-            while (GetChar(L) <= TrimChar) L--;
+            while (GetByte(L) <= TrimChar) L--;
             return SubString(i, L - i + 1);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1758,7 +1765,7 @@ namespace Delphi {
         CString CString::TrimLeft(TCHAR TrimChar) const {
             size_t i;
             i = 0;
-            while (!IsEmpty() && ((GetChar(i) <= TrimChar))) i++;
+            while (!IsEmpty() && ((GetByte(i) <= TrimChar))) i++;
             if (i > 0)
                 return SubString(i);
             return *this;
@@ -1768,10 +1775,10 @@ namespace Delphi {
         CString CString::TrimRight(TCHAR TrimChar) const {
             int i;
             i = (int) Length() - 1;
-            if (IsEmpty() || (GetChar(i) > TrimChar)) {
+            if (IsEmpty() || (GetByte(i) > TrimChar)) {
                 return *this;
             } else {
-                while ((i >= 0) && (GetChar(i) <= TrimChar)) i--;
+                while ((i >= 0) && (GetByte(i) <= TrimChar)) i--;
                 return SubString(0, i + 1);
             }
         }
