@@ -44,6 +44,9 @@ Author:
 #include <pwd.h>
 #include <grp.h>
 #include <sys/resource.h>
+#include <sys/sendfile.h>
+//----------------------------------------------------------------------------------------------------------------------
+
 //----------------------------------------------------------------------------------------------------------------------
 
 #ifdef _GLIBCXX_FUNCTIONAL
@@ -232,7 +235,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.6.6")
+#define DELPHI_LIB_VERSION      _T("2.7.0")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 

@@ -244,7 +244,6 @@ namespace Delphi {
 
             m_pCollection = ACollection;
             m_Handler = Handler;
-            m_UseCount = 0;
 
             AddToQueue();
         }

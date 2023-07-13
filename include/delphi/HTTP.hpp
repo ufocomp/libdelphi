@@ -822,12 +822,15 @@ namespace Delphi {
             void SetCookie(LPCTSTR lpszName, LPCTSTR lpszValue, LPCTSTR lpszPath = nullptr, time_t Expires = 0,
                     bool HttpOnly = true, LPCTSTR lpszSameSite = _T("Lax"), bool Secure = false, LPCTSTR lpszDomain = nullptr);
 
+            /// Add content type.
+            static void AddContentType(CHTTPReply &Reply, LPCTSTR lpszContentType = nullptr);
+
             /// Initialize a prepare reply.
             static void InitReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType = nullptr,
                 LPCTSTR lpszTransferEncoding = nullptr);
 
             /// Initialize a stock reply.
-            static void InitStockReply(CHTTPReply &Reply, CStatusType Status);
+            static void InitStockReply(CHTTPReply &Reply, CStatusType Status, const CString &RootDir = {});
 
             static void AddUnauthorized(CHTTPReply &Reply, bool bBearer = false, LPCTSTR lpszError = nullptr, LPCTSTR lpszMessage = nullptr);
 
@@ -999,9 +1002,10 @@ namespace Delphi {
             CHTTPReply &Reply() { return m_Reply; }
             const CHTTPReply &Reply() const { return m_Reply; }
 
-            void SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow = false);
+            void SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow = false, const CString &RootDir = {});
             void SendReply(CHTTPReply::CStatusType Status, LPCTSTR lpszContentType = nullptr, bool bSendNow = false);
             void SendReply(bool bSendNow = false);
+            void SendFileReply(LPCTSTR lpszFileName, LPCTSTR lpszContentType = nullptr);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
 

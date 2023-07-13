@@ -173,7 +173,7 @@ namespace Delphi {
 #ifdef WITH_SSL
             static void SSLInit();
             static void SSLFinalize();
-            static SSL *SSLNew(bool IsSever = false);
+            static SSL *SSLNew(bool ASever = false, const char *ACertificateFile = nullptr, const char *APrivateKeyFile = nullptr);
             static void SSLFree(SSL *ssl);
             static CSocket SSLGetSocket(SSL *ssl);
             static void SSLAllocate(SSL *ssl, CSocket ASocket);
@@ -186,6 +186,7 @@ namespace Delphi {
 
             static ssize_t SSLRecv(SSL *ssl, void *ABuffer, int ABufferLength);
             static ssize_t SSLSend(SSL *ssl, void *ABuffer, int ABufferLength);
+            static ssize_t SSLSendFile(SSL *ssl, CHandle AHandle, off_t AOffSet, size_t ASize, int AFlags = 0);
 
             virtual unsigned long GetSSLError();
 
@@ -197,7 +198,7 @@ namespace Delphi {
 
             void RaiseSSLError();
 
-            int SSLError() const { return m_SSLError; }
+            int SSLError() const { return (int) m_SSLError; }
 #endif
             int LastError() const { return m_LastError; }
 
@@ -235,6 +236,8 @@ namespace Delphi {
 
             virtual ssize_t SendTo(CSocket ASocket, void *ABuffer, size_t ABufferLength, int AFlags, LPCSTR AIP,
                     unsigned short APort);
+
+            virtual ssize_t SendFile(CSocket ASocket, CHandle AHandle, off_t *AOffSet, size_t ASize);
 
             virtual int SetSockOpt(CSocket ASocket, int ALevel, int AOptName, const void *AOptVal, socklen_t AOptLen);
 
@@ -395,8 +398,8 @@ namespace Delphi {
             bool m_HandleAllocated;
             bool m_Nonblocking;
 
-            char m_IP[NI_MAXIP];
-            char m_PeerIP[NI_MAXIP];
+            char m_IP[NI_MAXIP] = {0};
+            char m_PeerIP[NI_MAXIP] = {0};
 
             unsigned short m_Port;
             unsigned short m_PeerPort;
@@ -472,9 +475,11 @@ namespace Delphi {
 
             void Reset(bool AResetLocal = true);
 
-            ssize_t Send(void *ABuffer, size_t ABufferSize, int AFlags = 0);
+            ssize_t Send(void *ABuffer, size_t ABufferSize, int AFlags = 0) const;
 
             ssize_t SendTo(LPCSTR AIP, unsigned short APort, void *ABuffer, size_t ABufferSize, int AFlags = 0) const;
+
+            ssize_t SendFile(CHandle AHandle, off_t *AOffSet, size_t ASize, int AFlags) const;
 
             void SetPeer(LPCSTR asIP, unsigned short anPort);
 
@@ -498,13 +503,13 @@ namespace Delphi {
 
             CSocket Handle() const { return m_Handle; }
 
-            char *IP() { return m_IP; }
+            LPCSTR IP() const { return m_IP; }
             void IP(LPCSTR Value) { SetIP(Value); }
 
             unsigned short Port() const { return m_Port; }
             void Port(unsigned short Value) { m_Port = Value; }
 
-            char *PeerIP() { return m_PeerIP; }
+            LPCSTR PeerIP() const { return m_PeerIP; }
             void PeerIP(LPCSTR Value) { SetPeerIP(Value); }
 
             unsigned short PeerPort() const { return m_PeerPort; }
@@ -597,6 +602,8 @@ namespace Delphi {
 
             virtual ssize_t Send(void *ABuf, size_t ALen) abstract;
 
+            virtual ssize_t SendFile(CHandle AHandle, off_t *AOffSet, size_t AByteCount, int AFlags) abstract;
+
         }; // CIOHandler
 
         //--------------------------------------------------------------------------------------------------------------
@@ -634,6 +641,8 @@ namespace Delphi {
 
             ssize_t Send(void *ABuf, size_t ALen) override;
 
+            ssize_t SendFile(CHandle AHandle, off_t *AOffSet, size_t AByteCount, int AFlags) override;
+
             CSocketHandle *Binding() { return m_pBinding; }
 
         }; // CIOHandlerSocket
@@ -660,6 +669,8 @@ namespace Delphi {
             void SetTimeOutInterval(double Value);
 
         protected:
+
+            int m_UseCount;
 
             CDateTime m_TimeOut;
             double m_TimeOutInterval;
@@ -698,6 +709,15 @@ namespace Delphi {
             void TimeOutInterval(double Value) { SetTimeOutInterval(Value); };
 
             void UpdateTimeOut(CDateTime DateTime);
+
+            int UseCount() const { return m_UseCount; }
+            int IncUseCount() { return m_UseCount++; }
+            int DecUseCount() {
+                m_UseCount--;
+                if (m_UseCount < 0)
+                    m_UseCount = 0;
+                return m_UseCount;
+            }
 
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
@@ -839,6 +859,8 @@ namespace Delphi {
             bool WriteAsync(ssize_t AByteCount = -1);
 
             void WriteInteger(int AValue, bool AConvert = true);
+
+            ssize_t SendFile(CHandle AHandle, off_t AOffSet, size_t AByteCount, int AFlags = 0);
 
             virtual void WriteLn(LPCSTR Format, ...);
 

@@ -27,6 +27,7 @@ Author:
 
 #define EVENT_SIZE 512
 #define WEBSOCKET_ERROR_MESSAGE "Invalid WebSocket header size (%s)."
+#define SSL_NOT_INITIALIZED "SSL not initialized."
 //----------------------------------------------------------------------------------------------------------------------
 
 namespace Delphi {
@@ -163,9 +164,9 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStack::SSLInit() {
-            SSL_library_init();
-            SSLeay_add_ssl_algorithms();
+            (void)SSL_library_init();
             SSL_load_error_strings();
+            OpenSSL_add_all_algorithms();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -176,9 +177,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        SSL *CStack::SSLNew(bool IsSever) {
-            const SSL_METHOD *method = IsSever ? TLS_server_method() : TLS_client_method();
+        SSL *CStack::SSLNew(bool ASever, const char *ACertificateFile, const char *APrivateKeyFile) {
+            const SSL_METHOD *method = ASever ? SSLv23_server_method() : SSLv23_client_method();
+
             SSL_CTX *ctx = ::SSL_CTX_new(method);
+
+            if (ACertificateFile != nullptr) {
+                SSL_CTX_use_certificate_file(ctx, ACertificateFile, SSL_FILETYPE_PEM);
+            }
+
+            if (APrivateKeyFile != nullptr) {
+                SSL_CTX_use_PrivateKey_file(ctx, APrivateKeyFile, SSL_FILETYPE_PEM);
+            }
+
             return ::SSL_new(ctx);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -242,6 +253,15 @@ namespace Delphi {
 
         ssize_t CStack::SSLSend(SSL *ssl, void *ABuffer, int ABufferLength) {
             return ::SSL_write(ssl, ABuffer, ABufferLength);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SSLSendFile(SSL *ssl, CHandle AHandle, off_t AOffSet, size_t ASize, int AFlags) {
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L) && defined(BIO_get_ktls_send)
+            return ::SSL_sendfile(ssl, AHandle, AOffSet, ASize, AFlags);
+#else
+            throw ESocketError("SSL_sendfile() not available");
+#endif
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -393,6 +413,11 @@ namespace Delphi {
             to.sin_port = HToNS(APort);
 
             return ::sendto(ASocket, ABuffer, ABufferLength, AFlags, (sockaddr * ) &to, tolen);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CStack::SendFile(CSocket ASocket, CHandle AHandle, off_t *AOffSet, size_t ASize) {
+            return ::sendfile(ASocket, AHandle, AOffSet, ASize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -862,25 +887,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSocketHandle::ConnectSSL() {
-            if (m_pSSL != nullptr) {
-                GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
-            }
+            if (m_pSSL == nullptr)
+                throw ESocketError(SSL_NOT_INITIALIZED);
+            GStack->CheckForSSLError(CStack::SSLConnect(m_pSSL));
         }
         //--------------------------------------------------------------------------------------------------------------
 
         uint64_t CSocketHandle::GetOptionsSSL() {
-            if (m_pSSL != nullptr) {
-                return CStack::SSLGetOptions(m_pSSL);
-            }
-            return 0;
+            if (m_pSSL == nullptr)
+                throw ESocketError(SSL_NOT_INITIALIZED);
+            return CStack::SSLGetOptions(m_pSSL);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         uint64_t CSocketHandle::SetOptionsSSL(uint64_t op) {
-            if (m_pSSL != nullptr) {
-                return CStack::SSLSetOptions(m_pSSL, op);
-            }
-            return 0;
+            if (m_pSSL == nullptr)
+                throw ESocketError(SSL_NOT_INITIALIZED);
+            return CStack::SSLSetOptions(m_pSSL, op);
         }
         //--------------------------------------------------------------------------------------------------------------
 #endif
@@ -1065,10 +1088,12 @@ namespace Delphi {
                 UpdateBindingPeer();
             }
 #ifdef WITH_SSL
-            ConnectSSL();
+            if (Assigned(m_pSSL)) {
+                ConnectSSL();
 #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
-            SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
+                SetOptionsSSL(SSL_OP_IGNORE_UNEXPECTED_EOF);
 #endif
+            }
 #endif
             return SocketError;
         }
@@ -1103,7 +1128,7 @@ namespace Delphi {
         ssize_t CSocketHandle::Recv(void *ABuffer, size_t ABufferSize, int AFlags) const {
 #ifdef WITH_SSL
             if (m_pSSL != nullptr)
-                return GStack->RecvPacket(m_pSSL, ABuffer, ABufferSize);
+                return GStack->RecvPacket(m_pSSL, ABuffer, (int) ABufferSize);
 #endif
             return GStack->Recv(Handle(), ABuffer, ABufferSize, AFlags);
         }
@@ -1117,10 +1142,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize, int AFlags) {
+        ssize_t CSocketHandle::Send(void *ABuffer, size_t ABufferSize, int AFlags) const {
 #ifdef WITH_SSL
             if (m_pSSL != nullptr)
-                return GStack->SendPacket(m_pSSL, ABuffer, ABufferSize);
+                return GStack->SendPacket(m_pSSL, ABuffer, (int) ABufferSize);
 #endif
             return SendTo(IP(), Port(), ABuffer, ABufferSize, AFlags);
         }
@@ -1141,6 +1166,21 @@ namespace Delphi {
             }
 
             return BytesOut;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CSocketHandle::SendFile(CHandle AHandle, off_t *AOffSet, size_t ASize, int AFlags) const {
+#ifdef WITH_SSL
+            if (m_pSSL != nullptr) {
+                auto offset = *AOffSet;
+                auto result = GStack->SSLSendFile(m_pSSL, AHandle, offset, ASize, AFlags);
+                if (result > 0) {
+                    *AOffSet = offset + result;
+                }
+                return result;
+            }
+#endif
+            return GStack->SendFile(Handle(), AHandle, AOffSet, ASize);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1336,6 +1376,14 @@ namespace Delphi {
             else
                 throw ESocketError(_T("Disconnected."));
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CIOHandlerSocket::SendFile(CHandle AHandle, off_t *AOffSet, size_t AByteCount, int AFlags) {
+            if (Connected())
+                return Binding()->SendFile(AHandle, AOffSet, AByteCount, AFlags);
+            else
+                throw ESocketError(_T("Disconnected."));
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1345,6 +1393,7 @@ namespace Delphi {
 
         CPollConnection::CPollConnection(CPollManager *AManager): CCollectionItem(AManager) {
             m_TimeOut = 0;
+            m_UseCount = 0;
             m_TimeOutInterval = 5000;
             m_pBinding = nullptr;
             m_pEventHandler = nullptr;
@@ -1691,7 +1740,7 @@ namespace Delphi {
                 byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 
                 if (m_pIOHandler == nullptr)
-                    return -1;
+                    throw ESocketError(_T("IO Handler error."));
 #ifdef WITH_SSL
                 if (m_pIOHandler->UsedSSL()) {
                     unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
@@ -1841,6 +1890,39 @@ namespace Delphi {
                 throw;
             }
             EndWork(wmWrite);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        ssize_t CTCPConnection::SendFile(CHandle AHandle, off_t AOffSet, size_t AByteCount, int AFlags) {
+            ssize_t byteTotal = 0, byteCount = 0;
+
+            if ((AByteCount > 0) && (AHandle != INVALID_HANDLE_VALUE)) {
+                CheckForDisconnect(true);
+
+                off_t offset = AOffSet;
+
+                while (byteTotal < AByteCount) {
+                    byteCount = m_pIOHandler->SendFile(AHandle, &offset, AByteCount, AFlags);
+#ifdef WITH_SSL
+                    if (m_pIOHandler->UsedSSL()) {
+                        unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
+                        if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
+                            return 0;
+                        }
+                    } else {
+#endif
+                        int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
+                            return 0;
+#ifdef WITH_SSL
+                    }
+#endif
+                    CheckWriteResult(byteCount);
+                    byteTotal += byteCount;
+                }
+            }
+
+            return byteTotal;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -3968,7 +4050,7 @@ namespace Delphi {
                 m_pBinding->Close();
                 m_pBinding = nullptr;
                 if (!pTemp->FreeClient()) {
-                    if (pTemp->AutoFree()) {
+                    if (pTemp->AutoFree() && pTemp->UseCount() == 0) {
                         delete pTemp;
                     }
                 }

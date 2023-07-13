@@ -1514,6 +1514,37 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CHTTPReply::AddContentType(CHTTPReply &Reply, LPCTSTR lpszContentType) {
+            if (lpszContentType == nullptr) {
+                switch (Reply.ContentType) {
+                    case CContentType::html:
+                        lpszContentType = _T("text/html");
+                        break;
+                    case CContentType::json:
+                        lpszContentType = _T("application/json");
+                        Reply.ToJSON();
+                        break;
+                    case CContentType::xml:
+                        lpszContentType = _T("application/xml");
+                        Reply.ToText();
+                        break;
+                    case CContentType::text:
+                        lpszContentType = _T("text/plain");
+                        Reply.ToText();
+                        break;
+                    case CContentType::sbin:
+                        lpszContentType = _T("application/octet-stream");
+                        break;
+                    default:
+                        lpszContentType = _T("text/plain");
+                        break;
+                }
+            }
+
+            Reply.AddHeader(_T("Content-Type"), lpszContentType);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CHTTPReply::InitReply(CHTTPReply &Reply, CStatusType Status, LPCTSTR lpszContentType,
                 LPCTSTR lpszTransferEncoding) {
 
@@ -1525,6 +1556,7 @@ namespace Delphi {
             Reply.VMinor = 1;
 
             Reply.Status = Status;
+            Reply.StatusText = Status;
 
             Reply.AddHeader(_T("Server"), Reply.ServerName);
 
@@ -1533,35 +1565,9 @@ namespace Delphi {
             }
 
             if (!Reply.Content.IsEmpty()) {
+                AddContentType(Reply, lpszContentType);
+
                 Reply.AddHeader(_T("Accept-Ranges"), _T("bytes"));
-
-                if (lpszContentType == nullptr) {
-                    switch (Reply.ContentType) {
-                        case CContentType::html:
-                            lpszContentType = _T("text/html");
-                            break;
-                        case CContentType::json:
-                            lpszContentType = _T("application/json");
-                            Reply.ToJSON();
-                            break;
-                        case CContentType::xml:
-                            lpszContentType = _T("application/xml");
-                            Reply.ToText();
-                            break;
-                        case CContentType::text:
-                            lpszContentType = _T("text/plain");
-                            Reply.ToText();
-                            break;
-                        case CContentType::sbin:
-                            lpszContentType = _T("application/octet-stream");
-                            break;
-                        default:
-                            lpszContentType = _T("text/plain");
-                            break;
-                    }
-                }
-
-                Reply.AddHeader(_T("Content-Type"), lpszContentType);
 
                 Reply.Content.Position(0);
 
@@ -1572,7 +1578,6 @@ namespace Delphi {
                     CString Length;
 
                     ssize_t count;
-                    size_t pos = 0;
 
                     while (true) {
                         count = (ssize_t) Reply.Content.Read(szBuffer, MAX_STRING_LEN);
@@ -1619,9 +1624,20 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPReply::InitStockReply(CHTTPReply &Reply, CHTTPReply::CStatusType Status) {
-            if (Status != CHTTPReply::no_content)
-                Reply.Content = StockReplies::ToString(Status, Reply.ContentType);
+        void CHTTPReply::InitStockReply(CHTTPReply &Reply, CHTTPReply::CStatusType Status, const CString &RootDir) {
+            if (Status != CHTTPReply::no_content) {
+                if (Reply.ContentType != CHTTPReply::CContentType::html || RootDir.IsEmpty()) {
+                    Reply.Content = StockReplies::ToString(Status, Reply.ContentType);
+                } else {
+                    const CString FileName(RootDir + Status + ".html");
+                    if (FileExists(FileName.c_str())) {
+                        Reply.Content.LoadFromFile(FileName.c_str());
+                    } else {
+                        Reply.Content = StockReplies::ToString(Status, Reply.ContentType);
+                    }
+                }
+            }
+
             InitReply(Reply, Status);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2110,9 +2126,9 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CHTTPServerConnection::SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow) {
+        void CHTTPServerConnection::SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow, const CString &RootDir) {
             m_Reply.CloseConnection = CloseConnection();
-            CHTTPReply::InitStockReply(m_Reply, Status);
+            CHTTPReply::InitStockReply(m_Reply, Status, RootDir);
             SendReply(bSendNow);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2135,6 +2151,38 @@ namespace Delphi {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::SendFileReply(LPCTSTR lpszFileName, LPCTSTR lpszContentType) {
+            TCHAR szSize[_INT_T_LEN + 1] = {0};
+
+            m_Reply.Content.Clear();
+
+            CHTTPReply::InitReply(m_Reply, CHTTPReply::ok);
+            CHTTPReply::AddContentType(m_Reply, lpszContentType);
+
+            m_Reply.AddHeader(_T("Accept-Ranges"), _T("bytes"));
+
+            CFile File(lpszFileName, FILE_RDONLY);
+
+            File.Open();
+
+            m_Reply.AddHeader(_T("Content-Length"), IntToStr((int) File.Size(), szSize, sizeof(szSize)));
+
+            m_Reply.ToBuffers(OutputBuffer());
+
+            m_ConnectionStatus = csReplyReady;
+
+            DoReply();
+
+            WriteAsync();
+
+            SendFile(File.Handle(), File.Offset(), File.Size(), 0);
+
+            m_ConnectionStatus = csReplySent;
+
+            Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2637,7 +2685,7 @@ namespace Delphi {
                 }
                 if (pConnection->ClosedGracefully()) {
                     AHandler->Binding(nullptr);
-                    if (pConnection->AutoFree())
+                    if (pConnection->AutoFree() && pConnection->UseCount() == 0)
                         delete pConnection;
                 }
             } catch (Delphi::Exception::Exception &E) {

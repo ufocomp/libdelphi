@@ -140,8 +140,6 @@ namespace Delphi {
 
         protected:
 
-            int m_UseCount;
-
             void SetAllow(bool Value);
 
         public:
@@ -156,8 +154,6 @@ namespace Delphi {
 
             bool Allow() const { return m_Allow; };
             void Allow(bool Value) { SetAllow(Value); };
-
-            int UseCount() const { return m_UseCount; }
 
             CQueueCollection *QueueCollection() const { return m_pCollection; };
 
