@@ -787,6 +787,7 @@ namespace Delphi {
             bool m_ReadLnTimedOut;
             bool m_ClosedGracefully;
             bool m_OEM;
+            bool m_UsedSSL;
 
             size_t m_SendBufferSize;
             size_t m_RecvBufferSize;
@@ -827,6 +828,8 @@ namespace Delphi {
 
             bool OEM() const { return m_OEM; }
             void OEM(bool Value) { m_OEM = Value; }
+
+            bool UsedSSL() const { return m_UsedSSL; }
 
             CDateTime Clock() const { return m_Clock; };
             void UpdateClock() { m_Clock = Now(); };

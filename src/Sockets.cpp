@@ -1511,6 +1511,7 @@ namespace Delphi {
             m_ReadLnTimedOut = false;
             m_ClosedGracefully = false;
             m_OEM = false;
+            m_UsedSSL = false;
 
             m_RecvBufferSize = GRecvBufferSizeDefault;
             m_SendBufferSize = GSendBufferSizeDefault;
@@ -1549,7 +1550,8 @@ namespace Delphi {
                 DoDisconnected();
                 ClosePoll();
                 m_ClosedGracefully = true;
-                m_pIOHandler->Close();
+                if (Assigned(m_pIOHandler))
+                    m_pIOHandler->Close();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1563,17 +1565,22 @@ namespace Delphi {
 
         void CTCPConnection::SetIOHandler(CIOHandler *AValue, bool AFree) {
             if (m_pIOHandler != AValue) {
-
-                if (m_pIOHandler != nullptr)
+                if (m_pIOHandler != nullptr) {
                     FreeIOHandler();
+                }
 
-                if (AValue == nullptr)
+                if (AValue == nullptr) {
                     m_pSocket = nullptr;
-                else
+                } else {
                     m_pSocket = (CIOHandlerSocket *) AValue;
+                }
 
                 m_FreeIOHandler = AFree;
                 m_pIOHandler = AValue;
+
+                if (m_pIOHandler != nullptr) {
+                    m_UsedSSL = m_pIOHandler->UsedSSL();
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1656,7 +1663,7 @@ namespace Delphi {
             CheckForDisconnect();
             // Check to see if the error signifies disconnection
 #ifdef WITH_SSL
-            if (m_pIOHandler->UsedSSL()) {
+            if (m_UsedSSL) {
                 unsigned long Ignore[] = { SSL_ERROR_WANT_WRITE, SSL_ERROR_SYSCALL };
                 if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
                     if (GStack->SSLError() == SSL_ERROR_SYSCALL) {
@@ -1698,10 +1705,12 @@ namespace Delphi {
 
                         pos = 0;
                         do {
-                            byteCount = m_pIOHandler->Send(Pointer((size_t) pBuffer->Memory() + pos),
-                                                           pBuffer->Size() - pos);
+                            if (m_pIOHandler == nullptr)
+                                throw ESocketError(_T("IO Handler error."));
+
+                            byteCount = m_pIOHandler->Send(Pointer((size_t) pBuffer->Memory() + pos), pBuffer->Size() - pos);
 #ifdef WITH_SSL
-                            if (m_pIOHandler->UsedSSL()) {
+                            if (m_UsedSSL) {
                                 if (byteCount <= 0) {
                                     unsigned long LastError = GStack->GetSSLError();
                                     if (LastError == SSL_ERROR_WANT_WRITE)
@@ -1737,24 +1746,26 @@ namespace Delphi {
             if ((AByteCount > 0) && (ABuffer != nullptr)) {
                 CheckForDisconnect(true);
 
-                byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
-
-                if (m_pIOHandler == nullptr)
-                    throw ESocketError(_T("IO Handler error."));
+                if (m_pIOHandler != nullptr) {
+                    byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 #ifdef WITH_SSL
-                if (m_pIOHandler->UsedSSL()) {
-                    unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
-                    if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
-                        return 0;
+                    if (m_UsedSSL) {
+                        unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
+                        if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
+                            return 0;
+                        }
+                    } else {
+#endif
+                        int Ignore[] = {EAGAIN, EWOULDBLOCK};
+                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
+                            return 0;
+#ifdef WITH_SSL
                     }
+#endif
                 } else {
-#endif
-                    int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                    if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
-                        return 0;
-#ifdef WITH_SSL
+                    byteCount = 0;
                 }
-#endif
+
                 CheckWriteResult(byteCount);
             }
 
@@ -1904,7 +1915,7 @@ namespace Delphi {
                 while (byteTotal < AByteCount) {
                     byteCount = m_pIOHandler->SendFile(AHandle, &offset, AByteCount, AFlags);
 #ifdef WITH_SSL
-                    if (m_pIOHandler->UsedSSL()) {
+                    if (m_UsedSSL) {
                         unsigned long Ignore[] = {SSL_ERROR_NONE, SSL_ERROR_WANT_WRITE};
                         if (GStack->CheckForSSLError(byteCount, Ignore, chARRAY(Ignore))) {
                             return 0;
@@ -2071,7 +2082,7 @@ namespace Delphi {
 
             if (!ClosedGracefully()) {
 #ifdef WITH_SSL
-                if (m_pIOHandler != nullptr && m_pIOHandler->UsedSSL()) {
+                if (m_UsedSSL) {
                     unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_SYSCALL };
                     if (GStack->CheckForSSLError(AByteCount, Ignore, chARRAY(Ignore))) {
                         AByteCount = 0;
@@ -2114,11 +2125,11 @@ namespace Delphi {
             CheckForDisconnect(ARaiseExceptionIfDisconnected);
 
             do {
-                if (IOHandler() != nullptr) { //APR: disconnect from other thread
+                if (m_pIOHandler != nullptr) { //APR: disconnect from other thread
                     m_RecvBuffer.Size(RecvBufferSize());
                     byteCount = m_pIOHandler->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
 #ifdef WITH_SSL
-                    if (m_pIOHandler->UsedSSL()) {
+                    if (m_UsedSSL) {
                         if (byteCount <= 0) {
                             result = byteCount;
                             unsigned long LastError = GStack->GetSSLError();
@@ -2172,7 +2183,7 @@ namespace Delphi {
                 do {
                     byteRecv = IOHandler()->Recv(m_RecvBuffer.Memory(), m_RecvBuffer.Size());
 #ifdef WITH_SSL
-                    if (m_pIOHandler->UsedSSL()) {
+                    if (m_UsedSSL) {
                         unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ };
                         if (GStack->CheckForSSLError(byteRecv, Ignore, chARRAY(Ignore)))
                             return byteCount;
