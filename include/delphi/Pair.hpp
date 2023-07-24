@@ -178,10 +178,10 @@ namespace Delphi {
             }
 
             int IndexOfName(const CString &Name) const {
-                for (int I = 0; I < GetCount(); ++I) {
-                    const ClassPair &Pair = Get(I);
+                for (int i = 0; i < GetCount(); ++i) {
+                    const ClassPair &Pair = Get(i);
                     if (Pair.Name().Lower() == Name.Lower())
-                        return I;
+                        return i;
                 }
                 return -1;
             }
@@ -200,6 +200,14 @@ namespace Delphi {
                 return Add(ClassPair(Name, Value));
             }
 
+            int Delete(const CString &Name) {
+                const auto index = IndexOfName(Name);
+                if (index != -1 ) {
+                    Delete(index);
+                }
+                return index;
+            }
+
             void Delete(int Index) {
                 m_pList.Delete(Index);
             }
@@ -207,11 +215,11 @@ namespace Delphi {
             void SetCount(int NewCount) {
                 int LCount = GetCount();
                 if (NewCount > LCount) {
-                    for (int I = LCount; I < NewCount; ++I)
+                    for (int i = LCount; i < NewCount; ++i)
                         Add(ClassPair());
                 } else {
-                    for (int I = LCount - 1; I >= NewCount; --I)
-                        Delete(I);
+                    for (int i = LCount - 1; i >= NewCount; --i)
+                        Delete(i);
                 }
             }
 
@@ -242,8 +250,8 @@ namespace Delphi {
             int Count() const { return GetCount(); }
 
             void Concat(const TPairs &Value) {
-                for (int I = 0; I < Value.GetCount(); ++I) {
-                    Add(Value[I]);
+                for (int i = 0; i < Value.GetCount(); ++i) {
+                    Add(Value[i]);
                 }
             }
 
@@ -283,6 +291,14 @@ namespace Delphi {
                     Concat(Value);
                 return *this;
             };
+
+            friend CStringList& operator<< (CStringList& List, const ClassPairs& Pairs) {
+                for (int i = 0; i < Pairs.Count(); i++) {
+                    const auto &Pair = Pairs[i];
+                    List.AddPair(Pair.Name(), Pair.Value());
+                }
+                return List;
+            }
 
             ClassPair &operator[](int Index) { return Items(Index); }
             const ClassPair &operator[](int Index) const { return Items(Index); }

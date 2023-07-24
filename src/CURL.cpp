@@ -61,7 +61,6 @@ namespace Delphi {
 
         CCurlApi::CCurlApi() {
             m_curl = nullptr;
-            m_Headers.NameValueSeparator(": ");
 
             Init();
         }
@@ -90,10 +89,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCurlApi::HeaderCallBack(char *buffer, size_t size, size_t nitems, CStringList *Headers) {
+        size_t CCurlApi::HeaderCallBack(char *buffer, size_t size, size_t nitems, CHeaders *Headers) {
             size_t buffer_size = nitems * size;
             if (buffer_size > 2) {
-                Headers->Add(CString((LPCTSTR) buffer, buffer_size - 2));
+                const CString S((LPCTSTR) buffer, buffer_size - 2);
+                const auto pos = S.Find(": ");
+                if (pos != CString::npos) {
+                    Headers->AddPair(S.SubString(0, pos), S.SubString(pos + 2));
+                }
             }
             return buffer_size;
         }
@@ -111,17 +114,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Get(const CLocation &URL, const CStringList &Headers) const {
+        CURLcode CCurlApi::Get(const CLocation &URL, const CHeaders &Headers) const {
             return Send(URL, "GET", CString(), Headers, false);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Post(const CLocation &URL, const CString &Content, const CStringList &Headers) const {
+        CURLcode CCurlApi::Post(const CLocation &URL, const CString &Content, const CHeaders &Headers) const {
             return Send(URL, "POST", Content, Headers, false);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers, bool bTunnel) const {
+        CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CHeaders &Headers, bool bTunnel) const {
             CURLcode code = CURLE_SEND_ERROR;
 
             if (m_curl) {
@@ -138,13 +141,14 @@ namespace Delphi {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
                 }
 #ifdef _DEBUG
-                curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
+                curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L);
 #endif
 
                 if (Headers.Count() > 0) {
                     struct curl_slist *chunk = nullptr;
-                    for ( int i = 0; i < Headers.Count(); i++ ) {
-                        chunk = curl_slist_append(chunk, Headers[i].c_str());
+                    for (int i = 0; i < Headers.Count(); i++ ) {
+                        const auto &Header = Headers[i];
+                        chunk = curl_slist_append(chunk, (Header.Name() + ": " + Header.Value()).c_str());
                     }
 
                     curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, chunk);
@@ -169,9 +173,9 @@ namespace Delphi {
 
                 code = curl_easy_perform(m_curl);
 
-                if (code == CURLE_OK) {
-                    CurlInfo();
-                }
+//                if (code == CURLE_OK) {
+//                    CurlInfo();
+//                }
             }
 
             return code;

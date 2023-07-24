@@ -64,13 +64,13 @@ namespace Delphi {
 
             CURL *m_curl;
 
-            mutable CStringList m_Headers;
+            mutable CHeaders m_Headers;
             mutable CString m_Result;
 
             virtual void CurlInfo() const abstract;
 
             static size_t CallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
-            static size_t HeaderCallBack(char *buffer, size_t size, size_t nitems, CStringList *Headers);
+            static size_t HeaderCallBack(char *buffer, size_t size, size_t nitems, CHeaders *Headers);
 
         public:
 
@@ -82,12 +82,12 @@ namespace Delphi {
 
             virtual void Reset() const;
 
-            const CStringList &Headers() const { return m_Headers; }
+            const CHeaders &Headers() const { return m_Headers; }
             const CString &Result() const { return m_Result; }
 
-            virtual CURLcode Get(const CLocation &URL, const CStringList &Headers) const;
-            virtual CURLcode Post(const CLocation &URL, const CString &Content, const CStringList &Headers) const;
-            virtual CURLcode Send(const CLocation &URL, const CString &Method, const CString &Content, const CStringList &Headers, bool bTunnel) const;
+            virtual CURLcode Get(const CLocation &URL, const CHeaders &Headers) const;
+            virtual CURLcode Post(const CLocation &URL, const CString &Content, const CHeaders &Headers) const;
+            virtual CURLcode Send(const CLocation &URL, const CString &Method, const CString &Content, const CHeaders &Headers, bool bTunnel) const;
 
         };
     }
