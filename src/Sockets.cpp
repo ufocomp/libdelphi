@@ -36,7 +36,7 @@ namespace Delphi {
 
         static int GInstanceCount = 0;
 
-        pthread_mutex_t GSocketCriticalSection;
+        static pthread_mutex_t GSocketCriticalSection;
         LIB_DELPHI CStack *GStack = nullptr;
         //--------------------------------------------------------------------------------------------------------------
 
@@ -632,54 +632,43 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         inline void AddSocket() {
-
             if (GInstanceCount == 0)
                 pthread_mutex_init(&GSocketCriticalSection, nullptr);
 
-            pthread_mutex_lock(&GSocketCriticalSection);
+            CLockGuard LockGuard(&GSocketCriticalSection);
 
-            try {
-                if (GInstanceCount == 0) {
-                    GStack = CStack::CreateSocket();
+            if (GInstanceCount == 0) {
+                GStack = CStack::CreateSocket();
 #ifdef WITH_SSL
-                    GStack->SSLInit();
+                GStack->SSLInit();
 #endif
-                }
-
-                GInstanceCount++;
-            } catch (...) {
             }
 
-            pthread_mutex_unlock(&GSocketCriticalSection);
+            GInstanceCount++;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         inline void RemoveSocket() {
+            {
+                CLockGuard LockGuard(&GSocketCriticalSection);
 
-            pthread_mutex_lock(&GSocketCriticalSection);
-
-            try {
                 GInstanceCount--;
 
-                if (GInstanceCount == 0)
-                {
+                if (GInstanceCount == 0) {
                     Delphi::Socket::CStack::DeleteSocket();
 #ifdef WITH_SSL
                     GStack->SSLFinalize();
 #endif
                     GStack = nullptr;
                 }
-            } catch (...) {
             }
-
-            pthread_mutex_unlock(&GSocketCriticalSection);
 
             if (GInstanceCount == 0)
                 pthread_mutex_destroy(&GSocketCriticalSection);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CSocketComponent::CSocketComponent(): m_WorkInfos{} {
+        CSocketComponent::CSocketComponent(): m_WorkInfos() {
             AddSocket();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -3080,9 +3069,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CSocketThread::CSocketThread(bool ACreateSuspended): CThread(ACreateSuspended) {
-            //pthread_mutex_init(&m_Lock, nullptr);
-            m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
             m_StopMode = smTerminate;
 
             m_OnException = nullptr;

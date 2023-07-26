@@ -164,7 +164,7 @@ namespace Delphi {
             const CJSONObject &Object() const { return *(CJSONObject *) m_Value; }
 
             void LoadFromFile(LPCTSTR lpszFileName);
-            void LoadFromStream(CStream &Stream);
+            void LoadFromStream(const CStream &Stream);
 
             void SaveToFile(LPCTSTR lpszFileName) const;
             void SaveToStream(CStream &Stream) const;

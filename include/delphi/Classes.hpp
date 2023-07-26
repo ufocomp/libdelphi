@@ -64,7 +64,7 @@ namespace Delphi {
         extern LIB_DELPHI CSysError *GSysError;
         //--------------------------------------------------------------------------------------------------------------
 
-        static pthread_mutex_t GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+        static pthread_mutex_t GThreadLock;
         //--------------------------------------------------------------------------------------------------------------
 
         typedef unsigned (*PTHREAD_START)(void *);
@@ -1203,9 +1203,9 @@ namespace Delphi {
 
         private:
 
-            LPCTSTR m_LineBreak;
-            LPCTSTR m_Delimiter;
-            LPCTSTR m_NameValueSeparator;
+            CString m_LineBreak;
+            CString m_Delimiter;
+            CString m_NameValueSeparator;
 
             TCHAR m_QuoteChar;
 
@@ -1296,7 +1296,7 @@ namespace Delphi {
             virtual void InsertObject(int Index, reference Str, CObject* AObject);
             virtual void InsertObject(int Index, TCHAR C, CObject* AObject);
             virtual void LoadFromFile(LPCTSTR lpszFileName);
-            virtual void LoadFromStream(CStream &Stream);
+            virtual void LoadFromStream(const CStream &Stream);
             virtual void Move(int CurIndex, int NewIndex);
             virtual void SaveToFile(LPCTSTR lpszFileName) const;
             virtual void SaveToStream(CStream &Stream) const;
@@ -1378,6 +1378,13 @@ namespace Delphi {
                 if (Str != nullptr) {
                     size_t Size = strlen(Str);
                     SetTextStr(Str, Size);
+                }
+                return *this;
+            }
+
+            virtual CStrings &operator=(const std::string &s) {
+                if (!s.empty()) {
+                    SetText(s.c_str());
                 }
                 return *this;
             }
@@ -1535,6 +1542,13 @@ namespace Delphi {
                 if (Str != nullptr) {
                     size_t Size = strlen(Str);
                     SetTextStr(Str, Size);
+                }
+                return *this;
+            }
+
+            CStringList &operator=(const std::string &s) override {
+                if (!s.empty()) {
+                    SetText(s.c_str());
                 }
                 return *this;
             }
@@ -1747,10 +1761,9 @@ namespace Delphi {
         private:
 
             pthread_t           m_hHandle;
-            pthread_attr_t      m_hAttr {};
 
-            pthread_mutex_t     m_SuspendMutex {};
-            pthread_cond_t      m_ResumeCond {};
+            pthread_mutex_t     m_SuspendMutex = PTHREAD_MUTEX_INITIALIZER;
+            pthread_cond_t      m_ResumeCond = PTHREAD_COND_INITIALIZER;
 
             pid_t               m_nThreadId;
 
@@ -1828,13 +1841,21 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CLockGuard {
+        private:
+
+            pthread_mutex_t *m_pMutex;
+
         public:
 
-            CLockGuard() { pthread_mutex_lock(&GThreadLock); }
-            ~CLockGuard() { pthread_mutex_unlock(&GThreadLock); }
+            explicit CLockGuard(pthread_mutex_t *mutex): m_pMutex(mutex) {
+                pthread_mutex_lock(m_pMutex);
+            }
+
+            ~CLockGuard() {
+                pthread_mutex_unlock(m_pMutex);
+            }
 
         };
-
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1854,7 +1875,7 @@ namespace Delphi {
         public:
 
             CThreadList();
-            virtual ~CThreadList() = default;
+            virtual ~CThreadList();
 
             void Add(CThread *Item);
             void Clear();

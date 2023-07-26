@@ -54,12 +54,17 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         inline void InitThreadSynchronization() {
-//            pthread_mutex_init(&GThreadLock, nullptr);
+//            pthread_mutexattr_t attr;
+//            pthread_mutexattr_init(&attr);
+//            pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+//            pthread_mutex_init(&GThreadLock, &attr);
+//            pthread_mutexattr_destroy(&attr);
+            GThreadLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         inline void DoneThreadSynchronization() {
-//            pthread_mutex_destroy(&GThreadLock);
+            pthread_mutex_destroy(&GThreadLock);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -82,18 +87,15 @@ namespace Delphi {
             if (GThreadCount == 0)
                 InitThreadSynchronization();
 
-            pthread_mutex_lock(&GThreadLock);
+            CLockGuard LockGuard(&GThreadLock);
 
             GThreadCount++;
-
-            pthread_mutex_unlock(&GThreadLock);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         inline void RemoveThread() {
-            pthread_mutex_lock(&GThreadLock);
-
-            try {
+            {
+                CLockGuard LockGuard(&GThreadLock);
                 GThreadCount--;
                 if ((GThreadCount == 0) && (GSyncList != nullptr)) {
                     for (int i = GSyncList->Count() - 1; i >= 0; i--)
@@ -101,10 +103,7 @@ namespace Delphi {
 
                     delete GSyncList;
                 }
-            } catch (...) {
             }
-
-            pthread_mutex_unlock(&GThreadLock);
 
             if (GThreadCount == 0)
                 DoneThreadSynchronization();
@@ -125,32 +124,29 @@ namespace Delphi {
             else
                 ResetSyncEvent();
 
-            pthread_mutex_lock(&GThreadLock);
-            try {
-                LocalSyncList.Assign(*GSyncList, laCopy);
+            CLockGuard LockGuard(&GThreadLock);
 
-                Result = (LocalSyncList.Count() > 0);
+            LocalSyncList.Assign(*GSyncList, laCopy);
 
-                if (Result) {
-                    while (LocalSyncList.Count() > 0) {
-                        SyncProc = (CSyncProc *) LocalSyncList.Items(0);
+            Result = (LocalSyncList.Count() > 0);
 
-                        LocalSyncList.Delete(0);
+            if (Result) {
+                while (LocalSyncList.Count() > 0) {
+                    SyncProc = (CSyncProc *) LocalSyncList.Items(0);
 
-                        pthread_mutex_unlock(&GThreadLock);
+                    LocalSyncList.Delete(0);
 
-                        try {
-                            SyncProc->SyncRec.Method();
-                        } catch (...) {
-                        }
+                    pthread_mutex_unlock(&GThreadLock);
 
-                        pthread_mutex_lock(&GThreadLock);
-                        pthread_cond_wait(&SyncProc->Signal, &GThreadLock);
+                    try {
+                        SyncProc->SyncRec.Method();
+                    } catch (...) {
                     }
+
+                    pthread_mutex_lock(&GThreadLock);
+                    pthread_cond_wait(&SyncProc->Signal, &GThreadLock);
                 }
-            } catch (...) {
             }
-            pthread_mutex_unlock(&GThreadLock);
 
             return Result;
         }
@@ -1714,6 +1710,7 @@ namespace Delphi {
             LStr.SetLength(m_MaxFormatSize);
             cchDest = LStr.GetSize();
             chVERIFY(SUCCEEDED(StringPCchVPrintf(LStr.Data(), &cchDest, pszFormat, argList)));
+            Clear();
             AddStr(LStr.Data(), cchDest / sizeof(TCHAR));
             return *this;
         }
@@ -1862,23 +1859,23 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LPCTSTR CStrings::GetDelimiter() const {
-            return m_Delimiter;
+            return m_Delimiter.c_str();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetDelimiter(LPCTSTR Value) {
-            if (!SameText(m_Delimiter, Value))
+            if (m_Delimiter != Value)
                 m_Delimiter = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         LPCTSTR CStrings::GetLineBreak() const {
-            return m_LineBreak;
+            return m_LineBreak.c_str();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetLineBreak(LPCTSTR Value) {
-            if (!SameText(m_LineBreak, Value))
+            if (m_LineBreak != Value)
                 m_LineBreak = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1895,12 +1892,12 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LPCTSTR CStrings::GetNameValueSeparator() const {
-            return m_NameValueSeparator;
+            return m_NameValueSeparator.c_str();
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetNameValueSeparator(LPCTSTR Value) {
-            if (!SameText(m_NameValueSeparator, Value))
+            if (m_NameValueSeparator != Value)
                 m_NameValueSeparator = Value;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2301,7 +2298,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CStrings::LoadFromStream(CStream &Stream) {
+        void CStrings::LoadFromStream(const CStream &Stream) {
             size_t BufSize, Count;
             LPTSTR Buffer;
 
@@ -2312,17 +2309,19 @@ namespace Delphi {
             else
                 BufSize = Count;
 
-            Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize);
+            const auto char_size = sizeof(TCHAR);
+
+            Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize + char_size);
             BeginUpdate();
             try {
                 Stream.Read(Buffer, BufSize);
                 SetTextStr(Buffer, BufSize);
             } catch (...) {
-                GHeap->Free(0, Buffer, BufSize);
+                GHeap->Free(0, Buffer, BufSize + char_size);
                 EndUpdate();
                 throw;
             }
-            GHeap->Free(0, Buffer, BufSize);
+            GHeap->Free(0, Buffer, BufSize + char_size);
             EndUpdate();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2360,7 +2359,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CStrings::SetTextStr(LPCTSTR Text, size_t Size) {
-
             size_t nLineBreakLen, nLineDelimiterLen;
             LPCTSTR P, E, LB, LD;
 
@@ -2371,16 +2369,16 @@ namespace Delphi {
                 E = P + Size;
                 if (Assigned(P)) {
                     Add(CString());
-                    if (SameText(m_LineBreak, sLineBreak)) {
-                        nLineDelimiterLen = strlen(m_Delimiter);
-                        LD = strstr(P, m_Delimiter);
+                    if (m_LineBreak == sLineBreak) {
+                        nLineDelimiterLen = m_Delimiter.Length();
+                        LD = strstr(P, m_Delimiter.c_str());
 
                         while (P < E) {
                             if ((*P == '\n') || (P == LD)) {
                                 Add(CString());
                                 if (P == LD) {
                                     P += nLineDelimiterLen;
-                                    LD = strstr(P, m_Delimiter);
+                                    LD = strstr(P, m_Delimiter.c_str());
                                 } else {
                                     if (P == (Text + Size))
                                         break;
@@ -2396,21 +2394,21 @@ namespace Delphi {
                             }
                         }
                     } else {
-                        nLineBreakLen = strlen(m_LineBreak);
-                        nLineDelimiterLen = strlen(m_Delimiter);
+                        nLineBreakLen = m_LineBreak.Length();
+                        nLineDelimiterLen = m_Delimiter.Length();
 
-                        LB = strstr(P, m_LineBreak);
-                        LD = strstr(P, m_Delimiter);
+                        LB = strstr(P, m_LineBreak.c_str());
+                        LD = strstr(P, m_Delimiter.c_str());
 
                         while (P < E) {
                             if ((P == LB) || (P == LD)) {
                                 Add(CString());
                                 if (P == LB) {
                                     P += nLineBreakLen;
-                                    LB = strstr(P, m_LineBreak);
+                                    LB = strstr(P, m_LineBreak.c_str());
                                 } else if (P == LD) {
                                     P += nLineDelimiterLen;
-                                    LD = strstr(P, m_Delimiter);
+                                    LD = strstr(P, m_Delimiter.c_str());
                                 } else {
                                     if (P == (Text + Size))
                                         break;
@@ -3020,7 +3018,6 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LPVOID ThreadProc(LPVOID lpParameter) {
-
             auto pThread = static_cast<CThread *> (lpParameter);
 
             if (pThread->m_bCreateSuspended)
@@ -3048,8 +3045,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CThread::CThread(bool CreateSuspended): CObject()
-        {
+        CThread::CThread(bool CreateSuspended): CObject() {
             AddThread();
 
             m_hHandle = 0;
@@ -3065,21 +3061,21 @@ namespace Delphi {
             m_bSuspended = CreateSuspended;
             m_bCreateSuspended = CreateSuspended;
 
-            m_SuspendMutex = PTHREAD_MUTEX_INITIALIZER;
-            m_ResumeCond = PTHREAD_COND_INITIALIZER;
+//            m_SuspendMutex = PTHREAD_MUTEX_INITIALIZER;
+//            m_ResumeCond = PTHREAD_COND_INITIALIZER;
 
-            pthread_attr_init(&m_hAttr);
-            pthread_attr_setdetachstate(&m_hAttr, PTHREAD_CREATE_JOINABLE);
-
-            m_nThreadId = pthread_create(&m_hHandle, &m_hAttr, &ThreadProc, (PVOID) this);
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+            m_nThreadId = pthread_create(&m_hHandle, &attr, &ThreadProc, (PVOID) this);
+            pthread_attr_destroy(&attr);
 
             if ( m_nThreadId != 0 )
                 throw Exception::Exception(_T("Thread creation error."));
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CThread::~CThread()
-        {
+        CThread::~CThread() {
             if ( (m_nThreadId != 0) && (!m_bFinished) )
             {
                 CThread::Terminate();
@@ -3092,60 +3088,51 @@ namespace Delphi {
                 pthread_cond_broadcast(&m_ResumeCond);
             }
 
-            pthread_attr_destroy(&m_hAttr);
             pthread_mutex_destroy(&m_SuspendMutex);
 
             RemoveThread();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::AfterConstruction()
-        {
+        void CThread::AfterConstruction() {
             if ( !m_bCreateSuspended )
                 Resume();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::CheckThreadError(int ErrCode)
-        {
+        void CThread::CheckThreadError(int ErrCode) {
             throw EOSError(ErrCode, _T("Thread error: "));
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::CheckThreadError(bool Success)
-        {
+        void CThread::CheckThreadError(bool Success) {
             if ( !Success )
                 CheckThreadError(errno);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::CallOnTerminate()
-        {
+        void CThread::CallOnTerminate() {
             if ( m_OnTerminate != nullptr )
                 m_OnTerminate(this);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::DoTerminate()
-        {
+        void CThread::DoTerminate() {
             CallOnTerminate();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CThreadPriority CThread::GetPriority()
-        {
+        CThreadPriority CThread::GetPriority() {
             return tpNormal;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::SetPriority(CThreadPriority Value)
-        {
+        void CThread::SetPriority(CThreadPriority Value) {
             //
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::SetSuspended(bool Value)
-        {
+        void CThread::SetSuspended(bool Value) {
             if ( Value != m_bSuspended ) {
                 if ( Value ) {
                     m_bSuspended = true;
@@ -3157,8 +3144,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Suspend()
-        {
+        void CThread::Suspend() {
             pthread_mutex_lock(&m_SuspendMutex);
             //m_bSuspended = true;
             while (m_bSuspended) {
@@ -3168,8 +3154,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Resume()
-        {
+        void CThread::Resume() {
             if (m_bSuspended) {
                 pthread_mutex_lock(&m_SuspendMutex);
                 m_bSuspended = false;
@@ -3179,20 +3164,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Terminate()
-        {
+        void CThread::Terminate() {
             m_bTerminated = true;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::CreateSyncList()
-        {
+        void CThread::CreateSyncList() {
             GSyncList = new CList();
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Synchronize(const CSynchronizeRecord &ASyncRec)
-        {
+        void CThread::Synchronize(const CSynchronizeRecord &ASyncRec) {
             auto SyncProc = new CSyncProc;
 
             if ( ::getppid() == MainProcessID )
@@ -3205,34 +3187,23 @@ namespace Delphi {
                 {
                     SyncProc->Signal = PTHREAD_COND_INITIALIZER;
 
-                    try
                     {
-                        pthread_mutex_lock(&GThreadLock);
-                        try
-                        {
-                            if ( GSyncList == nullptr )
-                                CreateSyncList();
+                        CLockGuard LockGuard(&GThreadLock);
 
-                            SyncProc->SyncRec = ASyncRec;
-                            GSyncList->Add(SyncProc);
+                        if (GSyncList == nullptr)
+                            CreateSyncList();
 
-                            SignalSyncEvent();
+                        SyncProc->SyncRec = ASyncRec;
+                        GSyncList->Add(SyncProc);
 
-                            if ( WakeMainThread  )
-                                WakeMainThread((CObject *) SyncProc->SyncRec.Thread);
+                        SignalSyncEvent();
 
-                            pthread_mutex_unlock(&GThreadLock);
-                            try
-                            {
-                                pthread_cond_signal(&SyncProc->Signal);
-                            } catch (...) {
-                            }
-                            pthread_mutex_lock(&GThreadLock);
-                        } catch (...) {
-                        }
+                        if ( WakeMainThread  )
+                            WakeMainThread((CObject *) SyncProc->SyncRec.Thread);
+
                         pthread_mutex_unlock(&GThreadLock);
-
-                    } catch (...) {
+                        pthread_cond_signal(&SyncProc->Signal);
+                        pthread_mutex_lock(&GThreadLock);
                     }
 
                     while (pthread_cond_destroy(&SyncProc->Signal) == EBUSY) {
@@ -3246,8 +3217,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Synchronize(CThreadMethod *AMethod)
-        {
+        void CThread::Synchronize(CThreadMethod *AMethod) {
             m_Synchronize.Thread = this;
             m_Synchronize.SynchronizeException = nullptr;
             m_Synchronize.Method = AMethod;
@@ -3256,8 +3226,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CThread::Synchronize(CThread *AThread, CThreadMethod *AMethod)
-        {
+        void CThread::Synchronize(CThread *AThread, CThreadMethod *AMethod) {
             CSynchronizeRecord SyncRec;
 
             if ( AThread != nullptr )
@@ -3288,6 +3257,11 @@ namespace Delphi {
         CThreadList::CThreadList()
         {
             m_Duplicates = dupIgnore;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CThreadList::~CThreadList() {
+            pthread_mutex_destroy(&m_Lock);
         }
         //--------------------------------------------------------------------------------------------------------------
 

@@ -362,7 +362,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CJSON::LoadFromStream(CStream &Stream) {
+        void CJSON::LoadFromStream(const CStream &Stream) {
 
             size_t BufSize, Count;
             LPTSTR Buffer;
@@ -374,17 +374,19 @@ namespace Delphi {
             else
                 BufSize = Count;
 
-            Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize);
+            const auto char_size = sizeof(TCHAR);
+
+            Buffer = (LPTSTR) GHeap->Alloc(HEAP_ZERO_MEMORY, BufSize + char_size);
             BeginUpdate();
             try {
                 Stream.Read(Buffer, BufSize);
                 StrToJson(Buffer, BufSize);
             } catch (...) {
-                GHeap->Free(0, Buffer, BufSize);
+                GHeap->Free(0, Buffer, BufSize + char_size);
                 EndUpdate();
                 throw;
             }
-            GHeap->Free(0, Buffer, BufSize);
+            GHeap->Free(0, Buffer, BufSize + char_size);
             EndUpdate();
         }
         //--------------------------------------------------------------------------------------------------------------

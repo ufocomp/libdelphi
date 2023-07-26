@@ -126,6 +126,7 @@ namespace Delphi {
 
         CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CHeaders &Headers, bool bTunnel) const {
             CURLcode code = CURLE_SEND_ERROR;
+            struct curl_slist *chunk = nullptr;
 
             if (m_curl) {
                 Reset();
@@ -145,10 +146,13 @@ namespace Delphi {
 #endif
 
                 if (Headers.Count() > 0) {
-                    struct curl_slist *chunk = nullptr;
-                    for (int i = 0; i < Headers.Count(); i++ ) {
-                        const auto &Header = Headers[i];
-                        chunk = curl_slist_append(chunk, (Header.Name() + ": " + Header.Value()).c_str());
+                    CStringList List;
+
+                    List.NameValueSeparator(": ");
+                    List << Headers;
+
+                    for (int i = 0; i < List.Count(); ++i) {
+                        chunk = curl_slist_append(chunk, List[i].c_str());
                     }
 
                     curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, chunk);
@@ -172,6 +176,9 @@ namespace Delphi {
                 }
 
                 code = curl_easy_perform(m_curl);
+
+                if (chunk != nullptr)
+                    curl_slist_free_all(chunk);
 
 //                if (code == CURLE_OK) {
 //                    CurlInfo();

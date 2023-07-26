@@ -278,7 +278,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         enum CWorkMode {
-            wmRead, wmWrite
+            wmRead = 0, wmWrite = 1
         };
         //--------------------------------------------------------------------------------------------------------------
 
@@ -292,13 +292,13 @@ namespace Delphi {
         class LIB_DELPHI CSocketComponent {
         protected:
 
-            CWorkInfo m_WorkInfos[sizeof(CWorkInfo)];
+            CWorkInfo m_WorkInfos[2]; // CWorkMode enum count
 
         public:
 
             CSocketComponent();
 
-            ~CSocketComponent();
+            virtual ~CSocketComponent();
 
             void BeginWork(CWorkMode AWorkMode, ssize_t ASize = 0);
 
@@ -384,7 +384,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CSocketHandle: public CSocketComponent, public CCollectionItem {
+        class LIB_DELPHI CSocketHandle: public CCollectionItem, public CSocketComponent {
         private:
 
             CSocket m_Handle;
@@ -580,9 +580,9 @@ namespace Delphi {
 
         public:
 
-            CIOHandler() : CSocketComponent() {};
+            CIOHandler(): CSocketComponent() {};
 
-            virtual ~CIOHandler() { CIOHandler::Close(); };
+            ~CIOHandler() override = default;
 
             virtual void AfterAccept() {};
 #ifdef WITH_SSL
@@ -594,7 +594,7 @@ namespace Delphi {
 #else
             virtual void Open() abstract;
 #endif
-            virtual void Close() {};
+            virtual void Close() abstract;
 
             virtual bool Connected() abstract;
 
@@ -657,7 +657,7 @@ namespace Delphi {
         class LIB_DELPHI CPollEventHandler;
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CPollConnection: public CSocketComponent, public CCollectionItem {
+        class LIB_DELPHI CPollConnection: public CCollectionItem, public CSocketComponent {
         private:
 
             CList m_Bindings;
@@ -1062,7 +1062,7 @@ namespace Delphi {
 
             CSocketServer();
 
-            ~CSocketServer();
+            ~CSocketServer() override;
 
             CString& DefaultIP() { return GetDefaultIP(); }
             const CString& DefaultIP() const { return GetDefaultIP(); }
@@ -1106,7 +1106,7 @@ namespace Delphi {
 
             CSocketClient();
 
-            ~CSocketClient() = default;
+            ~CSocketClient() override = default;
 
             CString &ClientName() { return m_ClientName; }
             const CString &ClientName() const { return m_ClientName; }
@@ -1133,7 +1133,7 @@ namespace Delphi {
 
             CEventSocketServer(): CSocketServer(), CSocketEvent() {};
 
-            ~CEventSocketServer() = default;
+            ~CEventSocketServer() override = default;
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1147,7 +1147,7 @@ namespace Delphi {
 
             CEventSocketClient(): CSocketClient(), CSocketEvent() {};
 
-            ~CEventSocketClient() = default;
+            ~CEventSocketClient() override = default;
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -1179,7 +1179,7 @@ namespace Delphi {
 
             CPollSocketClient(): CEventSocketClient() {};
 
-           virtual ~CPollSocketClient() = default;
+           ~CPollSocketClient() override = default;
 
             CPollManager *ptrConnections() { return &m_Connections; }
             CPollManager &Connections() { return m_Connections; }
@@ -1521,7 +1521,7 @@ namespace Delphi {
 
             CUDPServer();
 
-            ~CUDPServer();
+            ~CUDPServer() override;
 
             bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
@@ -1551,7 +1551,7 @@ namespace Delphi {
 
             CUDPClient();
 
-            ~CUDPClient();
+            ~CUDPClient() override;
 
             bool Active() const { return m_Active; }
             void Active(bool Value) { SetActive(Value); }
@@ -1582,7 +1582,7 @@ namespace Delphi {
 
         protected:
 
-            pthread_mutex_t m_Lock {};
+            pthread_mutex_t m_Lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
             CThreadStopMode m_StopMode;
             bool m_Stopped;
 
@@ -1869,7 +1869,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CCommandHandlers : public CCollection {
+        class LIB_DELPHI CCommandHandlers: public CCollection {
             typedef CCollection inherited;
         private:
 

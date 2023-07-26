@@ -180,6 +180,7 @@ namespace Delphi {
         public:
 
             explicit CQueueCollection(size_t AMaxQueue);
+            virtual ~CQueueCollection() = default;
 
             void DeleteHandler(CQueueHandler *AHandler);
 
