@@ -158,16 +158,18 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CJSONObject *CJSON::CreateObject() {
+        CJSONObject *CJSON::GetObject() {
             m_ValueType = jvtObject;
-            m_Value = new CJSONObject(this);
+            if (m_Value == nullptr)
+                m_Value = new CJSONObject(this);
             return dynamic_cast<CJSONObject *> (m_Value);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        CJSONArray *CJSON::CreateArray() {
+        CJSONArray *CJSON::GetArray() {
             m_ValueType = jvtArray;
-            m_Value = new CJSONArray(this);
+            if (m_Value == nullptr)
+                m_Value = new CJSONArray(this);
             return dynamic_cast<CJSONArray *> (m_Value);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -178,17 +180,15 @@ namespace Delphi {
 
             if (Assigned(Source.Value())) {
                 if (Source.Value()->IsObject())
-                    CreateObject()->Assign(Source.Object());
+                    GetObject()->Assign(Source.Object());
 
                 if (Source.Value()->IsArray())
-                    CreateArray()->Assign(Source.Array());
+                    GetArray()->Assign(Source.Array());
             } else {
                 if (m_ValueType == jvtObject) {
-                    auto Object = (CJSONObject *) &Source;
-                    CreateObject()->Assign(*Object);
+                    GetObject()->Assign((const CJSONObject &) Source);
                 } else if (m_ValueType == jvtArray) {
-                    auto Array = (CJSONArray *) &Source;
-                    CreateArray()->Assign(*Array);
+                    GetArray()->Assign((const CJSONArray &) Source);
                 }
             }
         }
@@ -197,10 +197,10 @@ namespace Delphi {
         void CJSON::Concat(const CJSON& Source) {
             if (Assigned(Source.Value()) && (ValueType() == Source.Value()->ValueType())) {
                 if (Source.Value()->IsObject())
-                    CreateObject()->Concat(Source.Object());
+                    GetObject()->Concat(Source.Object());
 
                 if (Source.Value()->IsArray())
-                    CreateArray()->Concat(Source.Array());
+                    GetArray()->Concat(Source.Array());
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1850,10 +1850,10 @@ namespace Delphi {
             if (CurrentJson().IsObject()) {
                 switch (ValueType) {
                     case jvtObject:
-                        m_pJsonList->Add(CurrentValue().CreateObject());
+                        m_pJsonList->Add(CurrentValue().GetObject());
                         break;
                     case jvtArray:
-                        m_pJsonList->Add(CurrentValue().CreateArray());
+                        m_pJsonList->Add(CurrentValue().GetArray());
                         break;
                     default:
                         CurrentValue().ValueType(ValueType);
@@ -1892,11 +1892,11 @@ namespace Delphi {
             switch (m_State) {
                 case json_start:
                     if (AInput == '{') {
-                        m_pJsonList->Add(m_Json->CreateObject());
+                        m_pJsonList->Add(m_Json->GetObject());
                         m_State = string_start;
                         return -1;
                     } else if (AInput == '[') {
-                        m_pJsonList->Add(m_Json->CreateArray());
+                        m_pJsonList->Add(m_Json->GetArray());
                         m_State = value_start;
                         return -1;
                     } else if (IsWS(AInput)) {

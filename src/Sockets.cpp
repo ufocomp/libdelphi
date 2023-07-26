@@ -2748,7 +2748,8 @@ namespace Delphi {
 
         bool CTCPClientConnection::FreeClient() {
             if (m_pClient != nullptr && m_pClient->AutoFree() && m_pClient->Connections().Count() == 1) {
-                FreeAndNil(m_pClient);
+                delete dynamic_cast<CTCPClient *> (m_pClient);
+                m_pClient = nullptr;
                 return true;
             }
             return false;
@@ -4977,6 +4978,11 @@ namespace Delphi {
 
         CTCPAsyncServer::CTCPAsyncServer(unsigned short AListen): CTCPAsyncServer() {
             DefaultPort(AListen);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CTCPAsyncServer::~CTCPAsyncServer() {
+            FreeIOHandler();
         }
         //--------------------------------------------------------------------------------------------------------------
 

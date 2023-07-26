@@ -2704,7 +2704,7 @@ namespace Delphi {
 
             explicit CTCPAsyncServer(unsigned short AListen);
 
-            ~CTCPAsyncServer() override = default;
+            ~CTCPAsyncServer() override;
 
             CTCPServerConnection *Connections(int Index) const { return GetConnection(Index); }
             void Connections(int Index, CTCPServerConnection *Value) { SetConnection(Index, Value); }

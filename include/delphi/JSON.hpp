@@ -101,6 +101,9 @@ namespace Delphi {
 
             ~CJSON() override;
 
+            CJSONArray *GetArray();
+            CJSONObject *GetObject();
+
             CJSONValueType ValueType() const { return m_ValueType; };
 
             void ValueType(CJSONValueType AValueType) { m_ValueType = AValueType; };
@@ -125,9 +128,6 @@ namespace Delphi {
 
             bool IsBoolean() const { return m_ValueType == jvtBoolean; };
 
-            CJSONArray *CreateArray();
-            CJSONObject *CreateObject();
-
             virtual void Assign(const CJSON &Value);
 
             virtual void Concat(const CJSON &Source);
@@ -146,9 +146,7 @@ namespace Delphi {
             virtual bool HasOwnProperty(const CString &String) const;
 
             CJSONArray &Array() {
-                if (m_Value == nullptr)
-                    CreateArray();
-                return *(CJSONArray *) m_Value;
+                return *(CJSONArray *) GetArray();
             }
 
             const CJSONArray &Array() const {
@@ -156,12 +154,12 @@ namespace Delphi {
             }
 
             CJSONObject &Object() {
-                if (m_Value == nullptr)
-                    CreateObject();
-                return *(CJSONObject *) m_Value;
+                return *(CJSONObject *) GetObject();
             }
 
-            const CJSONObject &Object() const { return *(CJSONObject *) m_Value; }
+            const CJSONObject &Object() const {
+                return *(CJSONObject *) m_Value;
+            }
 
             void LoadFromFile(LPCTSTR lpszFileName);
             void LoadFromStream(const CStream &Stream);
@@ -814,10 +812,10 @@ namespace Delphi {
 
             explicit CJSONValue(CJSONValueType AType) : CJSON(this, AType) {
                 if (AType == jvtObject)
-                    CreateObject();
+                    GetObject();
 
                 if (AType == jvtArray)
-                    CreateArray();
+                    GetArray();
             };
 
             explicit CJSONValue(const CJSONMembers& Value) : CJSON(this, jvtObject) {
