@@ -153,7 +153,7 @@ namespace Delphi {
         class LIB_DELPHI CStack {
         private:
 
-            TCHAR m_szBuffer[1024] = {0};
+            TCHAR m_szBuffer[1025] = {0};
 
             int m_LastError;
 #ifdef WITH_SSL

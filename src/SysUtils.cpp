@@ -43,7 +43,7 @@ namespace Delphi {
         LIB_DELPHI void DebugSystemError(LPCTSTR lpFunctionName) {
 
             LPTSTR lpMsgBuf;
-            TCHAR S[MAX_ERROR_STR + sizeof(TCHAR)] = {0};
+            TCHAR S[MAX_ERROR_STR + 1] = {0};
 
             if (DefaultLocale.Locale() == LC_GLOBAL_LOCALE) {
                 lpMsgBuf = ::strerror_r(errno, S, MAX_ERROR_STR);
@@ -57,7 +57,7 @@ namespace Delphi {
 
         LIB_DELPHI void DebugMessage(LPCTSTR lpFormat, ...) {
 
-            TCHAR szBuffer[MAX_ERROR_STR + sizeof(TCHAR)] = {0};
+            TCHAR szBuffer[MAX_ERROR_STR + 1] = {0};
 
             if (lpFormat != nullptr) {
                 va_list args;
