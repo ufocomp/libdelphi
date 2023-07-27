@@ -1705,13 +1705,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CString &CString::Format(LPCTSTR pszFormat, va_list argList) {
-            CString LStr;
-            size_t cchDest;
-            LStr.SetLength(m_MaxFormatSize);
-            cchDest = LStr.GetSize();
-            chVERIFY(SUCCEEDED(StringPCchVPrintf(LStr.Data(), &cchDest, pszFormat, argList)));
-            Clear();
-            AddStr(LStr.Data(), cchDest / sizeof(TCHAR));
+            SetLength(m_MaxFormatSize);
+            size_t cchDest = m_MaxFormatSize;
+            chVERIFY(SUCCEEDED(StringPCchVPrintf(Data(), &cchDest, pszFormat, argList)));
+            SetLength(cchDest);
             return *this;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2990,7 +2987,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        const CString& CSysError::StrError(int AError) {
+        const CString& CSysError::StrError(int AError) const {
             if (AError >= 0 && AError < Count())
                 return Strings(AError);
             return m_UnknownError;

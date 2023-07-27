@@ -1675,7 +1675,7 @@ namespace Delphi {
 
             static void DestroySysError() { delete GSysError; };
 
-            const CString& StrError(int AError);
+            const CString& StrError(int AError) const;
         };
 
         //--------------------------------------------------------------------------------------------------------------
