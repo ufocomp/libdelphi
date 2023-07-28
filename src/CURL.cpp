@@ -142,7 +142,7 @@ namespace Delphi {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
                 }
 #ifdef _DEBUG
-                curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0L);
+                curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 1L);
 #endif
 
                 if (Headers.Count() > 0) {
@@ -180,9 +180,9 @@ namespace Delphi {
                 if (chunk != nullptr)
                     curl_slist_free_all(chunk);
 
-//                if (code == CURLE_OK) {
-//                    CurlInfo();
-//                }
+                if (code == CURLE_OK) {
+                    CurlInfo();
+                }
             }
 
             return code;
