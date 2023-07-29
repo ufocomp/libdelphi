@@ -182,7 +182,7 @@ namespace Delphi {
             explicit CQueueCollection(size_t AMaxQueue);
             virtual ~CQueueCollection() = default;
 
-            void DeleteHandler(CQueueHandler *AHandler);
+            virtual void DeleteHandler(CQueueHandler *AHandler);
 
             int AddToQueue(CQueueHandler *AHandler);
             void InsertToQueue(int Index, CQueueHandler *AHandler);
