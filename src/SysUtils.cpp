@@ -26,6 +26,7 @@ Author:
 //----------------------------------------------------------------------------------------------------------------------
 
 #include <random>
+#include <wait.h>
 //----------------------------------------------------------------------------------------------------------------------
 
 extern "C++" {
@@ -1155,11 +1156,28 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI bool IsRunningProc(pid_t pid) {
-            if (::kill(pid, 0) == 0 && errno != ESRCH) {
-                return true;
+        LIB_DELPHI bool IsProcessAlive(pid_t pid) {
+            ::waitpid(pid, nullptr, WNOHANG);
+            if (::kill(pid, 0) == -1) {
+                if (errno != ESRCH) {
+                    return true;
+                }
+                return false;
             }
-            return false;
+            return true;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI void WaitPid(pid_t pid, int seconds) {
+            int status;
+            pid_t wid;
+            do {
+                if ((wid = waitpid(pid, &status, WNOHANG)) == -1) {
+                    break;
+                } else if (wid == 0) {
+                    sleep(seconds);
+                }
+            } while (wid == 0 && !WIFEXITED(status));
         }
     }
 }

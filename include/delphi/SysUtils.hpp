@@ -215,7 +215,8 @@ namespace Delphi {
         LIB_DELPHI CDateTime GetRandomDate(int a, int b, CDateTime Date);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI bool IsRunningProc(pid_t pid);
+        LIB_DELPHI bool IsProcessAlive(pid_t pid);
+        LIB_DELPHI void WaitPid(pid_t pid, int seconds = 1);
 
 #ifdef UNICODE
 
