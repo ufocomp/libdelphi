@@ -93,6 +93,7 @@ namespace Delphi {
             virtual BOOL WriteString(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, const CString &String) abstract;
             virtual BOOL WriteString(const CString &SectionName, const CString &KeyName, const CString &String) abstract;
 
+            virtual INT ReadInteger(const CString &SectionName, const CString &KeyName, INT Default) const;
             virtual INT ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default) const;
             virtual BOOL WriteInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Value);
 
@@ -100,9 +101,11 @@ namespace Delphi {
             virtual bool ReadBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Default) const;
             virtual BOOL WriteBool(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, bool Value);
 
+            virtual DOUBLE ReadFloat(const CString &SectionName, const CString &KeyName, DOUBLE Default) const;
             virtual DOUBLE ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default) const;
             virtual BOOL WriteFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Value);
 
+            virtual CDateTime ReadDateTime(const CString &SectionName, const CString &KeyName, CDateTime Default) const;
             virtual CDateTime ReadDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Default) const;
             virtual BOOL WriteDateTime(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, CDateTime Value);
 

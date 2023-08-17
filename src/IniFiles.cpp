@@ -102,6 +102,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        INT CCustomIniFile::ReadInteger(const CString &SectionName, const CString &KeyName, INT Default) const {
+            return ReadInteger(SectionName.c_str(), KeyName.c_str(), Default);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         INT CCustomIniFile::ReadInteger(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, INT Default) const {
             long int val;
 
@@ -156,6 +161,11 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        DOUBLE CCustomIniFile::ReadFloat(const CString &SectionName, const CString &KeyName, DOUBLE Default) const {
+            return ReadFloat(SectionName.c_str(), KeyName.c_str(), Default);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         DOUBLE CCustomIniFile::ReadFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Default) const {
             double val;
 
@@ -178,6 +188,11 @@ namespace Delphi {
         BOOL CCustomIniFile::WriteFloat(LPCTSTR lpszSectionName, LPCTSTR lpszKeyName, DOUBLE Value) {
             TCHAR szString[MAX_BUFFER_SIZE / 4 + 1] = {0};
             return WriteString(lpszSectionName, lpszKeyName, FloatToStr(Value, szString, MAX_BUFFER_SIZE / 4));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CDateTime CCustomIniFile::ReadDateTime(const CString &SectionName, const CString &KeyName, CDateTime Default) const {
+            return ReadDateTime(SectionName.c_str(), KeyName.c_str(), Default);
         }
         //--------------------------------------------------------------------------------------------------------------
 
