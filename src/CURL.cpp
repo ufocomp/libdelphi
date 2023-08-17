@@ -24,6 +24,8 @@ Author:
 #include "delphi.hpp"
 #include "delphi/CURL.hpp"
 
+#define DELPHI_CURL_TIMEOUT 30
+
 extern "C++" {
 
 namespace Delphi {
@@ -61,6 +63,7 @@ namespace Delphi {
 
         CCurlApi::CCurlApi() {
             m_curl = nullptr;
+            m_TimeOut = DELPHI_CURL_TIMEOUT;
 
             Init();
         }
@@ -137,6 +140,7 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_Result);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+                curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, m_TimeOut);
 
                 if (bTunnel) {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);

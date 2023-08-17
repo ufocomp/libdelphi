@@ -64,6 +64,8 @@ namespace Delphi {
 
             CURL *m_curl;
 
+            size_t m_TimeOut;
+
             mutable CHeaders m_Headers;
             mutable CString m_Result;
 
@@ -78,9 +80,12 @@ namespace Delphi {
 
             virtual ~CCurlApi();
 
-            static CString GetErrorMessage(CURLcode code);
+            CURL *Handle() const { return m_curl; }
 
             virtual void Reset() const;
+
+            size_t TimeOut() const { return m_TimeOut; }
+            void TimeOut(size_t Value) { m_TimeOut = Value; }
 
             const CHeaders &Headers() const { return m_Headers; }
             const CString &Result() const { return m_Result; }
@@ -88,6 +93,8 @@ namespace Delphi {
             virtual CURLcode Get(const CLocation &URL, const CHeaders &Headers) const;
             virtual CURLcode Post(const CLocation &URL, const CString &Content, const CHeaders &Headers) const;
             virtual CURLcode Send(const CLocation &URL, const CString &Method, const CString &Content, const CHeaders &Headers, bool bTunnel) const;
+
+            static CString GetErrorMessage(CURLcode code);
 
         };
     }
