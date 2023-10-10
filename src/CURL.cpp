@@ -141,6 +141,8 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_Result);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
                 curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, m_TimeOut);
+                curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(m_curl, CURLOPT_HTTP_CONTENT_DECODING, 1L);
 
                 if (bTunnel) {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
