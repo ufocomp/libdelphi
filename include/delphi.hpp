@@ -25,6 +25,7 @@ Author:
 //----------------------------------------------------------------------------------------------------------------------
 
 #include <iostream>
+#include <cstdint>
 #include <cstring>
 #include <cstdarg>
 #include <cmath>
@@ -235,7 +236,7 @@ inline void chMB(LPCSTR szMsg);
 
 #define DELPHI_LIB_NAME         _T("libdelphi")
 #define DELPHI_LIB_DESCRIPTION  _T("Delphi classes for C++")
-#define DELPHI_LIB_VERSION      _T("2.7.11")
+#define DELPHI_LIB_VERSION      _T("2.7.12")
 #define DELPHI_LIB_VER          DELPHI_LIB_NAME _T("/") DELPHI_LIB_VERSION
 //----------------------------------------------------------------------------------------------------------------------
 

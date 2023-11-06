@@ -1567,11 +1567,10 @@ namespace Delphi {
             if (!Reply.Content.IsEmpty()) {
                 AddContentType(Reply, lpszContentType);
 
-                Reply.AddHeader(_T("Accept-Ranges"), _T("bytes"));
-
                 Reply.Content.Position(0);
 
                 if (lpszTransferEncoding != nullptr && CompareString(lpszTransferEncoding, _T("chunked")) == 0) {
+                    Reply.AddHeader(_T("Accept-Ranges"), _T("bytes"));
                     Reply.AddHeader(_T("Transfer-Encoding"), lpszTransferEncoding);
 
                     CString Buffer;
@@ -2442,8 +2441,6 @@ namespace Delphi {
                     if (pConnection->CloseConnection()) {
                         pConnection->Disconnect();
                     }
-                } else {
-                    pConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);

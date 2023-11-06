@@ -4458,7 +4458,10 @@ namespace Delphi {
                      * if the error events were returned, add EPOLLIN and EPOLLOUT
                      * to handle the events at least in one active handler
                      */
-                    uEvents |= EPOLLIN | EPOLLOUT;
+
+                    if (pHandler->EventType() == etIO) {
+                        uEvents |= EPOLLIN | EPOLLOUT;
+                    }
                 }
 
                 if (pHandler->EventType() == etAccept) {
