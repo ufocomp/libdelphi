@@ -2613,8 +2613,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2632,8 +2631,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2649,8 +2647,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2664,8 +2661,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }

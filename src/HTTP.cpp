@@ -2145,8 +2145,7 @@ namespace Delphi {
 
             DoReply();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csReplySent;
                 Clear();
             }
@@ -2175,13 +2174,11 @@ namespace Delphi {
 
             DoReply();
 
-            WriteAsync();
-
-            SendFile(File.Handle(), File.Offset(), File.Size(), 0);
-
-            m_ConnectionStatus = csReplySent;
-
-            Clear();
+            if (WriteAsync()) {
+                SendFile(File.Handle(), File.Offset(), File.Size(), 0);
+                m_ConnectionStatus = csReplySent;
+                Clear();
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2319,8 +2316,7 @@ namespace Delphi {
 
             DoRequest();
 
-            if (bSendNow) {
-                WriteAsync();
+            if (bSendNow && WriteAsync()) {
                 m_ConnectionStatus = csRequestSent;
             }
         }
@@ -2510,16 +2506,15 @@ namespace Delphi {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
             chASSERT(pConnection);
             try {
-                if (pConnection->WriteAsync()) {
-                    if (pConnection->ConnectionStatus() == csReplyReady) {
-
+                if (pConnection->ConnectionStatus() == csReplyReady) {
+                    if (pConnection->WriteAsync()) {
                         pConnection->ConnectionStatus(csReplySent);
                         pConnection->Clear();
-
-                        if (pConnection->CloseConnection()) {
-                            pConnection->Disconnect();
-                        }
                     }
+                }
+
+                if (pConnection->CloseConnection()) {
+                    pConnection->Disconnect();
                 }
             } catch (Delphi::Exception::Exception &E) {
                 DoException(pConnection, E);
@@ -2675,8 +2670,8 @@ namespace Delphi {
             }
 
             try {
-                if (pConnection->WriteAsync()) {
-                    if (pConnection->ConnectionStatus() == csRequestReady) {
+                if (pConnection->ConnectionStatus() == csRequestReady) {
+                    if (pConnection->WriteAsync()) {
                         pConnection->ConnectionStatus(csRequestSent);
                     }
                 }
