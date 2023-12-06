@@ -670,7 +670,7 @@ namespace Delphi {
 
         protected:
 
-            int m_UseCount;
+            int m_Lock;
 
             CDateTime m_TimeOut;
             double m_TimeOutInterval;
@@ -710,13 +710,13 @@ namespace Delphi {
 
             void UpdateTimeOut(CDateTime DateTime);
 
-            int UseCount() const { return m_UseCount; }
-            int IncUseCount() { return m_UseCount++; }
-            int DecUseCount() {
-                m_UseCount--;
-                if (m_UseCount < 0)
-                    m_UseCount = 0;
-                return m_UseCount;
+            int Locked() const { return m_Lock != 0; }
+            int Lock() { return m_Lock++; }
+            int Unlock() {
+                m_Lock--;
+                if (m_Lock < 0)
+                    m_Lock = 0;
+                return m_Lock;
             }
 
             bool AutoFree() const { return m_AutoFree; }

@@ -298,7 +298,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CQueueCollection::DeleteHandler(CQueueHandler *AHandler) {
-            if (AHandler->UseCount() == 0)
+            if (!AHandler->Locked())
                 delete AHandler;
             if (m_Progress > 0)
                 DecProgress();

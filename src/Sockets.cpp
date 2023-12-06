@@ -1381,8 +1381,8 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollConnection::CPollConnection(CPollManager *AManager): CCollectionItem(AManager) {
+            m_Lock = 0;
             m_TimeOut = 0;
-            m_UseCount = 0;
             m_TimeOutInterval = 5000;
             m_pBinding = nullptr;
             m_pEventHandler = nullptr;
@@ -4044,7 +4044,7 @@ namespace Delphi {
                 m_pBinding->Close();
                 m_pBinding = nullptr;
                 if (!pTemp->FreeClient()) {
-                    if (pTemp->AutoFree() && pTemp->UseCount() == 0) {
+                    if (pTemp->AutoFree() && !pTemp->Locked()) {
                         delete pTemp;
                     }
                 }

@@ -2677,9 +2677,10 @@ namespace Delphi {
                         pConnection->ConnectionStatus(csRequestSent);
                     }
                 }
+
                 if (pConnection->ClosedGracefully()) {
                     AHandler->Binding(nullptr);
-                    if (pConnection->AutoFree() && pConnection->UseCount() == 0)
+                    if (pConnection->AutoFree() && !pConnection->Locked())
                         delete pConnection;
                 }
             } catch (Delphi::Exception::Exception &E) {
