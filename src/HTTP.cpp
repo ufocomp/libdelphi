@@ -2509,8 +2509,10 @@ namespace Delphi {
                 if (pConnection->ConnectionStatus() == csReplyReady) {
                     if (pConnection->WriteAsync()) {
                         pConnection->ConnectionStatus(csReplySent);
-                        pConnection->Clear();
+                    } else {
+                        pConnection->ConnectionStatus(csReplyError);
                     }
+                    pConnection->Clear();
                 }
 
                 if (pConnection->CloseConnection()) {
