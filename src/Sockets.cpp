@@ -2609,12 +2609,12 @@ namespace Delphi {
             ByteToHexStr((LPSTR) Hex.Data(), Hex.Size(), (LPCBYTE) Buffer.Memory(), Buffer.Size(), 32);
             DebugMessage("\n[OUTPUT] %d: %s\n", Buffer.Size(), Hex.c_str());
 #endif
-            m_ConnectionStatus = csRequestReady;
+            m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
             if (bSendNow && WriteAsync()) {
-                m_ConnectionStatus = csRequestSent;
+                m_ConnectionStatus = csReplySent;
                 Clear();
             }
         }
@@ -2627,12 +2627,12 @@ namespace Delphi {
             m_WSReply.SetPayload(DateTimeToStr(Now(), szDate, sizeof(szDate)), (uint32_t) MsEpoch());
             m_WSReply.Ping(OutputBuffer());
 
-            m_ConnectionStatus = csRequestReady;
+            m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
             if (bSendNow && WriteAsync()) {
-                m_ConnectionStatus = csRequestSent;
+                m_ConnectionStatus = csReplySent;
                 Clear();
             }
         }
@@ -2643,12 +2643,12 @@ namespace Delphi {
             m_WSReply.SetPayload(m_WSRequest.Payload());
             m_WSReply.Pong(OutputBuffer());
 
-            m_ConnectionStatus = csRequestReady;
+            m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
             if (bSendNow && WriteAsync()) {
-                m_ConnectionStatus = csRequestSent;
+                m_ConnectionStatus = csReplySent;
                 Clear();
             }
         }
@@ -2657,12 +2657,12 @@ namespace Delphi {
         void CWebSocketConnection::SendWebSocketClose(bool bSendNow) {
             m_WSReply.Close(OutputBuffer());
 
-            m_ConnectionStatus = csRequestReady;
+            m_ConnectionStatus = csReplyReady;
 
             DoReply();
 
             if (bSendNow && WriteAsync()) {
-                m_ConnectionStatus = csRequestSent;
+                m_ConnectionStatus = csReplySent;
                 Clear();
             }
         }
