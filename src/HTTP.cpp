@@ -304,6 +304,7 @@ namespace Delphi {
             Headers.Clear();
             Content.Clear();
             Location.Clear();
+            FormData.Clear();
         }
         //--------------------------------------------------------------------------------------------------------------
 
