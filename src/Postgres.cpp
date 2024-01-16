@@ -201,6 +201,12 @@ namespace Delphi {
             if (GetValue(_T("user")).IsEmpty())
                 m_Parameters.AddPair(_T("user"), _T("postgres"));
 
+            if (GetValue(_T("sslmode")).IsEmpty())
+                m_Parameters.AddPair(_T("sslmode"), _T("prefer"));
+
+            if (GetValue(_T("target_session_attrs")).IsEmpty())
+                m_Parameters.AddPair(_T("target_session_attrs"), _T("any"));
+
             m_ConnInfo = m_Parameters[0];
             for (int i = 1; i < m_Parameters.Count(); ++i)
                 m_ConnInfo += _T(" ") + m_Parameters[i];
