@@ -584,7 +584,7 @@ namespace Delphi {
                 Params.Delimiter("&");
 
                 Cookies.LineBreak("; ");
-                Cookies.Delimiter("; ");
+                Cookies.Delimiter(";");
             }
 
             CHTTPRequest(const CHTTPRequest &Request): CHTTPRequest() {
