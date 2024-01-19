@@ -71,6 +71,24 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CMemoryStream PQUnescapeBytea(LPCTSTR Str) {
+            size_t size;
+            CMemoryStream Stream;
+
+            auto bytea = ::PQunescapeBytea(reinterpret_cast<const unsigned char *>(Str), &size);
+
+            Stream.WriteBuffer(bytea, size);
+            PQfreemem(bytea);
+
+            return Stream;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CString PQUnescapeBytea(const CString &String) {
+            return CString(PQUnescapeBytea(String.c_str()));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void PQResultToJson(CPQResult *Result, CString &Json, bool DataArray, const CString &ObjectName) {
 
             LPCSTR value = nullptr;
@@ -127,7 +145,12 @@ namespace Delphi {
                         Json += value;
                     } else {
                         Json += "\"";
-                        Json += Delphi::Json::EncodeJsonString(value);
+                        if (type == ByteaOID) {
+                            const auto &Stream = PQUnescapeBytea(value);
+                            Json += base64_encode(CString(Stream));
+                        } else {
+                            Json += Delphi::Json::EncodeJsonString(value);
+                        }
                         Json += "\"";
                     }
                 }

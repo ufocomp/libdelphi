@@ -29,6 +29,7 @@ Author:
 //----------------------------------------------------------------------------------------------------------------------
 
 #define BOOLOID 16
+#define ByteaOID 17
 #define INT8OID 20
 #define INT2OID 21
 #define INT4OID 23
@@ -52,6 +53,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CString PQQuoteLiteral(const CString &String);
+
+        CMemoryStream PQUnescapeBytea(LPCTSTR Str);
+        CString PQUnescapeBytea(const CString &String);
+
         void PQResultToJson(CPQResult *Result, CString& Json, bool DataArray = false, const CString &ObjectName = CString());
 
         //--------------------------------------------------------------------------------------------------------------

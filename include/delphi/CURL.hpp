@@ -71,7 +71,8 @@ namespace Delphi {
 
             virtual void CurlInfo() const abstract;
 
-            static size_t CallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
+            static size_t WriteCallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
+            static size_t ReadCallBack(char *buffer, size_t size, size_t nmemb, CString *Content);
             static size_t HeaderCallBack(char *buffer, size_t size, size_t nitems, CHeaders *Headers);
 
         public:

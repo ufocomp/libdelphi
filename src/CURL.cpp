@@ -85,9 +85,17 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCurlApi::CallBack(void *content, size_t size, size_t nmemb, CString *Buffer) {
+        size_t CCurlApi::WriteCallBack(void *content, size_t size, size_t nmemb, CString *Buffer) {
             size_t buffer_size = nmemb * size;
             Buffer->Append((LPCTSTR) content, buffer_size);
+            return buffer_size;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        size_t CCurlApi::ReadCallBack(char *buffer, size_t size, size_t nmemb, CString *Content) {
+            const auto content_size = Content->Size() - Content->Position();
+            size_t buffer_size = Min(nmemb * size, content_size);
+            Content->ReadBuffer(buffer, buffer_size);
             return buffer_size;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -137,11 +145,12 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_URL, URL.href().c_str());
                 curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, CCurlApi::HeaderCallBack);
                 curl_easy_setopt(m_curl, CURLOPT_HEADERDATA, &m_Headers);
-                curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::CallBack);
+                curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::WriteCallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_Result);
-                curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+                curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, TRUE);
                 curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, m_TimeOut);
                 curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(m_curl, CURLOPT_ACCEPT_ENCODING, "gzip, deflate, br");
                 curl_easy_setopt(m_curl, CURLOPT_HTTP_CONTENT_DECODING, 1L);
 
                 if (bTunnel) {
@@ -170,14 +179,24 @@ namespace Delphi {
 
                 } else if (Method == "POST" || Method == "PUT" || Method == "DELETE") {
 
-                    if (Method == "PUT" || Method == "DELETE") {
-                        curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Method.c_str() );
-                    } else {
+                    if (Method == "POST") {
                         curl_easy_setopt(m_curl, CURLOPT_POST, TRUE);
 
                         if (!Content.IsEmpty()) {
                             curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, Content.c_str());
                         }
+                    } else if (Method == "PUT") {
+                        curl_easy_setopt(m_curl, CURLOPT_UPLOAD, TRUE);
+
+                        if (!Content.IsEmpty()) {
+                            Content.Position(0);
+
+                            curl_easy_setopt(m_curl, CURLOPT_READFUNCTION, CCurlApi::ReadCallBack);
+                            curl_easy_setopt(m_curl, CURLOPT_READDATA, &Content);
+                            curl_easy_setopt(m_curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t) Content.Size());
+                        }
+                    } else {
+                        curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Method.c_str() );
                     }
                 }
 
