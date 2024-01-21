@@ -7,6 +7,8 @@ namespace Delphi {
 
     namespace Base64 {
 
+        CString squeeze(const CString &data, TCHAR litter = '\n');
+
         CString base64_encode(const CString &S);
         CString base64_decode(const CString &S);
 

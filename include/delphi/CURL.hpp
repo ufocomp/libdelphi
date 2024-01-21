@@ -98,6 +98,31 @@ namespace Delphi {
             static CString GetErrorMessage(CURLcode code);
 
         };
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CCurlFetch ------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class CCurlFetch: public CCurlApi {
+        private:
+
+            mutable CStringList m_Into;
+
+        protected:
+
+            void CurlInfo() const override;
+
+        public:
+
+            CCurlFetch();
+            ~CCurlFetch() override = default;
+
+            int GetResponseCode() const;
+
+        };
+
     }
 }
 

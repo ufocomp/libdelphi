@@ -18,6 +18,20 @@ namespace Delphi {
 
     namespace Base64 {
 
+        CString squeeze(const CString &data, TCHAR litter) {
+            CString result;
+            size_t pos = 0;
+            TCHAR ch = data.at(pos++);
+
+            while (ch) {
+                if (ch != litter)
+                    result.Append(ch);
+                ch = data.at(pos++);
+            }
+
+            return result;
+        };
+
         struct base64 {
             static const std::array<char, 64> &data() {
                 static std::array<char, 64> data = {
