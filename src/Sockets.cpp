@@ -1732,9 +1732,7 @@ namespace Delphi {
         ssize_t CTCPConnection::WriteBufferAsync(void *ABuffer, size_t AByteCount) {
             ssize_t byteCount = 0;
 
-            if ((AByteCount > 0) && (ABuffer != nullptr)) {
-                CheckForDisconnect(true);
-
+            if ((AByteCount > 0) && (ABuffer != nullptr) && Connected()) {
                 if (m_pIOHandler != nullptr) {
                     byteCount = m_pIOHandler->Send(ABuffer, AByteCount);
 #ifdef WITH_SSL
@@ -1896,9 +1894,7 @@ namespace Delphi {
         ssize_t CTCPConnection::SendFile(CHandle AHandle, off_t AOffSet, size_t AByteCount, int AFlags) {
             ssize_t byteTotal = 0, byteCount = 0;
 
-            if ((AByteCount > 0) && (AHandle != INVALID_HANDLE_VALUE)) {
-                CheckForDisconnect(true);
-
+            if ((AByteCount > 0) && (AHandle != INVALID_HANDLE_VALUE) && Connected()) {
                 off_t offset = AOffSet;
 
                 while (byteTotal < AByteCount) {
