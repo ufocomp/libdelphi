@@ -1613,6 +1613,9 @@ namespace Delphi {
                             break;
 
                         case qsWait:
+                            pConnection->Flush();
+                            break;
+
                         case qsError:
                             break;
                     }

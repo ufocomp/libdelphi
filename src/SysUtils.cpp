@@ -67,7 +67,12 @@ namespace Delphi {
                 va_end(args);
             }
 
-            ::write(STDERR_FILENO, szBuffer, strlen(szBuffer));
+            const auto len = strlen(szBuffer);
+
+            ::write(STDERR_FILENO, szBuffer, len);
+
+            if (len == MAX_ERROR_STR - 1)
+                ::write(STDERR_FILENO, "...\n", 4);
         }
 
 #else
