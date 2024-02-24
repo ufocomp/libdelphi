@@ -2195,9 +2195,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         typedef std::function<void (CPollEventHandler *AHandler)> COnPollEventHandlerEvent;
+        typedef std::function<void (CPollEventHandler *AHandler, uint32_t events)> COnPollEventHandlerEPollEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CPollEventType { etNull, etAccept, etConnect, etIO, etDelete, etTimer };
+        enum CPollEventType { etNull, etAccept, etConnect, etIO, etEvent, etDelete, etTimer };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CEPoll;
@@ -2233,13 +2234,14 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
             COnPollEventHandlerEvent m_OnErrorEvent;
+            COnPollEventHandlerEPollEvent m_OnEvent;
 
             void ClearBinding();
             void UpdateTimeOut();
 
         protected:
 
-            void SetEventType(CPollEventType Value);
+            void SetEventType(CPollEventType Value, uint32_t events);
             void SetBinding(CPollConnection *Value);
             void SetTimeStamp(CDateTime Value);
 
@@ -2250,6 +2252,7 @@ namespace Delphi {
             void DoReadEvent();
             void DoWriteEvent();
             void DoErrorEvent();
+            void DoEvent(uint32_t events);
 
         public:
 
@@ -2264,7 +2267,7 @@ namespace Delphi {
             CPollConnection *Binding() const { return m_pBinding; }
             void Binding(CPollConnection *Value) { SetBinding(Value); }
 
-            void Start(CPollEventType AEventType = etIO);
+            void Start(CPollEventType AEventType = etIO, uint32_t events = 0);
             void Stop();
 
             void Fault();
@@ -2272,7 +2275,7 @@ namespace Delphi {
             bool Stopped() const { return m_EventType == etDelete; };
 
             CPollEventType EventType() const { return m_EventType; }
-            void EventType(CPollEventType Value) { SetEventType(Value); }
+            void EventType(CPollEventType Value, uint32_t events = 0) { SetEventType(Value, events); }
 
             CDateTime TimeStamp() const { return m_TimeStamp; }
             void TimeStamp(CDateTime Value) { SetTimeStamp(Value); }
@@ -2302,6 +2305,10 @@ namespace Delphi {
             COnPollEventHandlerEvent &OnErrorEvent() { return m_OnErrorEvent; }
             const COnPollEventHandlerEvent &OnErrorEvent() const { return m_OnErrorEvent; }
             void OnErrorEvent(COnPollEventHandlerEvent && Value) { m_OnErrorEvent = Value; }
+
+            COnPollEventHandlerEPollEvent &OnEvent() { return m_OnEvent; }
+            const COnPollEventHandlerEPollEvent &OnEvent() const { return m_OnEvent; }
+            void OnEvent(COnPollEventHandlerEPollEvent && Value) { m_OnEvent = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -2420,6 +2427,7 @@ namespace Delphi {
         private:
 
             COnPollEventHandlerEvent m_OnTimerEvent;
+            COnPollEventHandlerEPollEvent m_OnEvent;
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
             bool m_FreeEventHandlers;
@@ -2440,6 +2448,8 @@ namespace Delphi {
             virtual void PackEventHandlers(CDateTime DateTime);
 
             virtual void DoTimer(CPollEventHandler *AHandler);
+            virtual void DoEvent(CPollEventHandler *AHandler, uint32_t events);
+
             virtual void DoTimeOut(CPollEventHandler *AHandler) abstract;
             virtual void DoAccept(CPollEventHandler *AHandler) abstract;
             virtual void DoConnect(CPollEventHandler *AHandler) abstract;
@@ -2468,6 +2478,10 @@ namespace Delphi {
             COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
             const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
             void OnTimerEvent(COnPollEventHandlerEvent && Value) { m_OnTimerEvent = Value; }
+
+            COnPollEventHandlerEPollEvent &OnEvent() { return m_OnEvent; }
+            const COnPollEventHandlerEPollEvent &OnEvent() const { return m_OnEvent; }
+            void OnEvent(COnPollEventHandlerEPollEvent && Value) { m_OnEvent = Value; }
 
             COnPollEventHandlerExceptionEvent &OnEventHandlerException() { return m_OnEventHandlerException; }
             const COnPollEventHandlerExceptionEvent &OnEventHandlerException() const { return m_OnEventHandlerException; }

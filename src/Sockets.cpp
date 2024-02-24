@@ -4024,6 +4024,7 @@ namespace Delphi {
             m_OnReadEvent = nullptr;
             m_OnWriteEvent = nullptr;
             m_OnErrorEvent = nullptr;
+            m_OnEvent = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4048,35 +4049,59 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::SetEventType(CPollEventType Value) {
+        void CPollEventHandler::SetEventType(CPollEventType Value, uint32_t events) {
             if (m_EventType != Value) {
                 switch (Value) {
                     case etNull:
                         m_Events = 0;
                         break;
+
                     case etTimer:
                     case etAccept:
                         m_Events = EPOLLIN;
                         m_pEventHandlers->PollAdd(this);
                         break;
+
                     case etConnect:
                         m_Events = EPOLLOUT;
                         m_pEventHandlers->PollAdd(this);
                         break;
+
                     case etIO:
-                        m_Events = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR;
-                        if (m_EventType == etNull)
+                    case etEvent:
+                        if (events == 0) {
+                            m_Events = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR;
+                        } else {
+                            m_Events = events;
+                        }
+
+                        if (m_EventType == etNull) {
                             m_pEventHandlers->PollAdd(this);
-                        else
+                        } else {
                             m_pEventHandlers->PollMod(this);
+                        }
+
                         break;
+
                     case etDelete:
                         m_Events = 0;
-                        if (m_EventType != etNull)
+                        if (m_EventType != etNull) {
                             m_pEventHandlers->PollDel(this);
+                        }
                         break;
                 }
+
                 m_EventType = Value;
+            } else {
+                if (Value == etIO || Value == etEvent) {
+                    if (events == 0) {
+                        m_Events = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR;
+                    } else {
+                        m_Events = events;
+                    }
+
+                    m_pEventHandlers->PollMod(this);
+                }
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -4108,13 +4133,13 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CPollEventHandler::Start(CPollEventType AEventType) {
-            SetEventType(AEventType);
+        void CPollEventHandler::Start(CPollEventType AEventType, uint32_t events) {
+            SetEventType(AEventType, events);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CPollEventHandler::Stop() {
-            SetEventType(etDelete);
+            SetEventType(etDelete, 0);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -4157,6 +4182,12 @@ namespace Delphi {
         void CPollEventHandler::DoErrorEvent() {
             if (m_OnErrorEvent != nullptr)
                 m_OnErrorEvent(this);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPollEventHandler::DoEvent(uint32_t events) {
+            if (m_OnEvent != nullptr)
+                m_OnEvent(this, events);
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -4314,13 +4345,25 @@ namespace Delphi {
             if (Flags == TFD_TIMER_ABSTIME) {
                 if (::clock_gettime(ClockId(), &now) == -1)
                     throw EOSError(errno, _T("Could not get clock time. Error: "));
+                if (Value == 0) {
+                    ts.it_value.tv_nsec = now.tv_nsec + 1;
+                } else {
+                    ts.it_value.tv_sec = now.tv_sec + Value / 1000;
+                    ts.it_value.tv_nsec = now.tv_nsec + (Value % 1000) * 1000 * 1000;
+                }
+            } else {
+                if (Value > 0) {
+                    ts.it_value.tv_sec = Value / 1000;
+                    ts.it_value.tv_nsec = (Value % 1000) * 1000 * 1000;
+                } else if (Value == 0) {
+                    ts.it_value.tv_nsec = 1;
+                }
             }
 
-            ts.it_value.tv_sec = now.tv_sec + Value / 1000;
-            ts.it_value.tv_nsec = now.tv_nsec;
-
-            ts.it_interval.tv_sec = Interval / 1000;
-            ts.it_interval.tv_nsec = 0;
+            if (Interval > 0) {
+                ts.it_interval.tv_sec = Interval / 1000;
+                ts.it_interval.tv_nsec = (Interval % 1000) * 1000 * 1000;
+            }
 
             SetTime(Flags, &ts);
         }
@@ -4342,6 +4385,7 @@ namespace Delphi {
             m_FreeEventHandlers = true;
 
             m_OnTimerEvent = nullptr;
+            m_OnEvent = nullptr;
             m_OnEventHandlerException = nullptr;
 
             CreateEventHandlers();
@@ -4400,7 +4444,7 @@ namespace Delphi {
             for (int i = m_pEventHandlers->Count() - 1; i >= 0; i--) {
                 pHandler = m_pEventHandlers->Handlers(i);
 
-                if (pHandler->EventType() == etIO) {
+                if (pHandler->EventType() == etIO || pHandler->EventType() == etEvent) {
                     CheckTimeOut(pHandler, DateTime);
                 }
 
@@ -4456,23 +4500,13 @@ namespace Delphi {
                     }
                 }
 
-                if (pHandler->EventType() == etAccept) {
+                if (pHandler->EventType() == etTimer) {
 
                     if (uEvents & EPOLLIN) {
-                        if (pHandler->OnReadEvent() != nullptr) {
-                            pHandler->DoReadEvent();
+                        if (pHandler->OnTimerEvent() != nullptr) {
+                            pHandler->DoTimerEvent();
                         } else {
-                            DoAccept(pHandler);
-                        }
-                    }
-
-                } else if (pHandler->EventType() == etConnect) {
-
-                    if (uEvents & EPOLLOUT) {
-                        if (pHandler->OnConnectEvent() != nullptr) {
-                            pHandler->DoConnectEvent();
-                        } else {
-                            DoConnect(pHandler);
+                            DoTimer(pHandler);
                         }
                     }
 
@@ -4494,15 +4528,34 @@ namespace Delphi {
                         }
                     }
 
-                } else if (pHandler->EventType() == etTimer) {
+                } else if (pHandler->EventType() == etEvent) {
+
+                    if (pHandler->OnEvent() != nullptr) {
+                        pHandler->DoEvent(uEvents);
+                    } else {
+                        DoEvent(pHandler, uEvents);
+                    }
+
+                } else if (pHandler->EventType() == etAccept) {
 
                     if (uEvents & EPOLLIN) {
-                        if (pHandler->OnTimerEvent() != nullptr) {
-                            pHandler->DoTimerEvent();
+                        if (pHandler->OnReadEvent() != nullptr) {
+                            pHandler->DoReadEvent();
                         } else {
-                            DoTimer(pHandler);
+                            DoAccept(pHandler);
                         }
                     }
+
+                } else if (pHandler->EventType() == etConnect) {
+
+                    if (uEvents & EPOLLOUT) {
+                        if (pHandler->OnConnectEvent() != nullptr) {
+                            pHandler->DoConnectEvent();
+                        } else {
+                            DoConnect(pHandler);
+                        }
+                    }
+
                 }
             }
 
@@ -4525,6 +4578,15 @@ namespace Delphi {
                 m_OnTimerEvent(AHandler);
             }
         }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CEPoll::DoEvent(CPollEventHandler *AHandler, uint32_t events) {
+            if (m_OnEvent != nullptr) {
+                m_OnEvent(AHandler, events);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         //--------------------------------------------------------------------------------------------------------------
 
         void CEPoll::DoEventHandlersException(CPollEventHandler *AHandler, const Delphi::Exception::Exception &E) {
