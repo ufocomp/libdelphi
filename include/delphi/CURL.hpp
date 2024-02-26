@@ -243,6 +243,12 @@ namespace Delphi {
 
             CPollEventHandler *GetEventHandler(CSocket Socket);
 
+            CURLMcode Get(const CLocation &URL, const CHeaders &Headers,
+                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
+
+            CURLMcode Post(const CLocation &URL, const CString &Content, const CHeaders &Headers,
+                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
+
             CURLMcode Perform(const CLocation &URL, const CString &Method, const CString &Content,
                 const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
 

@@ -551,6 +551,18 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        CURLMcode CCURLClient::Get(const CLocation &URL, const CHeaders &Headers, COnCurlFetchEvent &&OnDone,
+                COnCurlFetchEvent &&OnFail) {
+            return Perform(URL, "GET", CString(), Headers, std::move(OnDone), std::move(OnFail));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        CURLMcode CCURLClient::Post(const CLocation &URL, const CString &Content, const CHeaders &Headers,
+                COnCurlFetchEvent &&OnDone, COnCurlFetchEvent &&OnFail) {
+            return Perform(URL, "POST", Content, Headers, std::move(OnDone), std::move(OnFail));
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CCURLClient::DoException(const Exception::Exception &E) {
             if (m_OnException != nullptr) {
                 m_OnException(this, E);
