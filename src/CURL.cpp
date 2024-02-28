@@ -157,8 +157,6 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_ACCEPT_ENCODING, "gzip, deflate, br");
                 curl_easy_setopt(m_curl, CURLOPT_HTTP_CONTENT_DECODING, 1L);
                 curl_easy_setopt(m_curl, CURLOPT_ERRORBUFFER, m_Error);
-                curl_easy_setopt(m_curl, CURLOPT_LOW_SPEED_TIME, 3L);
-                curl_easy_setopt(m_curl, CURLOPT_LOW_SPEED_LIMIT, 10L);
 
                 if (m_bTunnel) {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
