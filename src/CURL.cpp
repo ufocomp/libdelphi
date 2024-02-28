@@ -422,10 +422,14 @@ namespace Delphi {
                         break;
                     strcase(CURLM_BAD_FUNCTION_ARGUMENT);
                         break;
-                    strcase(CURLM_ABORTED_BY_CALLBACK);
+#if CURL_AT_LEAST_VERSION(7, 81, 0)
+                        strcase(CURLM_ABORTED_BY_CALLBACK);
                         break;
+#endif
+#if CURL_AT_LEAST_VERSION(7, 84, 0)
                     strcase(CURLM_UNRECOVERABLE_POLL);
                         break;
+#endif
                     strcase(CURLM_LAST);
                         break;
                     default:
