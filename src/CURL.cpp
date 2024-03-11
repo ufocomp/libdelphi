@@ -27,6 +27,7 @@ Author:
 #define strcase(code) case code: s = __STRING(code)
 
 #define DELPHI_CURL_TIMEOUT 30
+#define CONTENT_CANNOT_BE_EMPTY "%s content cannot be empty."
 
 extern "C++" {
 
@@ -175,7 +176,9 @@ namespace Delphi {
                         m_SList = curl_slist_append(m_SList, List[i].c_str());
                     }
 
-                    curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_SList);
+                    if (m_SList) {
+                        curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_SList);
+                    }
                 }
 
                 if (Method == "GET") {
@@ -185,21 +188,24 @@ namespace Delphi {
                 } else if (Method == "POST" || Method == "PUT" || Method == "DELETE") {
 
                     if (Method == "POST") {
+                        if (Content.IsEmpty()) {
+                            throw Delphi::Exception::ExceptionFrm(CONTENT_CANNOT_BE_EMPTY, Method.c_str());
+                        }
+
                         curl_easy_setopt(m_curl, CURLOPT_POST, TRUE);
-
-                        if (!Content.IsEmpty()) {
-                            curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, Content.c_str());
-                        }
+                        curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, (curl_off_t) Content.Size());
+                        curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, Content.c_str());
                     } else if (Method == "PUT") {
-                        curl_easy_setopt(m_curl, CURLOPT_UPLOAD, TRUE);
-
-                        if (!Content.IsEmpty()) {
-                            Content.Position(0);
-
-                            curl_easy_setopt(m_curl, CURLOPT_READFUNCTION, CCurlApi::ReadCallBack);
-                            curl_easy_setopt(m_curl, CURLOPT_READDATA, &Content);
-                            curl_easy_setopt(m_curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t) Content.Size());
+                        if (Content.IsEmpty()) {
+                            throw Delphi::Exception::ExceptionFrm(CONTENT_CANNOT_BE_EMPTY, Method.c_str());
                         }
+
+                        Content.Position(0);
+
+                        curl_easy_setopt(m_curl, CURLOPT_UPLOAD, TRUE);
+                        curl_easy_setopt(m_curl, CURLOPT_READFUNCTION, CCurlApi::ReadCallBack);
+                        curl_easy_setopt(m_curl, CURLOPT_READDATA, &Content);
+                        curl_easy_setopt(m_curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t) Content.Size());
                     } else {
                         curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, Method.c_str());
                     }
