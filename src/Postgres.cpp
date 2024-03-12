@@ -1488,10 +1488,17 @@ namespace Delphi {
             CPQPollConnection *pConnection;
             CPQPollConnection *pResult = nullptr;
 
+            auto sizeMax = m_SizeMax;
+
             for (int i = 0; i < m_ConnectManager.Count(); ++i) {
                 pConnection = dynamic_cast<CPQPollConnection *> (m_ConnectManager[i]);
 
                 if (pConnection->Connected()) {
+                    if (pConnection->Listeners().Count() > 0) {
+                        sizeMax++;
+                        continue;
+                    }
+
                     if (pConnection->ConnectionStatus() == qsReady) {
                         pResult = pConnection;
                         break;
@@ -1499,7 +1506,7 @@ namespace Delphi {
                 } else {
                     const auto status = pConnection->Status();
                     if ((status == CONNECTION_STARTED) || (status == CONNECTION_MADE)) {
-                        if ((Now() - pConnection->AntiFreeze()) >= (CDateTime) 10 / SecsPerDay) {
+                        if ((Now() - pConnection->AntiFreeze()) >= (CDateTime) 30 / SecsPerDay) {
                             DoPQError(pConnection);
                             pConnection->Close();
                         }
@@ -1512,7 +1519,7 @@ namespace Delphi {
                 }
             }
 
-            if (pResult == nullptr && (m_ConnectManager.Count() <= (int) m_SizeMax)) {
+            if (pResult == nullptr && (m_ConnectManager.Count() <= (int) sizeMax)) {
                 if (!NewConnection())
                     throw Exception::EDBConnectionError(_T("Unable to create new database connection."));
             }
@@ -1577,7 +1584,7 @@ namespace Delphi {
                     pConnection->AntiFreeze(AHandler->TimeStamp());
                 } catch (Delphi::Exception::Exception &E) {
                     DoPQConnectException(pConnection, E);
-                    pConnection->ConnectionStatus(qsError);
+                    delete pConnection;
                     Fault(AHandler);
                 }
             }
@@ -1621,7 +1628,7 @@ namespace Delphi {
                     }
                 } catch (Delphi::Exception::Exception &E) {
                     DoPQConnectException(pConnection, E);
-                    pConnection->ConnectionStatus(qsError);
+                    delete pConnection;
                     Fault(AHandler);
                 }
             }
