@@ -72,6 +72,8 @@ namespace Delphi {
 
             m_TimeOut = DELPHI_CURL_TIMEOUT;
 
+            m_OnWrite = nullptr;
+
             Init();
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -94,9 +96,10 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        size_t CCurlApi::WriteCallBack(void *content, size_t size, size_t nmemb, CString *Buffer) {
+        size_t CCurlApi::WriteCallBack(void *content, size_t size, size_t nmemb, CCurlApi *Sender) {
             size_t buffer_size = nmemb * size;
-            Buffer->Append((LPCTSTR) content, buffer_size);
+            Sender->m_Result.Append((LPCTSTR) content, buffer_size);
+            Sender->DoWrite((LPCTSTR) content, buffer_size);
             return buffer_size;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -151,7 +154,7 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, CCurlApi::HeaderCallBack);
                 curl_easy_setopt(m_curl, CURLOPT_HEADERDATA, &m_Headers);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::WriteCallBack);
-                curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_Result);
+                curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, m_TimeOut);
                 curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -249,6 +252,13 @@ namespace Delphi {
         CURLcode CCurlApi::Send(const CLocation &URL, const CString &Method, const CString &Content, const CHeaders &Headers) const {
             Prepare(URL, Method, Content, Headers);
             return Perform();
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CCurlApi::DoWrite(LPCTSTR buffer, size_t size) {
+            if (m_OnWrite != nullptr) {
+                m_OnWrite(this, buffer, size);
+            }
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -536,13 +546,15 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CURLMcode CCURLClient::Perform(const CLocation &URL, const CString &Method, const CString &Content,
-                const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail) {
+                const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail,
+                COnCurlApiWriteEvent && OnWrite) {
 
             auto pFetch = new CCurlAsyncFetch();
 
             pFetch->TimeOut(m_TimeOut);
             pFetch->OnDone() = OnDone;
             pFetch->OnFail() = OnFail;
+            pFetch->OnWrite() = OnWrite;
 
             pFetch->Prepare(URL, Method, Content, Headers);
 
@@ -560,14 +572,14 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CURLMcode CCURLClient::Get(const CLocation &URL, const CHeaders &Headers, COnCurlFetchEvent &&OnDone,
-                COnCurlFetchEvent &&OnFail) {
-            return Perform(URL, "GET", CString(), Headers, std::move(OnDone), std::move(OnFail));
+                COnCurlFetchEvent &&OnFail, COnCurlApiWriteEvent && OnWrite) {
+            return Perform(URL, "GET", CString(), Headers, std::move(OnDone), std::move(OnFail), std::move(OnWrite));
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CURLMcode CCURLClient::Post(const CLocation &URL, const CString &Content, const CHeaders &Headers,
-                COnCurlFetchEvent &&OnDone, COnCurlFetchEvent &&OnFail) {
-            return Perform(URL, "POST", Content, Headers, std::move(OnDone), std::move(OnFail));
+                COnCurlFetchEvent &&OnDone, COnCurlFetchEvent &&OnFail, COnCurlApiWriteEvent && OnWrite) {
+            return Perform(URL, "POST", Content, Headers, std::move(OnDone), std::move(OnFail), std::move(OnWrite));
         }
         //--------------------------------------------------------------------------------------------------------------
 

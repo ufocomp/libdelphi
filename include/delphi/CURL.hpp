@@ -54,6 +54,11 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
+        class CCurlApi;
+
+        typedef std::function<void (CCurlApi *Sender, LPCTSTR buffer, size_t size)> COnCurlApiWriteEvent;
+        //--------------------------------------------------------------------------------------------------------------
+
         class CCurlApi: public CCurlComponent {
         private:
 
@@ -63,6 +68,10 @@ namespace Delphi {
             bool m_bTunnel;
 
             char m_Error[CURL_ERROR_SIZE] = {0};
+
+            COnCurlApiWriteEvent m_OnWrite;
+
+            void DoWrite(LPCTSTR buffer, size_t size);
 
         protected:
 
@@ -77,7 +86,7 @@ namespace Delphi {
 
             virtual void CurlInfo() const abstract;
 
-            static size_t WriteCallBack(void *content, size_t size, size_t nmemb, CString *Buffer);
+            static size_t WriteCallBack(void *content, size_t size, size_t nmemb, CCurlApi *Sender);
             static size_t ReadCallBack(char *buffer, size_t size, size_t nmemb, CString *Content);
             static size_t HeaderCallBack(char *buffer, size_t size, size_t nitems, CHeaders *Headers);
 
@@ -111,6 +120,9 @@ namespace Delphi {
 
             static CString GetErrorMessage(CURLcode code);
 
+            COnCurlApiWriteEvent &OnWrite() { return m_OnWrite; }
+            const COnCurlApiWriteEvent &OnWrite() const { return m_OnWrite; }
+            void OnWrite(COnCurlApiWriteEvent && Value) { m_OnWrite = Value; }
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -244,13 +256,16 @@ namespace Delphi {
             CPollEventHandler *GetEventHandler(CSocket Socket);
 
             CURLMcode Get(const CLocation &URL, const CHeaders &Headers,
-                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
+                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail,
+                COnCurlApiWriteEvent && OnWrite = nullptr);
 
             CURLMcode Post(const CLocation &URL, const CString &Content, const CHeaders &Headers,
-                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
+                COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail,
+                COnCurlApiWriteEvent && OnWrite = nullptr);
 
             CURLMcode Perform(const CLocation &URL, const CString &Method, const CString &Content,
-                const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail);
+                const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail,
+                COnCurlApiWriteEvent && OnWrite = nullptr);
 
             COnCurlClientExceptionEvent &OnException() { return m_OnException; }
             const COnCurlClientExceptionEvent &OnException() const { return m_OnException; }
