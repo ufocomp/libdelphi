@@ -253,7 +253,6 @@ namespace Delphi {
 
         CDefaultLocale::CDefaultLocale(locale_t ALocale) noexcept {
             m_Locale = ALocale;
-            m_LocaleName = nullptr;
             m_Category = LC_ALL;
             m_CategoryMask = LC_ALL_MASK;
         }
@@ -278,25 +277,25 @@ namespace Delphi {
 
                 m_LocaleName = Value;
 
-                if (m_LocaleName != nullptr) {
+                if (Value != nullptr) {
 
                     if (m_Locale != LC_GLOBAL_LOCALE) {
 
-                        if (m_LocaleName[0] == '\0') {
+                        if (m_LocaleName.IsEmpty()) {
                             m_LocaleName = setlocale(m_Category, "");
                         }
 
-                        locale_t Locale = newlocale(m_CategoryMask, m_LocaleName, m_Locale);
+                        locale_t Locale = newlocale(m_CategoryMask, m_LocaleName.c_str(), m_Locale);
 
                         if (Locale == nullptr) {
-                            throw EOSError(errno, "Could not set locale argument \"%s\" failed: ", m_LocaleName);
+                            throw EOSError(errno, "Could not set locale argument \"%s\" failed: ", m_LocaleName.c_str());
                         }
 
                         m_Locale = Locale;
 
                         uselocale(m_Locale);
                     } else {
-                        setlocale(m_Category, m_LocaleName);
+                        setlocale(m_Category, m_LocaleName.c_str());
                     }
                 }
             }

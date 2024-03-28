@@ -46,15 +46,13 @@ namespace Delphi {
         typedef LPTHREAD_START_ROUTINE TThreadFunc;
         //--------------------------------------------------------------------------------------------------------------
 
-        class CHeap;
-        class CSysError;
+        class LIB_DELPHI CHeap;
+        class LIB_DELPHI CSysError;
+        class LIB_DELPHI CDefaultLocale;
         //--------------------------------------------------------------------------------------------------------------
 
         extern LIB_DELPHI pid_t MainProcessID;
         extern LIB_DELPHI pid_t MainThreadID;
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CDefaultLocale;
         //--------------------------------------------------------------------------------------------------------------
 
         extern LIB_DELPHI CDefaultLocale DefaultLocale;
@@ -136,43 +134,6 @@ namespace Delphi {
             size_t GetMaximumSize() const { return m_MaximumSize; }
 
             void SetMaximumSize(size_t Value) { m_MaximumSize = Value; }
-        };
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CDefaultLocale --------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class LIB_DELPHI CDefaultLocale {
-        private:
-
-            locale_t m_Locale;
-
-            LPCSTR m_LocaleName;
-
-            int m_Category;
-
-            int m_CategoryMask;
-
-        public:
-
-            explicit CDefaultLocale(locale_t ALocale = LC_GLOBAL_LOCALE) noexcept;
-
-            explicit CDefaultLocale(LPCSTR Locale);
-            ~CDefaultLocale();
-
-            locale_t Locale() { return m_Locale; };
-
-            LPCSTR LocaleName() { return m_LocaleName; };
-
-            int Category() const { return m_Category; };
-            void Category(int Value) { m_Category = Value; };
-
-            int CategoryMask() const { return m_CategoryMask; };
-            void CategoryMask(int Value) { m_CategoryMask = Value; };
-
-            void SetLocale(LPCSTR Locale);
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -662,9 +623,9 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class CStringStream;
-        class CCustomString;
-        class CString;
+        class LIB_DELPHI CStringStream;
+        class LIB_DELPHI CCustomString;
+        class LIB_DELPHI CString;
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CCustomStringStream: public CStream
@@ -1576,6 +1537,43 @@ namespace Delphi {
             }
 
         }; // CStringList
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //-- CDefaultLocale --------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        class LIB_DELPHI CDefaultLocale {
+        private:
+
+            locale_t m_Locale;
+
+            CString m_LocaleName;
+
+            int m_Category;
+
+            int m_CategoryMask;
+
+        public:
+
+            explicit CDefaultLocale(locale_t ALocale = LC_GLOBAL_LOCALE) noexcept;
+
+            explicit CDefaultLocale(LPCSTR Locale);
+            ~CDefaultLocale();
+
+            locale_t Locale() { return m_Locale; };
+
+            const CString &LocaleName() const { return m_LocaleName; };
+
+            int Category() const { return m_Category; };
+            void Category(int Value) { m_Category = Value; };
+
+            int CategoryMask() const { return m_CategoryMask; };
+            void CategoryMask(int Value) { m_CategoryMask = Value; };
+
+            void SetLocale(LPCSTR Locale);
+        };
 
         //--------------------------------------------------------------------------------------------------------------
 
