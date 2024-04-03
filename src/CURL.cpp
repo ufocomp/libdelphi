@@ -430,14 +430,22 @@ namespace Delphi {
                         break;
                     strcase(CURLM_UNKNOWN_OPTION);
                         break;
+#if CURL_AT_LEAST_VERSION(7, 32, 1)
                     strcase(CURLM_ADDED_ALREADY);
                         break;
+#endif
+#if CURL_AT_LEAST_VERSION(7, 59, 0)
                     strcase(CURLM_RECURSIVE_API_CALL);
                         break;
+#endif
+#if CURL_AT_LEAST_VERSION(7, 68, 0)
                     strcase(CURLM_WAKEUP_FAILURE);
                         break;
+#endif
+#if CURL_AT_LEAST_VERSION(7, 69, 0)
                     strcase(CURLM_BAD_FUNCTION_ARGUMENT);
                         break;
+#endif
 #if CURL_AT_LEAST_VERSION(7, 81, 0)
                         strcase(CURLM_ABORTED_BY_CALLBACK);
                         break;
