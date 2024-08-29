@@ -2425,23 +2425,25 @@ namespace Delphi {
 
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
-            chASSERT(pConnection);
-            try {
-                if (pConnection->Connected()) {
-                    if (pConnection->Protocol() == pHTTP) {
-                        if (pConnection->ConnectionStatus() == csRequestOk) {
-                            pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
-                            pConnection->CloseConnection(true);
+
+            if (IndexOfConnection(pConnection) != -1) {
+                try {
+                    if (pConnection->Connected()) {
+                        if (pConnection->Protocol() == pHTTP) {
+                            if (pConnection->ConnectionStatus() == csRequestOk) {
+                                pConnection->SendStockReply(CHTTPReply::gateway_timeout, true);
+                                pConnection->CloseConnection(true);
+                            }
+                        }
+
+                        if (pConnection->CloseConnection()) {
+                            pConnection->Disconnect();
                         }
                     }
-
-                    if (pConnection->CloseConnection()) {
-                        pConnection->Disconnect();
-                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(pConnection, E);
+                    pConnection->Disconnect();
                 }
-            } catch (Delphi::Exception::Exception &E) {
-                DoException(pConnection, E);
-                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2452,7 +2454,7 @@ namespace Delphi {
             CHTTPServerConnection *pConnection = nullptr;
 
             try {
-                pIOHandler = (CIOHandlerSocket *) CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
+                pIOHandler = CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
 
                 if (Assigned(pIOHandler)) {
                     pConnection = new CHTTPServerConnection(this);
@@ -2487,39 +2489,43 @@ namespace Delphi {
             };
 
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
-            chASSERT(pConnection);
-            try {
-                pConnection->ParseInput(OnExecuted);
-                if (pConnection->ConnectionStatus() == csRequestError) {
-                    pConnection->CloseConnection(true);
-                    if (pConnection->Protocol() == pHTTP)
-                        pConnection->SendStockReply(CHTTPReply::bad_request);
-                    pConnection->Clear();
+
+            if (IndexOfConnection(pConnection) != -1) {
+                try {
+                    pConnection->ParseInput(OnExecuted);
+                    if (pConnection->ConnectionStatus() == csRequestError) {
+                        pConnection->CloseConnection(true);
+                        if (pConnection->Protocol() == pHTTP)
+                            pConnection->SendStockReply(CHTTPReply::bad_request);
+                        pConnection->Clear();
+                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(pConnection, E);
+                    pConnection->Disconnect();
                 }
-            } catch (Delphi::Exception::Exception &E) {
-                DoException(pConnection, E);
-                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoWrite(CPollEventHandler *AHandler) {
             auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
-            chASSERT(pConnection);
-            try {
-                if (pConnection->ConnectionStatus() == csReplyReady) {
-                    if (pConnection->WriteAsync()) {
-                        pConnection->ConnectionStatus(csReplySent);
-                    }
-                    pConnection->Clear();
-                }
 
-                if (pConnection->CloseConnection()) {
+            if (IndexOfConnection(pConnection) != -1) {
+                try {
+                    if (pConnection->ConnectionStatus() == csReplyReady) {
+                        if (pConnection->WriteAsync()) {
+                            pConnection->ConnectionStatus(csReplySent);
+                        }
+                        pConnection->Clear();
+                    }
+
+                    if (pConnection->CloseConnection()) {
+                        pConnection->Disconnect();
+                    }
+                } catch (Delphi::Exception::Exception &E) {
+                    DoException(pConnection, E);
                     pConnection->Disconnect();
                 }
-            } catch (Delphi::Exception::Exception &E) {
-                DoException(pConnection, E);
-                pConnection->Disconnect();
             }
         }
         //--------------------------------------------------------------------------------------------------------------
