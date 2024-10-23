@@ -59,12 +59,12 @@ namespace Delphi {
                 }
             };
 
-            explicit Exception(int SysError): inherited(), m_SysError(0) {
+            explicit Exception(const int SysError): inherited(), m_SysError(0) {
                 Clear();
                 SystemError(SysError);
             };
 
-            explicit Exception(LPCTSTR lpMsg, int SysError): inherited(), m_SysError(0) {
+            explicit Exception(LPCTSTR lpMsg, const int SysError): inherited(), m_SysError(0) {
                 Clear();
 
                 if (lpMsg != nullptr) {
@@ -89,7 +89,7 @@ namespace Delphi {
                 m_Message.Clear();
             };
 
-            void SystemError(int SysError) {
+            void SystemError(const int SysError) {
 
                 const CString &S = GSysError->StrError(SysError);
 
@@ -98,7 +98,8 @@ namespace Delphi {
                 if (m_Message.IsEmpty()) {
                     m_Message.Format(_T("%d: %s"), m_SysError, S.c_str());
                 } else {
-                    m_Message.Format(_T("(%d: %s)"), m_SysError, S.c_str());
+                    const auto message = m_Message;
+                    m_Message.Format(_T("%s (%d: %s)"), message.c_str(), m_SysError, S.c_str());
                 }
             };
 
@@ -138,15 +139,15 @@ namespace Delphi {
 
             explicit EExternal(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EExternal(int SysError) : inherited(SysError) {};
+            explicit EExternal(const int SysError) : inherited(SysError) {};
 
-            EExternal(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            EExternal(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
             ~EExternal() override = default;
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EExternalException : public EExternal {
+        class LIB_DELPHI EExternalException final : public EExternal {
             typedef EExternal inherited;
 
         public:
@@ -155,9 +156,9 @@ namespace Delphi {
 
             explicit EExternalException(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EExternalException(int SysError) : inherited(SysError) {};
+            explicit EExternalException(const int SysError) : inherited(SysError) {};
 
-            EExternalException(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            EExternalException(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
             ~EExternalException() override = default;
         };
@@ -172,15 +173,15 @@ namespace Delphi {
 
             explicit EIntError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EIntError(int SysError) : inherited(SysError) {};
+            explicit EIntError(const int SysError) : inherited(SysError) {};
 
-            EIntError(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            EIntError(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
             ~EIntError() override = default;
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EDivByZero : public EIntError {
+        class LIB_DELPHI EDivByZero final : public EIntError {
             typedef EIntError inherited;
 
         public:
@@ -189,15 +190,15 @@ namespace Delphi {
 
             explicit EDivByZero(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EDivByZero(int SysError) : inherited(SysError) {};
+            explicit EDivByZero(const int SysError) : inherited(SysError) {};
 
-            EDivByZero(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            EDivByZero(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
             ~EDivByZero() override = default;
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI ERangeError : public EIntError {
+        class LIB_DELPHI ERangeError final : public EIntError {
             typedef EIntError inherited;
 
         public:
@@ -206,9 +207,9 @@ namespace Delphi {
 
             explicit ERangeError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit ERangeError(int SysError) : inherited(SysError) {};
+            explicit ERangeError(const int SysError) : inherited(SysError) {};
 
-            ERangeError(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            ERangeError(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
             ~ERangeError() override = default;
         };
@@ -223,9 +224,9 @@ namespace Delphi {
 
             explicit EStreamError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EStreamError(int SysError) : inherited(SysError) {};
+            explicit EStreamError(const int SysError) : inherited(SysError) {};
 
-            EStreamError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            EStreamError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
                 va_list argList;
 
                 va_start(argList, lpFormat);
@@ -248,9 +249,9 @@ namespace Delphi {
 
             explicit EFilerError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EFilerError(int SysError) : inherited(SysError) {};
+            explicit EFilerError(const int SysError) : inherited(SysError) {};
 
-            EFilerError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            EFilerError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
                 va_list argList;
 
                 va_start(argList, lpFormat);
@@ -264,7 +265,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EReadError : public EFilerError {
+        class LIB_DELPHI EReadError final : public EFilerError {
             typedef EFilerError inherited;
 
         public:
@@ -273,9 +274,9 @@ namespace Delphi {
 
             explicit EReadError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EReadError(int SysError) : inherited(SysError) {};
+            explicit EReadError(const int SysError) : inherited(SysError) {};
 
-            EReadError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            EReadError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
                 va_list argList;
 
                 va_start(argList, lpFormat);
@@ -289,7 +290,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EWriteError : public EFilerError {
+        class LIB_DELPHI EWriteError final : public EFilerError {
             typedef EFilerError inherited;
 
         public:
@@ -298,9 +299,9 @@ namespace Delphi {
 
             explicit EWriteError(LPCTSTR lpMsg) : inherited(lpMsg) {};
 
-            explicit EWriteError(int SysError) : inherited(SysError) {};
+            explicit EWriteError(const int SysError) : inherited(SysError) {};
 
-            EWriteError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            EWriteError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
                 va_list argList;
 
                 va_start(argList, lpFormat);
@@ -314,16 +315,16 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EOSError : public Exception {
+        class LIB_DELPHI EOSError final : public Exception {
             typedef Exception inherited;
 
         public:
 
-            explicit EOSError(int SysError) : inherited(SysError) {};
+            explicit EOSError(const int SysError) : inherited(SysError) {};
 
-            EOSError(LPCTSTR lpMsg, int SysError) : inherited(lpMsg, SysError) {};
+            EOSError(LPCTSTR lpMsg, const int SysError) : inherited(lpMsg, SysError) {};
 
-            EOSError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            EOSError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
                 va_list argList;
 
                 va_start(argList, lpFormat);
@@ -337,7 +338,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EConvertError : public Exception {
+        class LIB_DELPHI EConvertError final : public Exception {
             typedef Exception inherited;
 
         public:
@@ -355,7 +356,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI ESocketError : public Exception {
+        class LIB_DELPHI ESocketError final : public Exception {
             typedef Exception inherited;
 
         private:
@@ -368,9 +369,9 @@ namespace Delphi {
 
             explicit ESocketError(LPCTSTR lpMsg) : inherited(lpMsg), m_LastError(0) {};
 
-            explicit ESocketError(int SysError) : inherited(SysError) { m_LastError = SysError; };
+            explicit ESocketError(const int SysError) : inherited(SysError) { m_LastError = SysError; };
 
-            ESocketError(int SysError, LPCTSTR lpFormat, ...) : inherited() {
+            ESocketError(const int SysError, LPCTSTR lpFormat, ...) : inherited() {
 
                 m_LastError = SysError;
 
@@ -407,7 +408,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EHTTPServerError : public Exception {
+        class LIB_DELPHI EHTTPServerError final : public Exception {
             typedef Exception inherited;
 
         public:
@@ -425,7 +426,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EPollServerError : public Exception {
+        class LIB_DELPHI EPollServerError final : public Exception {
             typedef Exception inherited;
 
         public:
@@ -456,7 +457,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EDBConnectionError : public EDBError {
+        class LIB_DELPHI EDBConnectionError final : public EDBError {
             typedef EDBError inherited;
 
         public:
@@ -474,7 +475,7 @@ namespace Delphi {
         };
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI EJSONParseSyntaxError : public Exception {
+        class LIB_DELPHI EJSONParseSyntaxError final : public Exception {
             typedef Exception inherited;
 
         public:
