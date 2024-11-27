@@ -63,7 +63,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI bool CreateDir(LPCSTR lpPathName, mode_t Mode = 0700);
-        LIB_DELPHI bool ForceDirectories(LPCSTR lpPatchName, mode_t Mode = 0700);
+        LIB_DELPHI bool ForceDirectories(LPCSTR lpPathName, mode_t Mode = 0700);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI void DebugSystemError(LPCTSTR lpFunctionName);

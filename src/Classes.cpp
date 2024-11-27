@@ -1694,6 +1694,31 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CString::Replace(const CString &Pattern, const CString &Replacement) {
+            Position(0);
+
+            auto pos = Find(Pattern);
+            if (pos != npos) {
+                off_t offset = 0;
+                CString S;
+
+                while (pos != npos) {
+                    S.WriteBuffer(Data() + offset, pos - offset);
+                    S.WriteBuffer(Replacement.Data(), Replacement.Size());
+                    offset = static_cast<off_t>(pos + Pattern.Size());
+                    pos = Find(Pattern, offset);
+                }
+
+                S.WriteBuffer(Data() + offset, Size() - offset);
+                S.SetLength(S.Size());
+                S.Position(0);
+
+                Clear();
+                Create(S);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         CString &CString::Format(LPCTSTR pszFormat, ...) {
             va_list args;
             va_start(args, pszFormat);

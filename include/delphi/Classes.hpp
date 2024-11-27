@@ -813,7 +813,9 @@ namespace Delphi {
             void Append(TCHAR C);
             void Append(size_t Length, TCHAR C);
 
-            size_t Copy (LPTSTR Str, size_t Len, size_t Pos = 0) const;
+            void Replace(const CString &Pattern, const CString &Replacement);
+
+            size_t Copy(LPTSTR Str, size_t Len, size_t Pos = 0) const;
 
             CString &Format(LPCTSTR pszFormat, ...);
             CString &Format(LPCTSTR pszFormat, va_list argList);
