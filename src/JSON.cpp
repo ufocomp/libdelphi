@@ -1884,6 +1884,7 @@ namespace Delphi {
             while ((m_Result == -1) && (ABegin != AEnd)) {
                 m_Result = Consume(*ABegin++);
             }
+
             return {m_Result, size_t(ABegin - Start - 1)};
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -1902,7 +1903,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case string_start:
                     if (AInput == '"') {
                         CurrentObject().Add(CJSONMember());
@@ -1915,7 +1916,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case string:
                     if (IsLetter(AInput) || IsDigit(AInput)) {
                         CurrentMember().String().Append((TCHAR) AInput);
@@ -1925,7 +1926,7 @@ namespace Delphi {
                         m_State = string_end;
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case string_end:
                     if (AInput == ':') {
                         m_State = value_start;
@@ -1933,7 +1934,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_start:
                     if (AInput == '{') {
                         CreateValue(jvtObject);
@@ -1977,12 +1978,12 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_end:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
                         if (m_pJsonList->Count() == 0)
-                            return true;
+                            return 1;
                         return -1;
                     } else if (AInput == ',') {
                         if (CurrentJson().IsObject())
@@ -1993,7 +1994,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_string_start:
                     if (AInput == '"') {
                         m_State = value_string_end;
@@ -2008,7 +2009,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_string:
                     if (!m_Escape && AInput == '"') {
                         m_State = value_string_end;
@@ -2026,7 +2027,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_string_end:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
@@ -2047,7 +2048,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_digit:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
@@ -2066,7 +2067,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_true:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
@@ -2088,7 +2089,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_false:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
@@ -2110,7 +2111,7 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 case value_null:
                     if ((AInput == '}') || (AInput == ']')) {
                         DeleteLastJson();
@@ -2132,9 +2133,9 @@ namespace Delphi {
                     } else if (IsWS(AInput)) {
                         return -1;
                     }
-                    return false;
+                    return 0;
                 default:
-                    return false;
+                    return 0;
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -2160,7 +2161,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CJSONParser::IsWS(u_char c) {
-            return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
+            return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r') || (c == '\0');
         }
         //--------------------------------------------------------------------------------------------------------------
 
