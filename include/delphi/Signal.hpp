@@ -81,8 +81,6 @@ namespace Delphi {
             void SetCode(LPCTSTR Value);
             void SetName(LPCTSTR Value);
 
-            void SetHandler(CSignalHandler Value);
-
         public:
 
             CSignal(CCollection *ACollection, int ASigNo);
@@ -95,8 +93,9 @@ namespace Delphi {
             LPCTSTR Name() const { return m_Name; };
             void Name(LPCTSTR Value) { SetName(Value); };
 
-            CSignalHandler Handler() { return m_Handler; };
-            void Handler(CSignalHandler Value) { SetHandler(Value); };
+            CSignalHandler &Handler() { return m_Handler; }
+            const CSignalHandler &Handler() const { return m_Handler; }
+            void Handler(CSignalHandler && Value) { m_Handler = Value; }
 
         };
 
@@ -128,11 +127,11 @@ namespace Delphi {
 
             CSignals(): CCollection(this), m_Handle(INVALID_HANDLE_VALUE) {};
 
-            void AddSignal(int ASigNo, LPCTSTR ACode, LPCTSTR AName, CSignalHandler AHandler);
+            CSignal *AddSignal(int ASigNo, LPCTSTR ACode, LPCTSTR AName, CSignalHandler && AHandler);
 
             ~CSignals() override;
 
-            int IndexOfSigNo(int SigNo);
+            int IndexOfSigNo(int SigNo) const;
 
             void InitSignals();
 
@@ -141,9 +140,9 @@ namespace Delphi {
             sigset_t &SignalSet() { return m_SigSet; };
             const sigset_t &SignalSet() const { return m_SigSet; };
 
-            void SigProcMask(int How, sigset_t *OldSet = nullptr);
+            void SigProcMask(int How, sigset_t *OldSet = nullptr) const;
 
-            int SignalsCount() { return Count(); };
+            int SignalsCount() const { return Count(); };
 
             CSignal *Signals(int Index) const { return Get(Index); };
 

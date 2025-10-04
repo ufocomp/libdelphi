@@ -54,12 +54,6 @@ namespace Delphi {
             if (m_Name != Value)
                 m_Name = Value;
         }
-        //--------------------------------------------------------------------------------------------------------------
-
-        void CSignal::SetHandler(CSignalHandler Value) {
-            if (m_Handler != Value)
-                m_Handler = Value;
-        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -74,17 +68,19 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSignals::AddSignal(int ASigNo, LPCTSTR ACode, LPCTSTR AName, CSignalHandler AHandler) {
-            auto Signal = new CSignal(this, ASigNo);
+        CSignal *CSignals::AddSignal(int ASigNo, LPCTSTR ACode, LPCTSTR AName, CSignalHandler && AHandler) {
+            const auto Signal = new CSignal(this, ASigNo);
 
             Signal->Code(ACode);
             Signal->Name(AName);
-            Signal->Handler(AHandler);
+            Signal->Handler(static_cast<CSignalHandler &&> (AHandler));
+
+            return Signal;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CSignal *CSignals::Get(int Index) const {
-            if ((Index < 0) || (Index >= Count()))
+            if (Index < 0 || Index >= Count())
                 throw ExceptionFrm(SListIndexError, Index);
 
             return (CSignal *) GetItem(Index);
@@ -92,7 +88,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CSignals::Put(int Index, CSignal *Signal) {
-            if ((Index < 0) || (Index >= Count()))
+            if (Index < 0 || Index >= Count())
                 throw ExceptionFrm(SListIndexError, Index);
             SetItem(Index, Signal);
         }
@@ -122,11 +118,11 @@ namespace Delphi {
             for (int i = 0; i < Count(); ++i) {
                 ZeroMemory(&sa, sizeof(struct sigaction));
 
-                auto Signal = Get(i);
+                const auto Signal = Get(i);
 
                 if (Signal->Handler()) {
                     sa.sa_sigaction = Signal->Handler();
-                    sa.sa_flags = SA_SIGINFO;
+                    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
                 } else {
                     sa.sa_handler = SIG_IGN;
                 }
@@ -147,14 +143,14 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CSignals::SigProcMask(int How, sigset_t *OldSet) {
+        void CSignals::SigProcMask(int How, sigset_t *OldSet) const {
             if (sigprocmask(How, &m_SigSet, OldSet) == -1) {
                 throw EOSError(errno, _T("call sigprocmask() failed"));
             }
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        int CSignals::IndexOfSigNo(int SigNo) {
+        int CSignals::IndexOfSigNo(int SigNo) const {
 
             for (int i = 0; i < Count(); ++i) {
                 if (Get(i)->SigNo() == SigNo)
