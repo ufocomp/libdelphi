@@ -782,10 +782,10 @@ namespace Delphi {
             /// The headers to be included in the reply.
             CHeaders Headers {};
 
-            /// The content length to be receive in the reply.
+            /// The content length to be received in the reply.
             size_t ContentLength;
 
-            /// The content to be receive in the reply.
+            /// The content to be received in the reply.
             CString Content {};
 
             /// The cache file.
@@ -1087,7 +1087,7 @@ namespace Delphi {
 
         public:
 
-            CHTTPServer();
+            CHTTPServer() = default;
 
             explicit CHTTPServer(const CString &IP, unsigned short Port);
 
@@ -1247,15 +1247,15 @@ namespace Delphi {
 
             explicit CHTTPProxy(CHTTPProxyManager *AManager, CHTTPServerConnection *AConnection);
 
-            CHTTPServerConnection *Connection() { return m_pConnection; }
+            CHTTPServerConnection *Connection() const { return m_pConnection; }
 
-            CHTTPServer *Server() { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
+            CHTTPServer *Server() const { return dynamic_cast<CHTTPServer *> (m_pConnection->Server()); }
 
             CHTTPRequest &Request() { return m_Request; };
             const CHTTPRequest &Request() const { return m_Request; };
 
-            CProxyType ProxyType() { return m_ProxyType; }
-            void ProxyType(CProxyType Value) { m_ProxyType = Value; }
+            CProxyType ProxyType() const { return m_ProxyType; }
+            void ProxyType(const CProxyType Value) { m_ProxyType = Value; }
 
         };
 

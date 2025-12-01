@@ -2106,7 +2106,7 @@ namespace Delphi {
         bool CHTTPServerConnection::ParseInput(COnSocketExecuteEvent && OnExecute) {
             if (Connected()) {
                 UpdateClock();
-                CMemoryStream Stream(ReadAsync());
+                const CMemoryStream Stream(ReadAsync());
                 if (Stream.Size() > 0) {
                     InputBuffer().Extract(Stream.Memory(), Stream.Size());
                     switch (m_Protocol) {
@@ -2328,11 +2328,6 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CHTTPServer::CHTTPServer(): CTCPAsyncServer() {
-
-        }
-        //--------------------------------------------------------------------------------------------------------------
-
         CHTTPServer::CHTTPServer(const CString &IP, unsigned short Port): CHTTPServer() {
             DefaultIP() = IP;
             DefaultPort(Port);
@@ -2352,6 +2347,8 @@ namespace Delphi {
 
                 m_Providers = Server.m_Providers;
                 m_Sites = Server.m_Sites;
+
+                AllocateEventHandlers(Server);
 
                 m_ActiveLevel = Server.m_ActiveLevel;
             }
@@ -2424,7 +2421,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoTimeOut(CPollEventHandler *AHandler) {
-            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            const auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
 
             if (IndexOfConnection(pConnection) != -1) {
                 try {
@@ -2449,11 +2446,10 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoAccept(CPollEventHandler *AHandler) {
-            CIOHandlerSocket *pIOHandler = nullptr;
-            CPollEventHandler *pEventHandler = nullptr;
             CHTTPServerConnection *pConnection = nullptr;
 
             try {
+                CIOHandlerSocket *pIOHandler = nullptr;
                 pIOHandler = CServerIOHandler::Accept(AHandler->Socket(), SOCK_NONBLOCK);
 
                 if (Assigned(pIOHandler)) {
@@ -2469,7 +2465,8 @@ namespace Delphi {
 
                     pIOHandler->AfterAccept();
 
-                    pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
+                    const auto pEventHandler = m_pEventHandlers->Add(pIOHandler->Binding()->Handle());
+
                     pEventHandler->Binding(pConnection);
                     pEventHandler->Start(etIO);
 
@@ -2488,7 +2485,7 @@ namespace Delphi {
                 return DoExecute(AConnection);
             };
 
-            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            const auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
 
             if (IndexOfConnection(pConnection) != -1) {
                 try {
@@ -2508,7 +2505,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPServer::DoWrite(CPollEventHandler *AHandler) {
-            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
+            const auto pConnection = dynamic_cast<CHTTPServerConnection *> (AHandler->Binding());
 
             if (IndexOfConnection(pConnection) != -1) {
                 try {
@@ -2531,20 +2528,18 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CHTTPServer::DoCommand(CTCPConnection *AConnection) {
-            CCommandHandler *pHandler;
-
-            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
+            const auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             chASSERT(pConnection);
             const auto &caRequest = pConnection->Request();
 
-            bool Result = CommandHandlers().Count() > 0;
+            const bool Result = CommandHandlers().Count() > 0;
 
             if (Result) {
                 DoBeforeCommandHandler(AConnection, caRequest.Method);
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers().Count(); ++Index) {
-                        pHandler = CommandHandlers().Commands(Index);
+                        const auto pHandler = CommandHandlers().Commands(Index);
                         if (pHandler->Enabled()) {
                             if (pHandler->Check(caRequest.Method, AConnection))
                                 break;
@@ -2592,7 +2587,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoConnectStart(CIOHandlerSocket *AIOHandler, CPollEventHandler *AHandler) {
-            auto pConnection = new CHTTPClientConnection(this);
+            const auto pConnection = new CHTTPClientConnection(this);
             pConnection->IOHandler(AIOHandler);
             pConnection->AutoFree(true);
             AHandler->Binding(pConnection);
@@ -2600,7 +2595,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         void CHTTPClient::DoConnect(CPollEventHandler *AHandler) {
-            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            const auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
 
             if (pConnection == nullptr) {
                 AHandler->Stop();
@@ -2608,9 +2603,9 @@ namespace Delphi {
             }
 
             try {
-                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
+                const auto pIOHandler = dynamic_cast<CIOHandlerSocket *> (pConnection->IOHandler());
 
-                if (pIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler != nullptr && pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
                     pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
 #else
@@ -2634,7 +2629,7 @@ namespace Delphi {
                 return DoExecute(AConnection);
             };
 
-            auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+            const auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
 
             if (pConnection == nullptr) {
                 AHandler->Stop();
@@ -2696,9 +2691,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CHTTPClient::DoCommand(CTCPConnection *AConnection) {
-            CCommandHandler *pHandler;
-
-            auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
+            const auto pConnection = dynamic_cast<CHTTPServerConnection *> (AConnection);
             const auto &caRequest = pConnection->Request();
 
             const bool bResult = CommandHandlers().Count() > 0;
@@ -2708,7 +2701,7 @@ namespace Delphi {
                 try {
                     int Index;
                     for (Index = 0; Index < CommandHandlers().Count(); ++Index) {
-                        pHandler = CommandHandlers().Commands(Index);
+                        const auto pHandler = CommandHandlers().Commands(Index);
                         if (pHandler->Enabled()) {
                             if (pHandler->Check(caRequest.Method, AConnection))
                                 break;
@@ -2827,7 +2820,7 @@ namespace Delphi {
             }
 
             try {
-                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
+                const auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
 
                 if (pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
@@ -2851,14 +2844,14 @@ namespace Delphi {
             if (m_ProxyType == ptHTTP) {
                 CHTTPClient::DoRead(AHandler);
             } else {
-                auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
+                const auto pConnection = dynamic_cast<CHTTPClientConnection *> (AHandler->Binding());
 
                 if (pConnection == nullptr) {
                     AHandler->Stop();
                     return;
                 }
 
-                CMemoryStream Stream(pConnection->ReadAsync());
+                const CMemoryStream Stream(pConnection->ReadAsync());
                 if (Stream.Size() > 0) {
                     pConnection->InputBuffer().Extract(Stream.Memory(), Stream.Size());
                     unsigned char frame[2];

@@ -88,7 +88,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCurlApi::Cleanup() {
+        void CCurlApi::Cleanup() const {
             Reset();
             if (m_curl != nullptr) {
                 curl_easy_cleanup(m_curl);
@@ -97,7 +97,7 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         size_t CCurlApi::WriteCallBack(void *content, size_t size, size_t nmemb, CCurlApi *Sender) {
-            size_t buffer_size = nmemb * size;
+            const size_t buffer_size = nmemb * size;
             Sender->m_Result.Append((LPCTSTR) content, buffer_size);
             Sender->DoWrite((LPCTSTR) content, buffer_size);
             return buffer_size;
@@ -106,14 +106,14 @@ namespace Delphi {
 
         size_t CCurlApi::ReadCallBack(char *buffer, size_t size, size_t nmemb, CString *Content) {
             const auto content_size = Content->Size() - Content->Position();
-            size_t buffer_size = Min(nmemb * size, content_size);
+            const size_t buffer_size = Min(nmemb * size, content_size);
             Content->ReadBuffer(buffer, buffer_size);
             return buffer_size;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         size_t CCurlApi::HeaderCallBack(char *buffer, size_t size, size_t nitems, CHeaders *Headers) {
-            size_t buffer_size = nitems * size;
+            const size_t buffer_size = nitems * size;
             if (buffer_size > 2) {
                 const CString S((LPCTSTR) buffer, buffer_size - 2);
                 const auto pos = S.Find(": ");
@@ -156,11 +156,15 @@ namespace Delphi {
                 curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, CCurlApi::WriteCallBack);
                 curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this);
                 curl_easy_setopt(m_curl, CURLOPT_SSL_VERIFYPEER, 1L);
-                curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, m_TimeOut);
-                curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(m_curl, CURLOPT_TIMEOUT_MS, m_TimeOut);
                 curl_easy_setopt(m_curl, CURLOPT_ACCEPT_ENCODING, "gzip, deflate, br");
                 curl_easy_setopt(m_curl, CURLOPT_HTTP_CONTENT_DECODING, 1L);
                 curl_easy_setopt(m_curl, CURLOPT_ERRORBUFFER, m_Error);
+
+                if (!m_Proxy.hostname.empty()) {
+                    curl_easy_setopt(m_curl, CURLOPT_PROXY, m_Proxy.Host().c_str());
+                    curl_easy_setopt(m_curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
+                }
 
                 if (m_bTunnel) {
                     curl_easy_setopt(m_curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
@@ -357,9 +361,9 @@ namespace Delphi {
 
         void CCURLClient::InitEventHandler(CPollEventHandler *AHandler) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            AHandler->OnTimeOutEvent([this](auto && AHandler) { DoTimeOut(AHandler); });
-            AHandler->OnEvent([this](auto && AHandler, auto && events) { DoEvent(AHandler, events); });
-            AHandler->OnErrorEvent([this](auto && AHandler) { DoError(AHandler); });
+            AHandler->OnTimeOutEvent([this](auto && Value) { DoTimeOut(Value); });
+            AHandler->OnEvent([this](auto && Value, auto && events) { DoEvent(Value, events); });
+            AHandler->OnErrorEvent([this](auto && Value) { DoError(Value); });
 #else
             AHandler->OnTimeOutEvent(std::bind(&CCURLClient::DoTimeOut, this, _1));
             AHandler->OnEvent(std::bind(&CCURLClient::DoEvent, this, _1, _2));
@@ -369,21 +373,21 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CPollEventHandler *CCURLClient::GetEventHandler(CSocket Socket) {
-            auto pEventHandler = EventHandlers()->Add(Socket);
+            const auto pEventHandler = EventHandlers()->Add(Socket);
             InitEventHandler(pEventHandler);
             return pEventHandler;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCURLClient::AddSocket(CCURLClient *AClient, curl_socket_t s, int action) {
-            auto pEventHandler = AClient->GetEventHandler(s);
+            const auto pEventHandler = AClient->GetEventHandler(s);
             SetSocket(pEventHandler, action);
             curl_multi_assign(AClient->Handle(), s, pEventHandler);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         void CCURLClient::SetSocket(CPollEventHandler *AHandler, int action) {
-            uint32_t events = ((action & CURL_POLL_IN) ? EPOLLIN : 0) | ((action & CURL_POLL_OUT) ? EPOLLOUT : 0);
+            const uint32_t events = ((action & CURL_POLL_IN) ? EPOLLIN : 0) | ((action & CURL_POLL_OUT) ? EPOLLOUT : 0);
             AHandler->Start(etEvent, events);
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -484,7 +488,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CCURLClient::MultiInfo() {
+        void CCURLClient::MultiInfo() const {
             CCurlAsyncFetch *pFetch;
             CURLMsg *msg;
             int msgs_left;
@@ -517,7 +521,7 @@ namespace Delphi {
         void CCURLClient::DoTimer(CPollEventHandler *AHandler) {
             uint64_t exp;
 
-            auto pTimer = dynamic_cast<CEPollTimer *> (AHandler->Binding());
+            const auto pTimer = dynamic_cast<CEPollTimer *> (AHandler->Binding());
             pTimer->Read(&exp, sizeof(uint64_t));
 
             try {
@@ -557,9 +561,11 @@ namespace Delphi {
                 const CHeaders &Headers, COnCurlFetchEvent && OnDone, COnCurlFetchEvent && OnFail,
                 COnCurlApiWriteEvent && OnWrite) {
 
-            auto pFetch = new CCurlAsyncFetch();
+            const auto pFetch = new CCurlAsyncFetch();
 
             pFetch->TimeOut(m_TimeOut);
+            pFetch->Proxy() = m_Proxy;
+
             pFetch->OnDone() = OnDone;
             pFetch->OnFail() = OnFail;
             pFetch->OnWrite() = OnWrite;

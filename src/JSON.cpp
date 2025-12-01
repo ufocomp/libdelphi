@@ -34,9 +34,9 @@ namespace Delphi {
 
         CString EncodeJsonString(const CString &String) {
             CString Result;
-            TCHAR ch;
-            for (size_t Index = 0; Index < String.Size(); Index++) {
-                ch = String.at(Index);
+
+            for (size_t i = 0; i < String.Size(); i++) {
+                const auto ch = String.at(i);
                 switch (ch) {
                     case '\r':
                         Result.Append("\\r");
@@ -48,6 +48,7 @@ namespace Delphi {
                         Result.Append("\\t");
                         break;
                     case '"':
+                    case '/':
                     case '\\':
                         Result.Append("\\");
                         Result.Append(ch);
@@ -63,9 +64,9 @@ namespace Delphi {
 
         CString DecodeJsonString(const CString &String) {
             CString Result;
-            size_t Index = 0;
 
             if (!String.IsEmpty()) {
+                size_t Index = 0;
                 TCHAR ch = String.at(Index);
                 while (ch != 0) {
                     if (ch == '\\') {

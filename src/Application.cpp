@@ -36,7 +36,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CCustomApplication::CCustomApplication(int argc, char *const *argv): CObject() {
+        CCustomApplication::CCustomApplication(const int argc, char *const *argv): CObject() {
 
             m_exitcode = 0;
 

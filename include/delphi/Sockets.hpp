@@ -668,6 +668,9 @@ namespace Delphi {
             void SetTimeOut(CDateTime Value);
             void SetTimeOutInterval(double Value);
 
+            int IncLock();
+            int DecLock();
+
         protected:
 
             int m_Lock;
@@ -696,7 +699,7 @@ namespace Delphi {
             CList &Bindings() { return m_Bindings; };
             const CList &Bindings() const { return m_Bindings; };
 
-            CPollConnection *Binding() { return m_pBinding; };
+            CPollConnection *Binding() const { return m_pBinding; };
             void Binding(CPollConnection *Value) { SetBinding(Value); };
 
             CPollEventHandler *EventHandler() const { return m_pEventHandler; }
@@ -711,13 +714,8 @@ namespace Delphi {
             void UpdateTimeOut(CDateTime DateTime);
 
             int Locked() const { return m_Lock != 0; }
-            int Lock() { return m_Lock++; }
-            int Unlock() {
-                m_Lock--;
-                if (m_Lock < 0)
-                    m_Lock = 0;
-                return m_Lock;
-            }
+            int Lock() { return IncLock(); }
+            int Unlock() { return DecLock(); }
 
             bool AutoFree() const { return m_AutoFree; }
             void AutoFree(bool Value) { m_AutoFree = Value; }
@@ -951,7 +949,7 @@ namespace Delphi {
         class CSocketEvent;
         //--------------------------------------------------------------------------------------------------------------
 
-        typedef std::function<void (CSocketEvent *Sender, CTCPConnection *AConnection, LPCTSTR AFormat, va_list args)> COnSocketVerboseEvent;
+        typedef std::function<void (CSocketEvent *Sender, LPCTSTR AFormat, va_list args)> COnSocketVerboseEvent;
         typedef std::function<bool (CTCPConnection *AConnection)> COnSocketExecuteEvent;
         typedef std::function<void (CTCPConnection *AConnection)> COnSocketConnectionEvent;
         typedef std::function<void (CSocketEvent *Sender, const Delphi::Exception::Exception &E)> COnSocketListenExceptionEvent;
@@ -983,8 +981,8 @@ namespace Delphi {
             COnSocketAfterCommandHandlerEvent m_OnAfterCommandHandler;
             COnSocketNoCommandHandlerEvent m_OnNoCommandHandler;
 
-            virtual void DoVerbose(CTCPConnection *AConnection, LPCTSTR AFormat, ...);
-            virtual void DoVerbose(CTCPConnection *AConnection, LPCTSTR AFormat, va_list args);
+            virtual void DoVerbose(LPCTSTR AFormat, ...);
+            virtual void DoVerbose(LPCTSTR AFormat, va_list args);
 
             virtual bool DoCommand(CTCPConnection *AConnection) abstract;
 
@@ -1006,49 +1004,50 @@ namespace Delphi {
         public:
 
             CSocketEvent();
+            virtual ~CSocketEvent() = default;
 
             COnSocketVerboseEvent &OnVerbose() { return m_OnVerbose; }
-            const COnSocketVerboseEvent &OnVerbose() const { return m_OnVerbose; }
+            virtual const COnSocketVerboseEvent &OnVerbose() const { return m_OnVerbose; }
             void OnVerbose(COnSocketVerboseEvent && Value) { m_OnVerbose = Value; }
 
             COnSocketExecuteEvent &OnExecute() { return m_OnExecute; }
-            const COnSocketExecuteEvent &OnExecute() const { return m_OnExecute; }
+            virtual const COnSocketExecuteEvent &OnExecute() const { return m_OnExecute; }
             void OnExecute(COnSocketExecuteEvent && Value) { m_OnExecute = Value; }
 
             COnSocketConnectionEvent &OnTimeOut() { return m_OnTimeOut; }
-            const COnSocketConnectionEvent &OnTimeOut() const { return m_OnTimeOut; }
-            void OnTimeOut(COnSocketConnectionEvent && Value) { m_OnTimeOut = Value; }
+            virtual const COnSocketConnectionEvent &OnTimeOut() const { return m_OnTimeOut; }
+            virtual void OnTimeOut(COnSocketConnectionEvent && Value) { m_OnTimeOut = Value; }
 
             COnSocketConnectionEvent &OnAccessLog() { return m_OnAccessLog; }
-            const COnSocketConnectionEvent &OnAccessLog() const { return m_OnAccessLog; }
+            virtual const COnSocketConnectionEvent &OnAccessLog() const { return m_OnAccessLog; }
             void OnAccessLog(COnSocketConnectionEvent && Value) { m_OnAccessLog = Value; }
 
             CNotifyEvent &OnConnected() { return m_OnConnected; }
-            const CNotifyEvent &OnConnected() const { return m_OnConnected; }
+            virtual const CNotifyEvent &OnConnected() const { return m_OnConnected; }
             void OnConnected(CNotifyEvent && Value) { m_OnConnected = Value; }
 
             CNotifyEvent &OnDisconnected() { return m_OnDisconnected; }
-            const CNotifyEvent &OnDisconnected() const { return m_OnDisconnected; }
+            virtual const CNotifyEvent &OnDisconnected() const { return m_OnDisconnected; }
             void OnDisconnected(CNotifyEvent && Value) { m_OnDisconnected = Value; }
 
             COnSocketExceptionEvent &OnException() { return m_OnException; }
-            const COnSocketExceptionEvent &OnException() const { return m_OnException; }
+            virtual const COnSocketExceptionEvent &OnException() const { return m_OnException; }
             void OnException(COnSocketExceptionEvent && Value) { m_OnException = Value; }
 
             COnSocketListenExceptionEvent &OnListenException() { return m_OnListenException; }
-            const COnSocketListenExceptionEvent &OnListenException() const { return m_OnListenException; }
+            virtual const COnSocketListenExceptionEvent &OnListenException() const { return m_OnListenException; }
             void OnListenException(COnSocketListenExceptionEvent && Value) { m_OnListenException = Value; }
 
             COnSocketBeforeCommandHandlerEvent &OnBeforeCommandHandler() { return m_OnBeforeCommandHandler; }
-            const COnSocketBeforeCommandHandlerEvent &OnBeforeCommandHandler() const { return m_OnBeforeCommandHandler; }
+            virtual const COnSocketBeforeCommandHandlerEvent &OnBeforeCommandHandler() const { return m_OnBeforeCommandHandler; }
             void OnBeforeCommandHandler(COnSocketBeforeCommandHandlerEvent && Value) { m_OnBeforeCommandHandler = Value; }
 
             COnSocketAfterCommandHandlerEvent &OnAfterCommandHandler() { return m_OnAfterCommandHandler; }
-            const COnSocketAfterCommandHandlerEvent &OnAfterCommandHandler() const { return m_OnAfterCommandHandler; }
+            virtual const COnSocketAfterCommandHandlerEvent &OnAfterCommandHandler() const { return m_OnAfterCommandHandler; }
             void OnAfterCommandHandler(COnSocketAfterCommandHandlerEvent && Value) { m_OnAfterCommandHandler = Value; }
 
             COnSocketNoCommandHandlerEvent &OnNoCommandHandler() { return m_OnNoCommandHandler; }
-            const COnSocketNoCommandHandlerEvent &OnNoCommandHandler() const { return m_OnNoCommandHandler; }
+            virtual const COnSocketNoCommandHandlerEvent &OnNoCommandHandler() const { return m_OnNoCommandHandler; }
             void OnNoCommandHandler(COnSocketNoCommandHandlerEvent && Value) { m_OnNoCommandHandler = Value; }
 
         };
@@ -1156,7 +1155,7 @@ namespace Delphi {
         class LIB_DELPHI CEventSocketServer: public CSocketServer, public CSocketEvent {
         public:
 
-            CEventSocketServer(): CSocketServer(), CSocketEvent() {};
+            CEventSocketServer() = default;
 
             ~CEventSocketServer() override = default;
         };
@@ -1167,10 +1166,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEventSocketClient: public CSocketClient, public CSocketEvent {
+        class LIB_DELPHI CEventSocketClient: public CObject, public CSocketClient, public CSocketEvent {
         public:
 
-            CEventSocketClient(): CSocketClient(), CSocketEvent() {};
+            CEventSocketClient() = default;
 
             ~CEventSocketClient() override = default;
         };
@@ -1181,10 +1180,10 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CPollSocketServer: public CEventSocketServer, public CPollManager {
+        class LIB_DELPHI CPollSocketServer: public CPollManager, public CEventSocketServer {
         public:
 
-            CPollSocketServer(): CEventSocketServer(), CPollManager() {};
+            CPollSocketServer() = default;
 
             ~CPollSocketServer() override = default;
         };
@@ -1395,7 +1394,7 @@ namespace Delphi {
 
             virtual void Clear();
 
-            CObject *Object() { return m_Object; }
+            CObject *Object() const { return m_Object; }
             void Object(CObject *Value) { SetObject(Value); }
 
             CStringList &Data() { return m_Data; }
@@ -2230,6 +2229,7 @@ namespace Delphi {
             COnPollEventHandlerEvent m_OnTimerEvent;
             COnPollEventHandlerEvent m_OnTimeOutEvent;
 
+            COnPollEventHandlerEvent m_OnAcceptEvent;
             COnPollEventHandlerEvent m_OnConnectEvent;
             COnPollEventHandlerEvent m_OnReadEvent;
             COnPollEventHandlerEvent m_OnWriteEvent;
@@ -2248,6 +2248,7 @@ namespace Delphi {
             void DoTimerEvent();
             void DoTimeOutEvent();
 
+            void DoAcceptEvent();
             void DoConnectEvent();
             void DoReadEvent();
             void DoWriteEvent();
@@ -2289,6 +2290,10 @@ namespace Delphi {
             COnPollEventHandlerEvent &OnTimeOutEvent() { return m_OnTimeOutEvent; }
             const COnPollEventHandlerEvent &OnTimeOutEvent() const { return m_OnTimeOutEvent; }
             void OnTimeOutEvent(COnPollEventHandlerEvent && Value) { m_OnTimeOutEvent = Value; }
+
+            COnPollEventHandlerEvent &OnAcceptEvent() { return m_OnAcceptEvent; }
+            const COnPollEventHandlerEvent &OnAcceptEvent() const { return m_OnAcceptEvent; }
+            void OnAcceptEvent(COnPollEventHandlerEvent && Value) { m_OnAcceptEvent = Value; }
 
             COnPollEventHandlerEvent &OnConnectEvent() { return m_OnConnectEvent; }
             const COnPollEventHandlerEvent &OnConnectEvent() const { return m_OnConnectEvent; }
@@ -2423,14 +2428,14 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        class LIB_DELPHI CEPoll: public CObject {
+        class LIB_DELPHI CEPoll {
         private:
 
             COnPollEventHandlerEvent m_OnTimerEvent;
             COnPollEventHandlerEPollEvent m_OnEvent;
             COnPollEventHandlerExceptionEvent m_OnEventHandlerException;
 
-            bool m_FreeEventHandlers;
+            bool m_ExternalEventHandlers;
 
             void CreateEventHandlers();
             void FreeEventHandlers();
@@ -2462,8 +2467,7 @@ namespace Delphi {
         public:
 
             CEPoll();
-
-            ~CEPoll() override;
+            virtual ~CEPoll();
 
             void Wait(const sigset_t *ASigMask = nullptr);
 
@@ -2473,7 +2477,7 @@ namespace Delphi {
             void AllocateEventHandlers(const CEPoll &EPoll) { SetEventHandlers(EPoll.EventHandlers()); }
             void AllocateEventHandlers(CEPoll *EPoll) { SetEventHandlers(EPoll->EventHandlers()); }
 
-            bool ExternalEventHandlers() const { return !m_FreeEventHandlers; };
+            bool ExternalEventHandlers() const { return m_ExternalEventHandlers; };
 
             COnPollEventHandlerEvent &OnTimerEvent() { return m_OnTimerEvent; }
             const COnPollEventHandlerEvent &OnTimerEvent() const { return m_OnTimerEvent; }
@@ -2697,6 +2701,8 @@ namespace Delphi {
 
             void InitializeBindings() override;
 
+            void Assign(const CUDPAsyncServer &Server);
+
             ssize_t Receive(CSocketHandle *ASocketHandle);
             ssize_t Send(CSocketHandle *ASocketHandle);
 
@@ -2713,6 +2719,11 @@ namespace Delphi {
             COnUDPServerWriteEvent &OnWrite() { return m_OnWrite; }
             const COnUDPServerWriteEvent &OnWrite() const { return m_OnWrite; }
             void OnWrite(COnUDPServerWriteEvent && Value) { m_OnWrite = Value; }
+
+            CUDPAsyncServer &operator = (const CUDPAsyncServer &Server) {
+                Assign(Server);
+                return *this;
+            }
 
         };
 
@@ -2739,16 +2750,25 @@ namespace Delphi {
 
         public:
 
-            CTCPAsyncServer();
+            CTCPAsyncServer() = default;
 
             explicit CTCPAsyncServer(unsigned short AListen);
 
             ~CTCPAsyncServer() override;
 
+            void Assign(const CTCPAsyncServer &Server);
+
+            void InitializeBindings() override;
+
             CTCPServerConnection *Connections(int Index) const { return GetConnection(Index); }
             void Connections(int Index, CTCPServerConnection *Value) { SetConnection(Index, Value); }
 
             CTCPServerConnection *operator[] (int Index) const override { return Connections(Index); };
+
+            CTCPAsyncServer &operator = (const CTCPAsyncServer &Server) {
+                Assign(Server);
+                return *this;
+            }
 
         };
 

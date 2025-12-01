@@ -45,7 +45,7 @@ namespace Delphi {
         class CCurlComponent {
         public:
             CCurlComponent();
-            ~CCurlComponent();
+            virtual ~CCurlComponent();
         };
 
         //--------------------------------------------------------------------------------------------------------------
@@ -62,14 +62,16 @@ namespace Delphi {
         class CCurlApi: public CCurlComponent {
         private:
 
-            void Init();
-            void Cleanup();
+            CLocation m_Proxy;
 
             bool m_bTunnel;
 
             char m_Error[CURL_ERROR_SIZE] = {0};
 
             COnCurlApiWriteEvent m_OnWrite;
+
+            void Init();
+            void Cleanup() const;
 
             void DoWrite(LPCTSTR buffer, size_t size);
 
@@ -94,11 +96,14 @@ namespace Delphi {
 
             CCurlApi();
 
-            virtual ~CCurlApi();
+            ~CCurlApi() override;
 
             CURL *Handle() const { return m_curl; }
 
             virtual void Reset() const;
+
+            CLocation& Proxy() { return m_Proxy; }
+            const CLocation& Proxy() const { return m_Proxy; }
 
             size_t TimeOut() const { return m_TimeOut; }
             void TimeOut(size_t Value) { m_TimeOut = Value; }
@@ -206,6 +211,8 @@ namespace Delphi {
 
             CEPollTimer *m_pTimer;
 
+            CLocation m_Proxy;
+
             int m_Action;
             int m_StillRunning;
             int m_TimeOut;
@@ -216,7 +223,7 @@ namespace Delphi {
 
             void UpdateTimer(long int Value, long int Interval = 0);
 
-            void MultiInfo();
+            void MultiInfo() const;
 
             static void ErrorCheck(const char *where, CURLMcode code);
 
@@ -251,7 +258,10 @@ namespace Delphi {
             int Action() const { return m_Action; }
 
             int TimeOut() const { return m_TimeOut; }
-            void TimeOut(int Value) { m_TimeOut = Value; }
+            void TimeOut(const int Value) { m_TimeOut = Value; }
+
+            CLocation& Proxy() { return m_Proxy; }
+            const CLocation& Proxy() const { return m_Proxy; }
 
             CPollEventHandler *GetEventHandler(CSocket Socket);
 

@@ -429,9 +429,9 @@ namespace Delphi {
             }
 
             try {
-                auto pIOHandler = (CIOHandlerSocket *) pConnection->IOHandler();
+                const auto pIOHandler = dynamic_cast<CIOHandlerSocket *> (pConnection->IOHandler());
 
-                if (pIOHandler->Binding()->CheckConnection()) {
+                if (pIOHandler != nullptr && pIOHandler->Binding()->CheckConnection()) {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
                     pConnection->OnRequest([this](auto && Sender) { DoRequest(Sender); });
                     pConnection->OnReply([this](auto && Sender) { DoReply(Sender); });

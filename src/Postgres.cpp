@@ -508,6 +508,10 @@ namespace Delphi {
 #ifdef POSTGRESQL_VERSION_14
                 case CONNECTION_CHECK_STANDBY:
                     return "Checking if server is in standby mode.";
+                case CONNECTION_ALLOCATED:
+                    return "Waiting for connection attempt to be started.";
+                case CONNECTION_AUTHENTICATING:
+                    return "Authentication is in progress with some external system.";
 #endif
             }
 

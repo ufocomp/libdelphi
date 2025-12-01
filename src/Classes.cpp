@@ -1694,7 +1694,7 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CString::Replace(const CString &Pattern, const CString &Replacement) {
+        CString CString::Replace(const CString &Pattern, const CString &Replacement) {
             Position(0);
 
             auto pos = Find(Pattern);
@@ -1716,6 +1716,8 @@ namespace Delphi {
                 Clear();
                 Create(S);
             }
+
+            return *this;
         }
         //--------------------------------------------------------------------------------------------------------------
 
