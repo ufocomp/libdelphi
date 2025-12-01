@@ -2347,9 +2347,9 @@ namespace Delphi {
 
                 m_Providers = Server.m_Providers;
                 m_Sites = Server.m_Sites;
-
+#ifdef WITH_STREAM_SERVER
                 AllocateEventHandlers(Server);
-
+#endif
                 m_ActiveLevel = Server.m_ActiveLevel;
             }
         }
