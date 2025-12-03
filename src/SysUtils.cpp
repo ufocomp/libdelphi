@@ -1065,6 +1065,195 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        LIB_DELPHI static bool ParseISO8601A(const char* s, struct tm& outTM, int& tzOffSec) {
+            const char* p = s;
+
+            while (isspace((unsigned char)*p)) ++p;
+
+            // year
+            if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]) ||
+                !isdigit((unsigned char)p[2]) || !isdigit((unsigned char)p[3]))
+                return false;
+            int year = (p[0]-'0')*1000 + (p[1]-'0')*100 + (p[2]-'0')*10 + (p[3]-'0');
+            p += 4;
+
+            if (*p != '-') return false;
+            ++p;
+            if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1])) return false;
+            int month = (p[0]-'0')*10 + (p[1]-'0');
+            p += 2;
+
+            if (*p != '-') return false;
+            ++p;
+            if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1])) return false;
+            int day = (p[0]-'0')*10 + (p[1]-'0');
+            p += 2;
+
+            outTM.tm_year = year;
+            outTM.tm_mon  = month;
+            outTM.tm_mday = day;
+            outTM.tm_hour = 0;
+            outTM.tm_min  = 0;
+            outTM.tm_sec  = 0;
+
+            // time
+            if (*p == 'T' || *p == ' ') {
+                ++p;
+                if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]))
+                    return false;
+                int hh = (p[0]-'0')*10 + (p[1]-'0');
+                p += 2;
+                if (*p != ':') return false;
+                ++p;
+                if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]))
+                    return false;
+                int mm = (p[0]-'0')*10 + (p[1]-'0');
+                p += 2;
+                if (*p != ':') return false;
+                ++p;
+                if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1]))
+                    return false;
+                int ss = (p[0]-'0')*10 + (p[1]-'0');
+                p += 2;
+
+                outTM.tm_hour = hh;
+                outTM.tm_min  = mm;
+                outTM.tm_sec  = ss;
+            }
+
+            while (isspace((unsigned char)*p)) ++p;
+
+            tzOffSec = 0;
+            if (*p == 'Z') {
+                tzOffSec = 0;
+                ++p;
+            } else if (strncmp(p, "UTC", 3) == 0) {
+                tzOffSec = 0;
+                p += 3;
+            } else if (*p == '+' || *p == '-') {
+                int sign = (*p == '+') ? 1 : -1;
+                ++p;
+                if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1])) return false;
+                int oh = (p[0]-'0')*10 + (p[1]-'0');
+                p += 2;
+                int om = 0;
+                if (*p == ':') {
+                    ++p;
+                    if (!isdigit((unsigned char)p[0]) || !isdigit((unsigned char)p[1])) return false;
+                    om = (p[0]-'0')*10 + (p[1]-'0');
+                    p += 2;
+                } else if (isdigit((unsigned char)p[0]) && isdigit((unsigned char)p[1])) {
+                    om = (p[0]-'0')*10 + (p[1]-'0');
+                    p += 2;
+                }
+                tzOffSec = sign * (oh * 3600 + om * 60);
+            }
+
+            while (isspace((unsigned char)*p)) ++p;
+            if (*p != '\0') return false;
+
+            return true;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        LIB_DELPHI static bool ParseISO8601W(const wchar_t* s, struct tm& outTM, int& tzOffSec) {
+            const wchar_t* p = s;
+
+            while (*p == L' ' || *p == L'\t' || *p == L'\n' || *p == L'\r') ++p;
+
+            // year YYYY
+            if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9' &&
+                  p[2] >= L'0' && p[2] <= L'9' && p[3] >= L'0' && p[3] <= L'9'))
+                return false;
+            int year = (p[0]-L'0')*1000 + (p[1]-L'0')*100 + (p[2]-L'0')*10 + (p[3]-L'0');
+            p += 4;
+
+            if (*p != L'-') return false;
+            ++p;
+
+            if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+            int month = (p[0]-L'0')*10 + (p[1]-L'0');
+            p += 2;
+
+            if (*p != L'-') return false;
+            ++p;
+
+            if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+            int day = (p[0]-L'0')*10 + (p[1]-L'0');
+            p += 2;
+
+            outTM.tm_year = year;
+            outTM.tm_mon  = month;
+            outTM.tm_mday = day;
+            outTM.tm_hour = 0;
+            outTM.tm_min  = 0;
+            outTM.tm_sec  = 0;
+
+            // time
+            if (*p == L'T' || *p == L' ') {
+                ++p;
+                if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+                int hh = (p[0]-L'0')*10 + (p[1]-L'0');
+                p += 2;
+
+                if (*p != L':') return false;
+                ++p;
+
+                if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+                int mm = (p[0]-L'0')*10 + (p[1]-L'0');
+                p += 2;
+
+                if (*p != L':') return false;
+                ++p;
+
+                if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+                int ss = (p[0]-L'0')*10 + (p[1]-L'0');
+                p += 2;
+
+                outTM.tm_hour = hh;
+                outTM.tm_min  = mm;
+                outTM.tm_sec  = ss;
+            }
+
+            while (*p == L' ' || *p == L'\t' || *p == L'\n' || *p == L'\r') ++p;
+
+            tzOffSec = 0;
+            if (*p == L'Z') {
+                tzOffSec = 0;
+                ++p;
+            } else if (p[0] == L'U' && p[1] == L'T' && p[2] == L'C') {
+                tzOffSec = 0;
+                p += 3;
+            } else if (*p == L'+' || *p == L'-') {
+                int sign = (*p == L'+') ? 1 : -1;
+                ++p;
+
+                if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+                int oh = (p[0]-L'0')*10 + (p[1]-L'0');
+                p += 2;
+
+                int om = 0;
+                if (*p == L':') {
+                    ++p;
+                    if (!(p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9')) return false;
+                    om = (p[0]-L'0')*10 + (p[1]-L'0');
+                    p += 2;
+                } else if (p[0] >= L'0' && p[0] <= L'9' && p[1] >= L'0' && p[1] <= L'9') {
+                    om = (p[0]-L'0')*10 + (p[1]-L'0');
+                    p += 2;
+                }
+
+                tzOffSec = sign * (oh * 3600 + om * 60);
+            }
+
+            // trailing spaces
+            while (*p == L' ' || *p == L'\t' || *p == L'\n' || *p == L'\r') ++p;
+
+            if (*p != L'\0') return false;
+            return true;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         LIB_DELPHI LPSTR DateTimeToStrA(CDateTime Value, LPSTR Str, size_t Size, LPCSTR Format) {
             struct tm TM = {};
             int MSec;
@@ -1091,59 +1280,65 @@ namespace Delphi {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeA(LPCSTR S, LPCSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeA(LPCSTR S) {
             struct tm TM = {};
             struct timespec TS = {};
-            int tz = 0;
-            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
-                throw ExceptionFrm(SInvalidDateTime, S, Format);
+            int tzOffSec = 0;
+            if (!ParseISO8601A(S, TM, tzOffSec))
+                throw ExceptionFrm(SInvalidDateTime, S);
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
-            TM.tm_gmtoff = tz * 60 * 60;
+            TM.tm_gmtoff = tzOffSec;
             return SystemTimeToDateTime(&TM, &TS);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeW(LPCWSTR S, LPCWSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeW(LPCWSTR S) {
             struct tm TM = {};
             struct timespec TS = {};
-            int tz = 0;
-            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
-                throw ExceptionFrm(SInvalidDateTime, S, Format);
+            int tzOffSec = 0;
+            if (!ParseISO8601W(S, TM, tzOffSec))
+                throw ExceptionFrm(SInvalidDateTime, S);
             TM.tm_isdst = -1;
             TM.tm_year -= 1900;
             TM.tm_mon -= 1;
-            TM.tm_gmtoff = tz * 60 * 60;
+            TM.tm_gmtoff = tzOffSec;
             return SystemTimeToDateTime(&TM, &TS);
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default, LPCSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default) {
             struct tm TM = {};
+            int tzOffSec = 0;
             struct timespec TS = {};
-            int tz = 0;
-            if (sscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
-                return Default;
-            TM.tm_isdst = -1;
-            TM.tm_year -= 1900;
-            TM.tm_mon -= 1;
-            TM.tm_gmtoff = tz * 60 * 60;
-            return SystemTimeToDateTime(&TM, &TS);
+
+            if (ParseISO8601A(S, TM, tzOffSec)) {
+                TM.tm_isdst = -1;
+                TM.tm_year -= 1900;
+                TM.tm_mon  -= 1;
+                TM.tm_gmtoff = tzOffSec;
+                return SystemTimeToDateTime(&TM, &TS);
+            }
+
+            return Default;
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format) {
+        LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default) {
             struct tm TM = {};
             struct timespec TS = {};
-            int tz = 0;
-            if (swscanf(S, Format, &TM.tm_year, &TM.tm_mon, &TM.tm_mday, &TM.tm_hour, &TM.tm_min, &TM.tm_sec, &tz) == EOF)
-                return Default;
-            TM.tm_isdst = -1;
-            TM.tm_year -= 1900;
-            TM.tm_mon -= 1;
-            TM.tm_gmtoff = tz * 60 * 60;
-            return SystemTimeToDateTime(&TM, &TS);
+            int tzOffSec = 0;
+
+            if (ParseISO8601W(S, TM, tzOffSec)) {
+                TM.tm_year -= 1900;
+                TM.tm_mon  -= 1;
+                TM.tm_isdst = -1;
+                TM.tm_gmtoff = tzOffSec;
+                return SystemTimeToDateTime(&TM, &TS);
+            }
+
+            return Default;
         }
         //--------------------------------------------------------------------------------------------------------------
 

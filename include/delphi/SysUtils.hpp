@@ -37,12 +37,9 @@ Author:
 #define MaxInt (int)     (2147483647)
 //----------------------------------------------------------------------------------------------------------------------
 
-#define SFormatDateTimeA    "%04d-%02d-%02d %02d:%02d:%02d"
-#define SFormatDateTimeW    L"%04d-%02d-%02d %02d:%02d:%02d"
-
 #define SInvalidInteger     _T("Invalid conversion string \"%s\" to integer")
 #define SInvalidDouble      _T("Invalid conversion string \"%s\" to double")
-#define SInvalidDateTime    _T("Invalid conversion string \"%s\" to datetime by format: \"%s\"")
+#define SInvalidDateTime    _T("Invalid conversion string \"%s\" to datetime")
 #define SOutOfTheRange      _T("A number is out of range after conversion string \"%s\"")
 
 extern "C++" {
@@ -203,12 +200,12 @@ namespace Delphi {
         LIB_DELPHI LPWSTR DateTimeToStrW(CDateTime Value, LPWSTR Str, size_t Size, LPCWSTR Format = L"%Y-%m-%d %H:%M:%S");
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeA(LPCSTR S, LPCSTR Format = SFormatDateTimeA);
-        LIB_DELPHI CDateTime StrToDateTimeW(LPCWSTR S, LPCWSTR Format = SFormatDateTimeW);
+        LIB_DELPHI CDateTime StrToDateTimeA(LPCSTR S);
+        LIB_DELPHI CDateTime StrToDateTimeW(LPCWSTR S);
         //--------------------------------------------------------------------------------------------------------------
 
-        LIB_DELPHI CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default, LPCSTR Format = SFormatDateTimeA);
-        LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default, LPCWSTR Format = SFormatDateTimeW);
+        LIB_DELPHI CDateTime StrToDateTimeDefA(LPCSTR S, CDateTime Default);
+        LIB_DELPHI CDateTime StrToDateTimeDefW(LPCWSTR S, CDateTime Default);
         //--------------------------------------------------------------------------------------------------------------
 
         LIB_DELPHI int GetRandomValue(int a, int b);
