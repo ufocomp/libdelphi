@@ -971,6 +971,8 @@ namespace Delphi {
         class CHTTPServer;
         //--------------------------------------------------------------------------------------------------------------
 
+        typedef std::function<void (CHTTPServerConnection *AConnection, const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute)> COnHTTPServerParseEvent;
+
         class CHTTPServerConnection: public CTCPServerConnection {
             typedef CTCPServerConnection inherited;
 
@@ -984,6 +986,9 @@ namespace Delphi {
 
             size_t m_ContentLength;
 
+            COnHTTPServerParseEvent m_OnParse;
+
+            void DoParse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute);
             void Parse(const CMemoryStream &Stream, COnSocketExecuteEvent && OnExecute) override;
 
         public:
@@ -1002,12 +1007,21 @@ namespace Delphi {
             CHTTPReply &Reply() { return m_Reply; }
             const CHTTPReply &Reply() const { return m_Reply; }
 
+            Request::CParserState State() const { return m_State; }
+
+            size_t ContentLength() const { return m_ContentLength; }
+            void ContentLength(const size_t Value) { m_ContentLength = Value; }
+
             void SendStockReply(CHTTPReply::CStatusType Status, bool bSendNow = false, const CString &RootDir = {});
             void SendReply(CHTTPReply::CStatusType Status, LPCTSTR lpszContentType = nullptr, bool bSendNow = false);
             void SendReply(bool bSendNow = false);
             void SendFileReply(LPCTSTR lpszFileName, LPCTSTR lpszContentType = nullptr);
 
             void SwitchingProtocols(const CString &Accept, const CString &Protocol);
+
+            COnHTTPServerParseEvent &OnParse() { return m_OnParse; }
+            virtual const COnHTTPServerParseEvent &OnParse() const { return m_OnParse; }
+            void OnParse(COnHTTPServerParseEvent && Value) { m_OnParse = Value; }
 
         }; // CHTTPServerConnection
 
@@ -1076,6 +1090,8 @@ namespace Delphi {
 
             CSites m_Sites;
 
+            COnHTTPServerParseEvent m_OnParse;
+
             void DoTimeOut(CPollEventHandler *AHandler) override;
             void DoAccept(CPollEventHandler *AHandler) override;
             void DoRead(CPollEventHandler *AHandler) override;
@@ -1087,7 +1103,7 @@ namespace Delphi {
 
         public:
 
-            CHTTPServer() = default;
+            CHTTPServer();
 
             explicit CHTTPServer(const CString &IP, unsigned short Port);
 
@@ -1111,6 +1127,10 @@ namespace Delphi {
                 Assign(Server);
                 return *this;
             }
+
+            COnHTTPServerParseEvent &OnParse() { return m_OnParse; }
+            virtual const COnHTTPServerParseEvent &OnParse() const { return m_OnParse; }
+            void OnParse(COnHTTPServerParseEvent && Value) { m_OnParse = Value; }
 
         };
 

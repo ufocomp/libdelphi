@@ -774,10 +774,10 @@ namespace Delphi {
                         Request.ContentLength = 0;
                         Context.ContentLength = BufferSize - 1;
 
-                        if (Request.Headers.Count() > 0) {
-                            if (!Request.BuildLocation())
-                                return 0;
+                        if (!Request.BuildLocation())
+                            return 0;
 
+                        if (Request.Headers.Count() > 0) {
                             Request.BuildCookies();
 
                             const auto& contentLength = Request.Headers[_T("Content-Length")];
@@ -882,7 +882,7 @@ namespace Delphi {
 
         int CHTTPRequestParser::Parse(CHTTPRequest &Request, CHTTPContext& Context) {
             Context.Result = -1;
-            while ((Context.Result == -1) && (Context.Begin != Context.End)) {
+            while (Context.Result == -1 && Context.Begin != Context.End) {
                 Context.Result = Consume(Request, Context);
             }
             return Context.Result;
@@ -2054,6 +2054,8 @@ namespace Delphi {
 
             m_Reply.ServerName = AServer->ServerName();
             m_Reply.AllowedMethods = AServer->AllowedMethods();
+
+            m_OnParse = nullptr;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2109,20 +2111,36 @@ namespace Delphi {
                 const CMemoryStream Stream(ReadAsync());
                 if (Stream.Size() > 0) {
                     InputBuffer().Extract(Stream.Memory(), Stream.Size());
-                    switch (m_Protocol) {
-                        case pHTTP:
-                            CHTTPServerConnection::Parse(Stream, std::move(OnExecute));
-                            break;
-                        case pWebSocket:
-                            CWebSocketConnection::Parse(Stream, std::move(OnExecute));
-                            break;
-                    }
-
+                    DoParse(Stream, std::move(OnExecute));
                     return true;
                 }
             }
 
             return false;
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CHTTPServerConnection::DoParse(const CMemoryStream& Stream, COnSocketExecuteEvent&& OnExecute) {
+            if (m_OnParse == nullptr) {
+                switch (m_Protocol) {
+                case pHTTP:
+                    CHTTPServerConnection::Parse(Stream, std::move(OnExecute));
+                    break;
+                case pWebSocket:
+                    CWebSocketConnection::Parse(Stream, std::move(OnExecute));
+                    break;
+                case pTCP:
+                    m_ConnectionStatus = csRequestOk;
+                    m_ContentLength = Stream.Size();
+
+                    m_Request.Content.LoadFromStream(Stream);
+
+                    OnExecute(this);
+                    break;
+                }
+            } else {
+                m_OnParse(this, Stream, std::move(OnExecute));
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2285,6 +2303,10 @@ namespace Delphi {
                         case pWebSocket:
                             CWebSocketConnection::Parse(Stream, std::move(OnExecute));
                             break;
+                        case pTCP:
+                            m_ConnectionStatus = csReplyOk;
+                            OnExecute(this);
+                            break;
                     }
 
                     return true;
@@ -2326,6 +2348,11 @@ namespace Delphi {
 
         //-- CHTTPServer -----------------------------------------------------------------------------------------------
 
+        //--------------------------------------------------------------------------------------------------------------
+
+        CHTTPServer::CHTTPServer(): CTCPAsyncServer() {
+            m_OnParse = nullptr;
+        }
         //--------------------------------------------------------------------------------------------------------------
 
         CHTTPServer::CHTTPServer(const CString &IP, unsigned short Port): CHTTPServer() {
@@ -2454,6 +2481,9 @@ namespace Delphi {
 
                 if (Assigned(pIOHandler)) {
                     pConnection = new CHTTPServerConnection(this);
+
+                    pConnection->OnParse() = m_OnParse;
+
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
                     pConnection->OnDisconnected([this](auto && Sender) { DoDisconnected(Sender); });
                     pConnection->OnReply([this](auto && Sender) { DoReply(Sender); });

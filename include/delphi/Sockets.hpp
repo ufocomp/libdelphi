@@ -1326,7 +1326,7 @@ namespace Delphi {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        enum CHTTPProtocol { pHTTP = 0, pWebSocket };
+        enum CHTTPProtocol { pHTTP = 0, pWebSocket, pTCP };
         //--------------------------------------------------------------------------------------------------------------
 
         class LIB_DELPHI CWebSocketConnection: public CTCPConnection {
@@ -1376,6 +1376,7 @@ namespace Delphi {
             ~CWebSocketConnection() override = default;
 
             CHTTPProtocol Protocol() const { return m_Protocol; }
+            void Protocol(const CHTTPProtocol Value) { m_Protocol = Value; }
 
             CWebSocket &WSRequest() { return m_WSRequest; }
             const CWebSocket &WSRequest() const { return m_WSRequest; }
