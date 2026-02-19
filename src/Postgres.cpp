@@ -48,6 +48,11 @@ namespace Delphi {
 
     namespace Postgres {
 
+        // NOTE: Simplified quoting using E'...' escape syntax.
+        // Limitations vs PQescapeLiteral(): does not handle null bytes (\0),
+        // assumes single-byte or well-formed UTF-8 (no partial multibyte validation),
+        // and relies on standard_conforming_strings not disabling E'' syntax.
+        // Sufficient for current usage (mount points, identifiers, base64 tokens).
         CString PQQuoteLiteral(const CString &String) {
 
             if (String.IsEmpty())
@@ -72,20 +77,31 @@ namespace Delphi {
         //--------------------------------------------------------------------------------------------------------------
 
         CMemoryStream PQUnescapeBytea(LPCTSTR Str) {
-            size_t size;
             CMemoryStream Stream;
-
-            auto bytea = ::PQunescapeBytea(reinterpret_cast<const unsigned char *>(Str), &size);
-
-            Stream.WriteBuffer(bytea, size);
-            PQfreemem(bytea);
-
+            if (Str != nullptr) {
+                size_t len = 0;
+                unsigned char *data = ::PQunescapeBytea((const unsigned char *) Str, &len);
+                if (data != nullptr) {
+                    Stream.Write(data, len);
+                    Stream.Position(0);
+                    PQfreemem(data);
+                }
+            }
             return Stream;
         }
         //--------------------------------------------------------------------------------------------------------------
 
         CString PQUnescapeBytea(const CString &String) {
-            return CString(PQUnescapeBytea(String.c_str()));
+            CString Result;
+            if (!String.IsEmpty()) {
+                size_t len = 0;
+                unsigned char *data = ::PQunescapeBytea((const unsigned char *) String.c_str(), &len);
+                if (data != nullptr) {
+                    Result.Write((LPCTSTR) data, len);
+                    PQfreemem(data);
+                }
+            }
+            return Result;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -223,12 +239,6 @@ namespace Delphi {
 
             if (GetValue(_T("user")).IsEmpty())
                 m_Parameters.AddPair(_T("user"), _T("postgres"));
-
-            if (GetValue(_T("sslmode")).IsEmpty())
-                m_Parameters.AddPair(_T("sslmode"), _T("prefer"));
-
-            if (GetValue(_T("target_session_attrs")).IsEmpty())
-                m_Parameters.AddPair(_T("target_session_attrs"), _T("any"));
 
             m_ConnInfo = m_Parameters[0];
             for (int i = 1; i < m_Parameters.Count(); ++i)
@@ -515,7 +525,7 @@ namespace Delphi {
 #endif
             }
 
-            return nullptr;
+            return "Unknown status.";
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -533,7 +543,7 @@ namespace Delphi {
                     return "Polling active.";
             }
 
-            return nullptr;
+            return "Unknown status.";
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -1442,7 +1452,7 @@ namespace Delphi {
                 }
 
                 if (m_OnPQTimeOut != nullptr) {
-                    pConnection->OnError(std::bind(&CPQConnectPoll::DoPQTimeOut, this, _1));
+                    pConnection->OnTimeOut(std::bind(&CPQConnectPoll::DoPQTimeOut, this, _1));
                 }
 
                 if (m_OnPQStatus != nullptr) {
@@ -1510,7 +1520,7 @@ namespace Delphi {
                 } else {
                     const auto status = pConnection->Status();
                     if ((status == CONNECTION_STARTED) || (status == CONNECTION_MADE)) {
-                        if ((Now() - pConnection->AntiFreeze()) >= (CDateTime) 30 / SecsPerDay) {
+                        if ((Now() - pConnection->AntiFreeze()) >= (CDateTime) 10 / SecsPerDay) {
                             DoPQError(pConnection);
                             pConnection->Close();
                         }
@@ -1588,7 +1598,7 @@ namespace Delphi {
                     pConnection->AntiFreeze(AHandler->TimeStamp());
                 } catch (Delphi::Exception::Exception &E) {
                     DoPQConnectException(pConnection, E);
-                    delete pConnection;
+                    pConnection->ConnectionStatus(qsError);
                     Fault(AHandler);
                 }
             }
@@ -1624,15 +1634,12 @@ namespace Delphi {
                             break;
 
                         case qsWait:
-                            pConnection->Flush();
-                            break;
-
                         case qsError:
                             break;
                     }
                 } catch (Delphi::Exception::Exception &E) {
                     DoPQConnectException(pConnection, E);
-                    delete pConnection;
+                    pConnection->ConnectionStatus(qsError);
                     Fault(AHandler);
                 }
             }
