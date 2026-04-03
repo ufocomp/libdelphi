@@ -2526,6 +2526,10 @@ namespace Delphi {
                             pConnection->SendStockReply(CHTTPReply::bad_request);
                         pConnection->Clear();
                     }
+
+                    if (pConnection->ClosedGracefully()) {
+                        pConnection->Disconnect();
+                    }
                 } catch (Delphi::Exception::Exception &E) {
                     DoException(pConnection, E);
                     pConnection->Disconnect();
@@ -2546,7 +2550,7 @@ namespace Delphi {
                         pConnection->Clear();
                     }
 
-                    if (pConnection->CloseConnection()) {
+                    if (pConnection->ClosedGracefully() || pConnection->CloseConnection()) {
                         pConnection->Disconnect();
                     }
                 } catch (Delphi::Exception::Exception &E) {

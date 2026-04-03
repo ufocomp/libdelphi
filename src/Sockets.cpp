@@ -1760,8 +1760,10 @@ namespace Delphi {
                     } else {
 #endif
                         constexpr int Ignore[] = {EAGAIN, EWOULDBLOCK};
-                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem))
+                        if (GStack->CheckForSocketError(byteCount, Ignore, chARRAY(Ignore), egSystem)) {
+                            m_ClosedGracefully = true;
                             return 0;
+                        }
 #ifdef WITH_SSL
                     }
 #endif
