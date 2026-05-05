@@ -201,14 +201,14 @@ namespace Delphi {
 
             if (!m_pConnection->Connected()) {
                 if (!m_pConnection->Connect())
-                    throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
+                    throw Delphi::Exception::EDBError("%s", m_pConnection->GetErrorMessage());
             }
 
             sqlite3_stmt *stmt = nullptr;
             int ResultCode = sqlite3_prepare_v2(m_pConnection->Handle(), m_SQL.c_str(), m_SQL.Length() + 1, &stmt, nullptr);
 
             if (ResultCode != SQLITE_OK) {
-                throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
+                throw Delphi::Exception::EDBError("%s", m_pConnection->GetErrorMessage());
             }
 
             for (int i = 0; i < m_Params.Count(); i++) {
@@ -276,7 +276,7 @@ namespace Delphi {
                 }
 
                 if (ResultCode != SQLITE_OK) {
-                    throw Delphi::Exception::EDBError(m_pConnection->GetErrorMessage());
+                    throw Delphi::Exception::EDBError("%s", m_pConnection->GetErrorMessage());
                 }
             }
 
