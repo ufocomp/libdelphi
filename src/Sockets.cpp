@@ -144,7 +144,7 @@ namespace Delphi {
 #ifdef WITH_SSL
         bool CStack::CheckForSSLError(ssize_t AResult) {
             unsigned long Ignore[] = { SSL_ERROR_NONE, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE };
-            return CheckForSSLError(AResult, Ignore, 1);
+            return CheckForSSLError(AResult, Ignore, chARRAY(Ignore));
         }
         //--------------------------------------------------------------------------------------------------------------
 
