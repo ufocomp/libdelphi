@@ -27,6 +27,7 @@ Author:
 
 #define EVENT_SIZE 512
 #define WEBSOCKET_ERROR_MESSAGE "Invalid WebSocket header size (%s)."
+#define WEBSOCKET_PROTOCOL_ERROR_MESSAGE "WebSocket protocol violation (%s)."
 #define SSL_NOT_INITIALIZED "SSL not initialized."
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -2368,6 +2369,14 @@ namespace Delphi {
 
             m_Frame.Mask = frame[1] & WS_MASK;
             m_Frame.Length = frame[1] & 0x7Fu;
+
+            // RFC 6455 §5.5: control frames MUST NOT be fragmented and MUST have payload <= 125 bytes
+            if (m_Frame.Opcode >= WS_OPCODE_CLOSE) {
+                if (m_Frame.FIN != WS_FIN)
+                    throw Delphi::Exception::ExceptionFrm(WEBSOCKET_PROTOCOL_ERROR_MESSAGE, "Control-Fragmented");
+                if (m_Frame.Length > 125)
+                    throw Delphi::Exception::ExceptionFrm(WEBSOCKET_PROTOCOL_ERROR_MESSAGE, "Control-Oversize");
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -2395,6 +2404,10 @@ namespace Delphi {
 
                 Stream.Read(len64.arr, sizeof(len64));
                 m_PayloadSize = htobe64(len64.val);
+
+                // RFC 6455 §5.2: the most significant bit of 64-bit payload length MUST be 0
+                if (m_PayloadSize & 0x8000000000000000ull)
+                    throw Delphi::Exception::ExceptionFrm(WEBSOCKET_PROTOCOL_ERROR_MESSAGE, "Extended-64-MSB");
             } else {
                 m_PayloadSize = m_Frame.Length;
             }
@@ -2451,8 +2464,10 @@ namespace Delphi {
 
                 const auto payloadSize = m_Payload.Size();
 
-                m_Payload.SetSize((ssize_t) (payloadSize + m_PayloadSize));
-                SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, m_PayloadSize);
+                if (m_PayloadSize > 0) {
+                    m_Payload.SetSize(payloadSize + m_PayloadSize);
+                    SecureZeroMemory((LPBYTE) m_Payload.Memory() + payloadSize, m_PayloadSize);
+                }
 
                 m_MaskingIndex = 0;
 
