@@ -4962,8 +4962,8 @@ namespace Delphi {
                                 pEventHandler->OnReadEvent([this](auto && AHandler) { DoRead(AHandler); });
                                 pEventHandler->OnWriteEvent([this](auto && AHandler) { DoWrite(AHandler); });
 #else
-                                pEventHandler->OnReadEvent(std::bind(&CAsyncClient::DoRead, this, _1));
-                                pEventHandler->OnWriteEvent(std::bind(&CAsyncClient::DoWrite, this, _1));
+                                pEventHandler->OnReadEvent(std::bind(&CUDPAsyncServer::DoRead, this, _1));
+                                pEventHandler->OnWriteEvent(std::bind(&CUDPAsyncServer::DoWrite, this, _1));
 #endif
                             }
                         }
